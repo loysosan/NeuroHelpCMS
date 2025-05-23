@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"time"
-	"os"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var jwtKey = []byte("super-secret")
@@ -29,7 +29,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&creds)
 
 	var admin models.Administrator
-	if err := db.DB.Where("username = ?", creds.Username).First(&admin).Error; err != nil || admin.Password != creds.Password {
+	if err := db.DB.Where("username = ?", creds.Username).First(&admin).Error; err != nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(admin.Password), []byte(creds.Password)); err != nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}

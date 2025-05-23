@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"user-api/internal/db"
 	"user-api/internal/handlers"
+	authmw "user-api/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -21,7 +22,7 @@ func main() {
 	r.Post("/login", handlers.Login)
 
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.RequireAdmin)
+		r.Use(authmw.RequireAdmin)
 
 		r.Post("/users", handlers.CreateUser)
 		r.Get("/users/{id}", handlers.GetUser)
