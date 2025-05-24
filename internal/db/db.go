@@ -28,5 +28,21 @@ func Connect() {
 		log.Fatal("Cant connect to database:", err)
 	}
 
-	DB.AutoMigrate(&models.User{}, &models.Skills{}, &models.Administrator{})
+	DB.AutoMigrate(
+		&models.Administrator{},
+		&models.User{},
+		&models.Plan{},
+		&models.Category{},
+		&models.Skill{},
+		&models.PsychologistSkills{},
+		&models.Portfolio{},
+		&models.Diploma{},
+		&models.Photo{},
+		&models.Review{},
+		&models.Rating{},
+		&models.BlogPost{},
+		&models.Session{},
+		&models.Message{},
+		&models.Availability{},
+	)
 }
