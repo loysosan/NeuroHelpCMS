@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"user-api/internal/db"
 	"user-api/internal/handlers"
-	authmw "user-api/middleware"
+	authmw "user-api/internal/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

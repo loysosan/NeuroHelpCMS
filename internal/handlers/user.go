@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"user-api/internal/db"
 	"user-api/internal/models"
+	"user-api/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -13,12 +14,35 @@ import (
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Incorrect request", http.StatusBadRequest)
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
 		return
 	}
-	db.DB.Create(&user)
+
+	// Role Validation
+	if user.Role != "client" && user.Role != "psychologist" {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ROLE", "Role must be 'client' or 'psychologist'")
+		return
+	}
+
+	// Check existing email
+	var existing models.User
+	if err := db.DB.Where("email = ?", user.Email).First(&existing).Error; err == nil {
+		utils.WriteError(w, http.StatusConflict, "USER_ALREADY_EXISTS", "User with this email already exists")
+		return
+	}
+
+	// User creating
+	if err := db.DB.Create(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create user")
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    user,
+	})
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
@@ -39,3 +63,4 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
 }
+
