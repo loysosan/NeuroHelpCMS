@@ -9,6 +9,7 @@ import (
 	"user-api/internal/utils"
 
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // CreateUser godoc
@@ -34,6 +35,13 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "INVALID_ROLE", "Role must be 'client' or 'psychologist'")
 		return
 	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "HASH_ERROR", "Unable to hash password")
+		return
+	}
+	user.Password = string(hashedPassword)
 
 	// Check existing email
 	var existing models.User
@@ -92,4 +100,3 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
 }
-
