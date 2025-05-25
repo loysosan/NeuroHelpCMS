@@ -10,7 +10,29 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
+
+	_ "user-api/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
+	
 )
+
+// @title           User API
+// @version         1.0
+// @description     Open API для взаємодії з користувачами
+// @termsOfService  http://example.com/terms/
+
+// @contact.name   Oleksandr Krasilia
+// @contact.email  oleksandr@example.com
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Enter JWT token as `Bearer <token>` (for example, `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`)
+
+// @security BearerAuth []
 
 func main() {
 	_ = godotenv.Load(".env")
@@ -28,6 +50,8 @@ func main() {
 		r.Get("/users/{id}", handlers.GetUser)
 		r.Get("/users", handlers.GetAllUsers)
 	})
+
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	log.Println("Server runned on: 8080")
 	http.ListenAndServe(":8080", r)

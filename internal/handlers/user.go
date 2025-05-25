@@ -11,6 +11,17 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// CreateUser godoc
+// @Summary      Create user
+// @Description  Add new user (client or psychologist)
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        user body models.User true "User data"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400 {object} map[string]interface{}
+// @Router       /users [post]
+// @Security BearerAuth
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -45,6 +56,16 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetUser godoc
+// @Summary      Отримати користувача
+// @Description  Повертає користувача за ID
+// @Tags         users
+// @Produce      json
+// @Param        id path int true "User ID"
+// @Success      200 {object} models.User
+// @Failure      404 {object} map[string]interface{}
+// @Router       /users/{id} [get]
+// @Security BearerAuth
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	var user models.User
@@ -57,6 +78,14 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// GetAllUsers godoc
+// @Summary      Отримати всіх користувачів
+// @Description  Повертає список усіх користувачів
+// @Tags         users
+// @Produce      json
+// @Success      200 {array} models.User
+// @Router       /users [get]
+// @Security BearerAuth
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
 	db.DB.Find(&users)

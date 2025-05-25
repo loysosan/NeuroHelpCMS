@@ -23,7 +23,16 @@ type Claims struct {
 	Role     string `json:"role"`
 	jwt.RegisteredClaims
 }
-
+// Admin Login godoc
+// @Summary      Autorize admin user
+// @Description  Autorize admin user
+// @Tags         Login for admin
+// @Accept       json
+// @Produce      json
+// @Param        user body Credentials true "User data"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400 {object} map[string]interface{}
+// @Router       /login [post]
 func Login(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
 	json.NewDecoder(r.Body).Decode(&creds)
