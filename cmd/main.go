@@ -6,6 +6,7 @@ import (
 	"user-api/internal/db"
 	"user-api/internal/handlers"
 	authmw "user-api/internal/middleware"
+	"user-api/internal/healthz"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -50,6 +51,8 @@ func main() {
 		r.Get("/users/{id}", handlers.GetUser)
 		r.Get("/users", handlers.GetAllUsers)
 	})
+
+	r.Get("/healthz", healthz.HealthCheck)
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
