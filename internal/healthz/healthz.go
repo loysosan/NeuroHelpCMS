@@ -3,9 +3,7 @@ package healthz
 import (
 	"encoding/json"
 	"net/http"
-
 	"user-api/internal/db"
-
 	"github.com/rs/zerolog/log"
 )
 

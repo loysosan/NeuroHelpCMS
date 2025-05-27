@@ -42,17 +42,20 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	r.Post("/login", handlers.Login)
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/login", handlers.Login)
+		})
 
-	r.Group(func(r chi.Router) {
-		r.Use(authmw.RequireAdmin)
+		r.Route("/users", func(r chi.Router) {
+			r.Use(authmw.RequireAdmin)
+			r.Post("/", handlers.CreateUser)
+			r.Get("/", handlers.GetAllUsers)
+			r.Get("/{id}", handlers.GetUser)
+		})
 
-		r.Post("/users", handlers.CreateUser)
-		r.Get("/users/{id}", handlers.GetUser)
-		r.Get("/users", handlers.GetAllUsers)
+		r.Get("/healthz", healthz.HealthCheck)
 	})
-
-	r.Get("/healthz", healthz.HealthCheck)
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
