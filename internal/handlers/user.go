@@ -9,6 +9,7 @@ import (
 	"user-api/internal/utils"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,18 +27,21 @@ import (
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		log.Warn().Msg("CreateUser: invalid JSON format")
 		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
 		return
 	}
 
 	// Role Validation
 	if user.Role != "client" && user.Role != "psychologist" {
+		log.Warn().Str("role", user.Role).Msg("CreateUser: invalid role")
 		utils.WriteError(w, http.StatusBadRequest, "INVALID_ROLE", "Role must be 'client' or 'psychologist'")
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Error().Err(err).Msg("CreateUser: password hashing failed")
 		utils.WriteError(w, http.StatusInternalServerError, "HASH_ERROR", "Unable to hash password")
 		return
 	}
@@ -46,15 +50,19 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	// Check existing email
 	var existing models.User
 	if err := db.DB.Where("email = ?", user.Email).First(&existing).Error; err == nil {
+		log.Warn().Str("email", user.Email).Msg("CreateUser: user with this email already exists")
 		utils.WriteError(w, http.StatusConflict, "USER_ALREADY_EXISTS", "User with this email already exists")
 		return
 	}
 
 	// User creating
 	if err := db.DB.Create(&user).Error; err != nil {
+		log.Error().Err(err).Msg("CreateUser: failed to create user in database")
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create user")
 		return
 	}
+
+	log.Info().Str("email", user.Email).Str("role", user.Role).Msg("CreateUser: user successfully created")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

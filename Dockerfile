@@ -2,11 +2,10 @@ FROM golang:1.23-alpine
 
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download
+RUN go mod init user-api || true
 
 COPY . .
+RUN go mod tidy
 
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 RUN swag init --generalInfo cmd/main.go --output docs
