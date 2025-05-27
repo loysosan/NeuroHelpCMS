@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"time"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/rs/zerolog/log"
 )
 
 var jwtKey = []byte("super-secret")
@@ -39,11 +40,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	var admin models.Administrator
 	if err := db.DB.Where("username = ?", creds.Username).First(&admin).Error; err != nil {
+		log.Warn().Str("username", creds.Username).Msg("Login failed: user not found")
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(admin.Password), []byte(creds.Password)); err != nil {
+		log.Warn().Str("username", creds.Username).Msg("Login failed: invalid password")
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -58,6 +61,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, _ := token.SignedString(jwtKey)
+
+	log.Info().Str("username", creds.Username).Msg("Login: Admin login successful")
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
