@@ -34,7 +34,7 @@ type Claims struct {
 // @Success      201 {object} map[string]interface{}
 // @Failure      400 {object} map[string]interface{}
 // @Router       /login [post]
-func Login(w http.ResponseWriter, r *http.Request) {
+func AdminLogin(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
 	json.NewDecoder(r.Body).Decode(&creds)
 
@@ -62,7 +62,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, _ := token.SignedString(jwtKey)
 
-	log.Info().Str("username", creds.Username).Msg("Login: Admin login successful")
+	log.Info().Str("username", creds.Username).Msg("Login: 	Admin login successful")
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})

@@ -42,7 +42,11 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	r.Post("/login", handlers.Login)
+	r.Post("/login", handlers.AdminLogin)
+
+	// Public registration and verification routes
+	r.Post("/register", handlers.RegisterUser)
+	r.Get("/verify", handlers.VerifyEmail)
 
 	r.Group(func(r chi.Router) {
 		r.Use(authmw.RequireAdmin)
