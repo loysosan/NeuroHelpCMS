@@ -51,9 +51,9 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(authmw.RequireAdmin)
 
-		r.Post("/users", handlers.CreateUser)
-		r.Get("/users/{id}", handlers.GetUser)
-		r.Get("/users", handlers.GetAllUsers)
+		r.Post("/admin/users", handlers.CreateUser)
+		r.Get("/admin/{id}", handlers.GetUser)
+		r.Get("/admin/users", handlers.GetAllUsers)
 	})
 
 	r.Get("/healthz", healthz.HealthCheck)

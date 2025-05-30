@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 	"user-api/internal/db"
 	"user-api/internal/models"
 	"user-api/internal/utils"
@@ -22,6 +26,15 @@ func init() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to load config.ini")
 	}
+}
+
+// generateToken creates a secure random token of n bytes, hex-encoded.
+func generateToken(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // processUserCreation centralizes validation, password hashing, existence check, and DB creation.
@@ -57,6 +70,24 @@ func processUserCreation(w http.ResponseWriter, user *models.User) bool {
     return true
 }
 
+// generateAndSaveVerification builds a secure token, saves it on the user, and returns the verification URL.
+func generateAndSaveVerification(user *models.User) (string, error) {
+    token, err := generateToken(32)
+    if err != nil {
+        return "", err
+    }
+    user.VerificationToken = token
+    user.TokenSentAt = time.Now()
+    if err := db.DB.Save(user).Error; err != nil {
+        return "", err
+    }
+    verifyURL := fmt.Sprintf("%s/verify?token=%s",
+        cfg.Section("app").Key("frontend_url").String(),
+        token,
+    )
+    return verifyURL, nil
+}
+
 // CreateUser godoc
 // @Summary      Create user
 // @Description  Add new user (client or psychologist)
@@ -66,7 +97,7 @@ func processUserCreation(w http.ResponseWriter, user *models.User) bool {
 // @Param        user body models.User true "User data"
 // @Success      201 {object} map[string]interface{}
 // @Failure      400 {object} map[string]interface{}
-// @Router       /users [post]
+// @Router       /admin/users [post]
 // @Security BearerAuth
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
@@ -110,23 +141,34 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
     if !processUserCreation(w, &user) {
         return
     }
-    log.Info().Str("email", user.Email).Str("role", user.Role).Msg("RegisterUser: user successfully registered")
 
-    // Send registration email
-    err := utils.SendTemplatedEmail(utils.SendTemplatedEmailParams{
-        To:           user.Email,
-        Subject:      "Welcome to our service",
-        TemplatePath: cfg.Section("email").Key("template_path").String(),
-        SMTPHost:     cfg.Section("email").Key("smtp_host").String(),
-        SMTPPort:     cfg.Section("email").Key("smtp_port").String(),
-        SMTPUser:     cfg.Section("email").Key("smtp_user").String(),
-        SMTPPass:     cfg.Section("email").Key("smtp_pass").String(),
-        FromEmail:    cfg.Section("email").Key("from_email").String(),
-        Data:         user,
-    })
-    if err != nil {
-        log.Error().Err(err).Msg("RegisterUser: failed to send registration email")
-    }
+	log.Info().Str("email", user.Email).Str("role", user.Role).Msg("RegisterUser: user successfully registered")
+
+	verifyURL, err := generateAndSaveVerification(&user)
+	if err != nil {
+		log.Error().Err(err).Msg("RegisterUser: failed to generate or save verification token")
+	}
+
+	// Send registration email
+	if err := utils.SendTemplatedEmail(utils.SendTemplatedEmailParams{
+		Vars: []string{
+			"username=" + user.FirstName,
+			"email="    + user.Email,
+			"verify_link=" + verifyURL,
+		},
+		TemplatePath: cfg.Section("email").Key("template_path").String(),
+		ToEmail:      user.Email,
+		SMTPHost:     cfg.Section("email").Key("smtp_host").String(),
+		SMTPPort:     cfg.Section("email").Key("smtp_port").String(),
+		SMTPUser:     cfg.Section("email").Key("smtp_user").String(),
+		SMTPPass:     cfg.Section("email").Key("smtp_pass").String(),
+		FromEmail:    cfg.Section("email").Key("from_email").String(),
+		SendType:     utils.SendSMTP,
+	}); err != nil {
+		log.Error().Err(err).Msg("RegisterUser: failed to send registration email")
+	} else {
+		log.Info().Str("email", user.Email).Msg("RegisterUser: registration email sent")
+	}
 
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusCreated)
@@ -144,7 +186,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 // @Param        id path int true "User ID"
 // @Success      200 {object} models.User
 // @Failure      404 {object} map[string]interface{}
-// @Router       /users/{id} [get]
+// @Router       /admin/users/{id} [get]
 // @Security BearerAuth
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
@@ -164,11 +206,49 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 // @Tags         users
 // @Produce      json
 // @Success      200 {array} models.User
-// @Router       /users [get]
+// @Router       /admin/users [get]
 // @Security BearerAuth
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
 	db.DB.Find(&users)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
+}
+
+// VerifyEmail godoc
+// @Summary      Verify user email
+// @Description  Confirm registration by token
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        token query string true "Verification token"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,404,410,500 {object} map[string]interface{}
+// @Router       /verify [get]
+func VerifyEmail(w http.ResponseWriter, r *http.Request) {
+    token := r.URL.Query().Get("token")
+    if token == "" {
+        utils.WriteError(w, http.StatusBadRequest, "MISSING_TOKEN", "Token is required")
+        return
+    }
+    var user models.User
+    if err := db.DB.Where("verification_token = ?", token).First(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "INVALID_TOKEN", "Invalid or expired token")
+        return
+    }
+    if time.Since(user.TokenSentAt) > 24*time.Hour {
+        utils.WriteError(w, http.StatusGone, "TOKEN_EXPIRED", "Token has expired")
+        return
+    }
+    user.Verified = true
+    user.VerificationToken = ""
+    if err := db.DB.Save(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to verify email")
+        return
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "Email verified successfully",
+    })
 }
