@@ -42,7 +42,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	r.Post("/login", handlers.AdminLogin)
+	r.Post("/admin/login", handlers.AdminLogin)
 
 	// Public registration and verification routes
 	r.Post("/register", handlers.RegisterUser)
