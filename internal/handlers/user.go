@@ -9,9 +9,53 @@ import (
 	"user-api/internal/utils"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-ini/ini"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var cfg *ini.File
+
+func init() {
+	var err error
+	cfg, err = ini.Load("config.ini")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to load config.ini")
+	}
+}
+
+// processUserCreation centralizes validation, password hashing, existence check, and DB creation.
+// Returns true if user was created successfully, false if a response has already been written.
+func processUserCreation(w http.ResponseWriter, user *models.User) bool {
+    // Role Validation
+    if user.Role != "client" && user.Role != "psychologist" {
+        log.Warn().Str("role", user.Role).Msg("processUserCreation: invalid role")
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ROLE", "Role must be 'client' or 'psychologist'")
+        return false
+    }
+    // Password hashing
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+    if err != nil {
+        log.Error().Err(err).Msg("processUserCreation: password hashing failed")
+        utils.WriteError(w, http.StatusInternalServerError, "HASH_ERROR", "Unable to hash password")
+        return false
+    }
+    user.Password = string(hashedPassword)
+    // Check existing email
+    var existing models.User
+    if err := db.DB.Where("email = ?", user.Email).First(&existing).Error; err == nil {
+        log.Warn().Str("email", user.Email).Msg("processUserCreation: user with this email already exists")
+        utils.WriteError(w, http.StatusConflict, "USER_ALREADY_EXISTS", "User with this email already exists")
+        return false
+    }
+    // Create user in DB
+    if err := db.DB.Create(user).Error; err != nil {
+        log.Error().Err(err).Msg("processUserCreation: failed to create user in database")
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create user")
+        return false
+    }
+    return true
+}
 
 // CreateUser godoc
 // @Summary      Create user
@@ -32,33 +76,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Role Validation
-	if user.Role != "client" && user.Role != "psychologist" {
-		log.Warn().Str("role", user.Role).Msg("CreateUser: invalid role")
-		utils.WriteError(w, http.StatusBadRequest, "INVALID_ROLE", "Role must be 'client' or 'psychologist'")
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err != nil {
-		log.Error().Err(err).Msg("CreateUser: password hashing failed")
-		utils.WriteError(w, http.StatusInternalServerError, "HASH_ERROR", "Unable to hash password")
-		return
-	}
-	user.Password = string(hashedPassword)
-
-	// Check existing email
-	var existing models.User
-	if err := db.DB.Where("email = ?", user.Email).First(&existing).Error; err == nil {
-		log.Warn().Str("email", user.Email).Msg("CreateUser: user with this email already exists")
-		utils.WriteError(w, http.StatusConflict, "USER_ALREADY_EXISTS", "User with this email already exists")
-		return
-	}
-
-	// User creating
-	if err := db.DB.Create(&user).Error; err != nil {
-		log.Error().Err(err).Msg("CreateUser: failed to create user in database")
-		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create user")
+	if !processUserCreation(w, &user) {
 		return
 	}
 
@@ -70,6 +88,52 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"data":    user,
 	})
+}
+
+// RegisterUser godoc
+// @Summary      Register user
+// @Description  Add new user (client or psychologist) without authentication
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        user body models.User true "User data"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400 {object} map[string]interface{}
+// @Router       /register [post]
+func RegisterUser(w http.ResponseWriter, r *http.Request) {
+    var user models.User
+    if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+        log.Warn().Msg("RegisterUser: invalid JSON format")
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+        return
+    }
+    if !processUserCreation(w, &user) {
+        return
+    }
+    log.Info().Str("email", user.Email).Str("role", user.Role).Msg("RegisterUser: user successfully registered")
+
+    // Send registration email
+    err := utils.SendTemplatedEmail(utils.SendTemplatedEmailParams{
+        To:           user.Email,
+        Subject:      "Welcome to our service",
+        TemplatePath: cfg.Section("email").Key("template_path").String(),
+        SMTPHost:     cfg.Section("email").Key("smtp_host").String(),
+        SMTPPort:     cfg.Section("email").Key("smtp_port").String(),
+        SMTPUser:     cfg.Section("email").Key("smtp_user").String(),
+        SMTPPass:     cfg.Section("email").Key("smtp_pass").String(),
+        FromEmail:    cfg.Section("email").Key("from_email").String(),
+        Data:         user,
+    })
+    if err != nil {
+        log.Error().Err(err).Msg("RegisterUser: failed to send registration email")
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "data":    user,
+    })
 }
 
 // GetUser godoc
