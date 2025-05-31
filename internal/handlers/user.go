@@ -200,6 +200,29 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+
+// GetUser godoc
+// @Summary      Get selected user information
+// @Description  Recive user information via ID
+// @Tags         users
+// @Produce      json
+// @Param        id path int true "User ID"
+// @Success      200 {object} models.User
+// @Failure      404 {object} map[string]interface{}
+// @Router       /users/{id} [get]
+// @Security BearerAuth
+func ClientGetUser(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	var user models.User
+	result := db.DB.First(&user, id)
+	if result.Error != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
 // GetAllUsers godoc
 // @Summary      Отримати всіх користувачів
 // @Description  Повертає список усіх користувачів
@@ -214,6 +237,8 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
 }
+
+
 
 // VerifyEmail godoc
 // @Summary      Verify user email
@@ -242,6 +267,7 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
     }
     user.Verified = true
     user.VerificationToken = ""
+    user.Status = "Active"
     if err := db.DB.Save(&user).Error; err != nil {
         utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to verify email")
         return

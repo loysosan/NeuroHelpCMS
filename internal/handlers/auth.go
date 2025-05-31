@@ -13,6 +13,7 @@ import (
 )
 
 var jwtKey = []byte("super-secret")
+var jwtUserKey = []byte("user-super-secret")
 
 type Credentials struct {
 	Username string `json:"username"`
@@ -66,4 +67,48 @@ func AdminLogin(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+}
+
+// UserLogin godoc
+// @Summary      Authorize normal user
+// @Description  Authorize normal user
+// @Tags         Login for user
+// @Accept       json
+// @Produce      json
+// @Param        user body Credentials true "User data"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400 {object} map[string]interface{}
+// @Router       /login [post]
+func UserLogin(w http.ResponseWriter, r *http.Request) {
+    var creds Credentials
+    json.NewDecoder(r.Body).Decode(&creds)
+
+    var user models.User
+    if err := db.DB.Where("email = ?", creds.Username).First(&user).Error; err != nil {
+        log.Warn().Str("email", creds.Username).Msg("User login failed: user not found")
+        http.Error(w, "unauthorized", http.StatusUnauthorized)
+        return
+    }
+
+    if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil {
+        log.Warn().Str("email", creds.Username).Msg("User login failed: invalid password")
+        http.Error(w, "unauthorized", http.StatusUnauthorized)
+        return
+    }
+
+    expirationTime := time.Now().Add(24 * time.Hour)
+    claims := &Claims{
+        Username: user.Email,
+        Role:     user.Role,
+        RegisteredClaims: jwt.RegisteredClaims{
+            ExpiresAt: jwt.NewNumericDate(expirationTime),
+        },
+    }
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    tokenString, _ := token.SignedString(jwtUserKey)
+
+    log.Info().Str("email", creds.Username).Msg("User login successful")
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
