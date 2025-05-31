@@ -39,25 +39,35 @@ func main() {
 	_ = godotenv.Load(".env")
 	db.Connect()
 
+	// Login Administrator
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-
 	r.Post("/admin/login", handlers.AdminLogin)
+	// User login endpoint
+	r.Post("/login", handlers.UserLogin)
+
+	// Security admin URI
+	r.Group(func(r chi.Router) {
+		r.Use(authmw.RequireAdmin)
+
+		r.Post("/admin/users", handlers.CreateUser)
+		r.Get("/admin/{id}", handlers.GetUser)
+		r.Get("/admin/users", handlers.GetAllUsers)
+	})
 
 	// Public registration and verification routes
 	r.Post("/register", handlers.RegisterUser)
 	r.Get("/verify", handlers.VerifyEmail)
-
+	
+	// Protected user endpoints
 	r.Group(func(r chi.Router) {
-		r.Use(authmw.RequireAdmin)
+		r.Use(authmw.RequireUser)
 
-		r.Post("/users", handlers.CreateUser)
-		r.Get("/users/{id}", handlers.GetUser)
-		r.Get("/users", handlers.GetAllUsers)
+		r.Get("/users/{id}", handlers.ClientGetUser)
 	})
 
+	// Services API endpoints
 	r.Get("/healthz", healthz.HealthCheck)
-
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	log.Println("Server runned on: 8080")

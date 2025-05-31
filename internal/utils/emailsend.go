@@ -6,7 +6,7 @@ import (
 	"net/smtp"
 	"os"
 	"strings"
-	"log"
+	"github.com/rs/zerolog/log"
 )
 
 // EmailSendType defines the method for sending the email
@@ -44,6 +44,8 @@ func ParseKeyValueArray(arr []string) map[string]string {
 
 // SendTemplatedEmail sends an email using a parsed template with injected variables
 func SendTemplatedEmail(params SendTemplatedEmailParams) error {
+	log.Info().Str("to", params.ToEmail).Str("send_type", string(params.SendType)).Msg("SendTemplatedEmail: starting send")
+
 	data := ParseKeyValueArray(params.Vars)
 
 	tmplContent, err := os.ReadFile(params.TemplatePath)
@@ -68,9 +70,21 @@ func SendTemplatedEmail(params SendTemplatedEmailParams) error {
 		body.String()
 
 	if params.SendType == SendLocal {
-		return smtp.SendMail("localhost:25", nil, params.FromEmail, []string{params.ToEmail}, []byte(message))
+		err := smtp.SendMail("localhost:25", nil, params.FromEmail, []string{params.ToEmail}, []byte(message))
+		if err != nil {
+			log.Error().Err(err).Msg("SendTemplatedEmail: local send failed")
+		} else {
+			log.Info().Str("to", params.ToEmail).Msg("SendTemplatedEmail: local send succeeded")
+		}
+		return err
 	}
 
 	auth := smtp.PlainAuth("", params.SMTPUser, params.SMTPPass, params.SMTPHost)
-	return smtp.SendMail(params.SMTPHost+":"+params.SMTPPort, auth, params.FromEmail, []string{params.ToEmail}, []byte(message))
+	err = smtp.SendMail(params.SMTPHost+":"+params.SMTPPort, auth, params.FromEmail, []string{params.ToEmail}, []byte(message))
+	if err != nil {
+		log.Error().Err(err).Msg("SendTemplatedEmail: SMTP send failed")
+	} else {
+		log.Info().Str("to", params.ToEmail).Msg("SendTemplatedEmail: SMTP send succeeded")
+	}
+	return err
 }

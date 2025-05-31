@@ -17,6 +17,10 @@ type User struct {
 	PlanID       *uint64   `gorm:""`
 	CreatedAt    time.Time `gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
+	// Email verification status and token
+	Verified          bool      `gorm:"not null;default:false"`
+	VerificationToken string    `gorm:"type:varchar(64);index"`
+	TokenSentAt       time.Time `gorm:"autoCreateTime"`
 	Portfolio    Portfolio `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	Skills       []Skill   `gorm:"many2many:psychologist_skills"`
 	Reviews      []Review  `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
@@ -26,6 +30,7 @@ type User struct {
 	MessagesReceived []Message `gorm:"foreignKey:ReceiverID;constraint:OnDelete:SET NULL"`
 	Availability []Availability `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	Rating       Rating    `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
+	
 }
 
 type Photo struct {
