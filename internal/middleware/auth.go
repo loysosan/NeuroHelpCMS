@@ -91,4 +91,4 @@ func RequireUser(next http.Handler) http.Handler {
 		r = r.WithContext(context.WithValue(r.Context(), "email", claims.Username))
 		next.ServeHTTP(w, r)
 	})
-}	
+}

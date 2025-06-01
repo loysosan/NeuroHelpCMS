@@ -91,7 +91,7 @@ func generateAndSaveVerification(user *models.User) (string, error) {
 // CreateUser godoc
 // @Summary      Create user
 // @Description  Add new user (client or psychologist)
-// @Tags         users
+// @Tags         Actions for admistrators
 // @Accept       json
 // @Produce      json
 // @Param        user body models.User true "User data"
@@ -124,7 +124,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 // RegisterUser godoc
 // @Summary      Register user
 // @Description  Add new user (client or psychologist) without authentication
-// @Tags         users
+// @Tags         Actions for users
 // @Accept       json
 // @Produce      json
 // @Param        user body models.User true "User data"
@@ -181,7 +181,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 // GetUser godoc
 // @Summary      Отримати користувача
 // @Description  Повертає користувача за ID
-// @Tags         users
+// @Tags         Actions for admistrators
 // @Produce      json
 // @Param        id path int true "User ID"
 // @Success      200 {object} models.User
@@ -204,7 +204,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 // GetUser godoc
 // @Summary      Get selected user information
 // @Description  Recive user information via ID
-// @Tags         users
+// @Tags         Actions for users
 // @Produce      json
 // @Param        id path int true "User ID"
 // @Success      200 {object} models.User
@@ -226,7 +226,7 @@ func ClientGetUser(w http.ResponseWriter, r *http.Request) {
 // GetAllUsers godoc
 // @Summary      Отримати всіх користувачів
 // @Description  Повертає список усіх користувачів
-// @Tags         users
+// @Tags         Actions for admistrators
 // @Produce      json
 // @Success      200 {array} models.User
 // @Router       /admin/users [get]
@@ -243,7 +243,7 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 // VerifyEmail godoc
 // @Summary      Verify user email
 // @Description  Confirm registration by token
-// @Tags         users
+// @Tags         Actions for users
 // @Accept       json
 // @Produce      json
 // @Param        token query string true "Verification token"
@@ -277,4 +277,66 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
         "success": true,
         "message": "Email verified successfully",
     })
+}
+
+/*************  ✨ Windsurf Command ⭐  *************/
+// UpdateUser godoc
+// @Summary      Update user information
+// @Description  Update user's data by ID
+// @Tags         Actions for admistrators
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "User ID"
+// @Param        user body models.User true "Updated user data"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,404,500 {object} map[string]interface{}
+// @Router       /admin/users/{id} [put]
+// @Security BearerAuth
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	var user models.User
+	if err := db.DB.First(&user, id).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+		return
+	}
+
+	var updatedUser map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updatedUser); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+		return
+	}
+
+	for key, value := range updatedUser {
+		switch key {
+		case "FirstName":
+			user.FirstName = value.(string)
+		case "LastName":
+			user.LastName = value.(string)
+		case "Email":
+			user.Email = value.(string)
+		case "Role":
+			user.Role = value.(string)
+		case "Phone":
+			user.Phone = value.(*string)
+		case "PlanID":
+			user.PlanID = value.(*uint64)
+		case "Status":
+			user.Status = value.(string)
+		case "Portfolio":
+			user.Portfolio = value.(models.Portfolio)
+		case "Verified":
+			user.Verified = value.(bool)
+		}
+	}
+
+	if err := db.DB.Save(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update user data")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "User data updated successfully",
+	})
 }
