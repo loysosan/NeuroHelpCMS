@@ -52,7 +52,8 @@ func main() {
 
 		r.Post("/admin/users", handlers.CreateUser)
 		r.Get("/admin/{id}", handlers.GetUser)
-		r.Get("/admin/users", handlers.GetAllUsers)
+		r.Get("/admin/users", handlers.GetAllUsers)		
+		r.Put("/admin/users/{id}", handlers.UpdateUser)
 	})
 
 	// Public registration and verification routes
@@ -73,3 +74,4 @@ func main() {
 	log.Println("Server runned on: 8080")
 	http.ListenAndServe(":8080", r)
 }
+
