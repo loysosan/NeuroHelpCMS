@@ -1,0 +1,59 @@
+; --------------------------------------------
+; Application general settings
+; --------------------------------------------
+[app]
+# Port on which the server listens
+port = 8080
+
+# Base URL of the frontend (without trailing slash)
+# Example: http://localhost:8080 or https://yourdomain.com
+frontend_url = http://localhost:8080
+
+; --------------------------------------------
+; Database settings
+; --------------------------------------------
+[database]
+# Database host
+host     = localhost
+
+# Database port
+port     = 5432
+
+# Database username
+user     = dbuser
+
+# Database password
+password = dbpass
+
+# Database name
+name     = mydb
+
+; --------------------------------------------
+; Email settings
+; --------------------------------------------
+[email]
+# SMTP server host
+smtp_host     = smtp.example.com
+
+# SMTP port (587 for STARTTLS, 465 for SSL)
+smtp_port     = 587
+
+# SMTP authentication credentials
+smtp_user     = your-smtp-user@example.com
+smtp_pass     = your-smtp-password
+
+# Sender address (from which emails are sent)
+from_email    = no-reply@example.com
+
+# Path to HTML email template (relative to project root)
+template_path = ./templates/confirm-user.html
+
+; --------------------------------------------
+; Authentication settings
+; --------------------------------------------
+[auth]
+# JWT secret for administrator
+jwt_admin_secret = your-admin-jwt-secret
+
+# JWT secret for regular users
+jwt_user_secret  = your-user-jwt-secret

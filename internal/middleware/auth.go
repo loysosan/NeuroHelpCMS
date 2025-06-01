@@ -10,7 +10,18 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog/log"
+	"github.com/go-ini/ini"
 )
+
+var cfg *ini.File
+
+func init() {
+	var err error
+	cfg, err = ini.Load("config.ini")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to load config.ini")
+	}
+}
 
 func RequireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +35,7 @@ func RequireAdmin(next http.Handler) http.Handler {
 		tokenStr := strings.TrimPrefix(tokenHeader, "Bearer ")
 		claims := &handlers.Claims{}
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
-			return []byte("super-secret"), nil
+			return []byte(cfg.Section("auth").Key("jwt_admin_secret").String()), nil
 		})
 
 		if err != nil || !token.Valid || claims.Role != "admin" {
@@ -53,7 +64,7 @@ func RequireUser(next http.Handler) http.Handler {
 		tokenStr := strings.TrimPrefix(tokenHeader, "Bearer ")
 		claims := &handlers.Claims{}
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
-			return []byte("user-super-secret"), nil
+			return []byte(cfg.Section("auth").Key("jwt_user_secret").String()), nil
 		})
 
 		if err != nil || !token.Valid {
@@ -80,4 +91,4 @@ func RequireUser(next http.Handler) http.Handler {
 		r = r.WithContext(context.WithValue(r.Context(), "email", claims.Username))
 		next.ServeHTTP(w, r)
 	})
-}
+}	
