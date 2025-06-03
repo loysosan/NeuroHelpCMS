@@ -65,6 +65,8 @@ func main() {
 		r.Use(authmw.RequireUser)
 
 		r.Get("/users/{id}", handlers.ClientGetUser)
+		r.Post("/reviews/{psychologist_id}", handlers.CreateReview)
+
 	})
 
 	// Services API endpoints
