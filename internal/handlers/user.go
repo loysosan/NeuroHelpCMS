@@ -340,3 +340,97 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		"message": "User data updated successfully",
 	})
 }
+
+// CreateReview godoc
+// @Summary      Create a review for a psychologist
+// @Description  A client can add a rating and an optional comment for a psychologist
+// @Tags         Client Actions
+// @Accept       json
+// @Produce      json
+// @Param        psychologist_id path int true "Psychologist ID"
+// @Param        review body models.Review true "Review data"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400 {object} map[string]string "Invalid data"
+// @Failure      403 {object} map[string]string "Access denied"
+// @Failure      404 {object} map[string]string "Psychologist not found"
+// @Failure      500 {object} map[string]string "Server error"
+// @Router       /reviews/{psychologist_id} [post]
+// @Security     BearerAuth
+func CreateReview(w http.ResponseWriter, r *http.Request) {
+    // Get psychologist ID from URL
+    psychologistID, err := strconv.ParseUint(chi.URLParam(r, "psychologist_id"), 10, 64)
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid psychologist ID")
+        return
+    }
+
+    // Get client email from context (set by auth middleware)
+    clientEmail := r.Context().Value("email").(string)
+    
+    // Get client data from DB
+    var client models.User
+    if err := db.DB.Where("email = ?", clientEmail).First(&client).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to retrieve client data")
+        return
+    }
+
+    // Check user role
+    if client.Role != "client" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only clients can leave reviews")
+        return
+    }
+
+    // Check psychologist existence
+    var psychologist models.User
+    if err := db.DB.Where("id = ? AND role = ?", psychologistID, "psychologist").First(&psychologist).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Psychologist not found")
+        return
+    }
+
+    // Parse request body
+    var reviewReq models.Review
+    if err := json.NewDecoder(r.Body).Decode(&reviewReq); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+        return
+    }
+
+    // Create review
+    review := models.Review{
+        PsychologistID: psychologistID,
+        ClientID:       client.ID,
+        Rating:         reviewReq.Rating,
+        Comment:        reviewReq.Comment,
+    }
+
+    // Save review
+    if err := db.DB.Create(&review).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to save review")
+        return
+    }
+
+    // Update psychologist rating
+    var avgRating float64
+    var count int64
+    db.DB.Model(&models.Review{}).Where("psychologist_id = ?", psychologistID).
+        Select("AVG(rating) as avg_rating, COUNT(*) as count").
+        Row().Scan(&avgRating, &count)
+
+    rating := models.Rating{
+        PsychologistID: psychologistID,
+        AverageRating:  avgRating,
+        ReviewCount:    int(count),
+    }
+    db.DB.Save(&rating)
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "Review successfully created",
+        "data": map[string]interface{}{
+            "review_id": review.ID,
+            "rating":    review.Rating,
+            "comment":   review.Comment,
+        },
+    })
+}
