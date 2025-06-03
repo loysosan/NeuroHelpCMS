@@ -54,6 +54,7 @@ func main() {
 		r.Get("/admin/{id}", handlers.GetUser)
 		r.Get("/admin/users", handlers.GetAllUsers)		
 		r.Put("/admin/users/{id}", handlers.UpdateUser)
+		r.Post("/admin/skills", handlers.CreateSkill)
 	})
 
 	// Public registration and verification routes

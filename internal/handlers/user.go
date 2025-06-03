@@ -434,3 +434,41 @@ func CreateReview(w http.ResponseWriter, r *http.Request) {
         },
     })
 }
+
+// CreateSkill godoc
+// @Summary      Create a new skill
+// @Description  Add a new skill (admin only)
+// @Tags         Actions for administrators
+// @Accept       json
+// @Produce      json
+// @Param        skill body models.Skill true "Skill data"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400,409,500 {object} map[string]interface{}
+// @Router       /admin/skills [post]
+// @Security     BearerAuth
+func CreateSkill(w http.ResponseWriter, r *http.Request) {
+    var skill models.Skill
+    if err := json.NewDecoder(r.Body).Decode(&skill); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+        return
+    }
+
+    // Check if skill with the same name already exists
+    var existing models.Skill
+    if err := db.DB.Where("name = ?", skill.Name).First(&existing).Error; err == nil {
+        utils.WriteError(w, http.StatusConflict, "SKILL_EXISTS", "Skill with this name already exists")
+        return
+    }
+
+    if err := db.DB.Create(&skill).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create skill")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "data":    skill,
+    })
+}
