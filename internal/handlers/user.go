@@ -472,3 +472,81 @@ func CreateSkill(w http.ResponseWriter, r *http.Request) {
         "data":    skill,
     })
 }
+
+// GetSkills godoc
+// @Summary      Get all skills
+// @Description  Retrieve all available skills (admin only)
+// @Tags         Actions for administrators
+// @Produce      json
+// @Success      200 {array} models.Skill
+// @Failure      500 {object} map[string]interface{}
+// @Router       /admin/skills [get]
+// @Security     BearerAuth
+func GetSkills(w http.ResponseWriter, r *http.Request) {
+    var skills []models.Skill
+    if err := db.DB.Find(&skills).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve skills")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(skills)
+}
+
+// CreateSkillCategory godoc
+// @Summary      Create a new skill category
+// @Description  Add a new skill category (admin only)
+// @Tags         Actions for administrators
+// @Accept       json
+// @Produce      json
+// @Param        category body models.Category true "Category data"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400,409,500 {object} map[string]interface{}
+// @Router       /admin/skills/categories [post]
+// @Security     BearerAuth
+func CreateSkillCategory(w http.ResponseWriter, r *http.Request) {
+    var category models.Category
+    if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+        return
+    }
+
+    // Check if category with the same name already exists
+    var existing models.Category
+    if err := db.DB.Where("name = ?", category.Name).First(&existing).Error; err == nil {
+        utils.WriteError(w, http.StatusConflict, "CATEGORY_EXISTS", "Category with this name already exists")
+        return
+    }
+
+    if err := db.DB.Create(&category).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create category")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "data":    category,
+    })
+}
+
+// GetSkillCategories godoc
+// @Summary      Get all skill categories
+// @Description  Retrieve all available skill categories (admin only)
+// @Tags         Actions for administrators
+// @Produce      json
+// @Success      200 {array} models.Category
+// @Failure      500 {object} map[string]interface{}
+// @Router       /admin/skills/categories [get]
+// @Security     BearerAuth
+func GetSkillCategories(w http.ResponseWriter, r *http.Request) {
+    var categories []models.Category
+    if err := db.DB.Find(&categories).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve categories")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(categories)
+}
