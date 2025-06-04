@@ -10,22 +10,8 @@ import (
 	"time"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/rs/zerolog/log"
-	"github.com/go-ini/ini"
 )
 
-var cfgAuth *ini.File
-var jwtKey []byte
-var jwtUserKey []byte
-
-func init() {
-	var err error
-	cfgAuth, err = ini.Load("config.ini")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to load config.ini")
-	}
-	jwtKey = []byte(cfgAuth.Section("auth").Key("jwt_admin_secret").String())
-	jwtUserKey = []byte(cfgAuth.Section("auth").Key("jwt_user_secret").String())
-}
 
 type Credentials struct {
 	Username string `json:"username"`
