@@ -45,5 +45,17 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  frontend:
+    build:
+      context: ./frontend
+    image: frontend-app
+    container_name: frontend-app
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+
 volumes:
   dbdata:
