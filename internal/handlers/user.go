@@ -201,3 +201,66 @@ func CreateReview(w http.ResponseWriter, r *http.Request) {
         },
     })
 }
+
+// ClientSelfUpdate godoc
+// @Summary      Update own profile
+// @Description  Allows a client to update their personal information
+// @Tags         Actions for users
+// @Accept       json
+// @Produce      json
+// @Param        user body models.User true "Updated user data"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,401,403,404,500 {object} map[string]interface{}
+// @Router       /users/self/updateuser [put]
+// @Security     BearerAuth
+func ClientSelfUpdate(w http.ResponseWriter, r *http.Request) {
+    // Get client email from context (set by auth middleware)
+    email, ok := r.Context().Value("email").(string)
+    if !ok || email == "" {
+        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+        return
+    }
+
+    // Find user by email
+    var user models.User
+    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+        return
+    }
+
+    // Only allow clients to update their data
+    if user.Role != "client" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only clients can update their profile")
+        return
+    }
+
+    // Parse request body
+    var updateData models.User
+    if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+        return
+    }
+
+    // Update allowed fields
+    if updateData.FirstName != "" {
+        user.FirstName = updateData.FirstName
+    }
+    if updateData.LastName != "" {
+        user.LastName = updateData.LastName
+    }
+    if updateData.Phone != nil {
+        user.Phone = updateData.Phone
+    }
+
+    // Save changes
+    if err := db.DB.Save(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update user")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "data":    user,
+    })
+}
