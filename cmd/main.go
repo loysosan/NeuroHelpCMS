@@ -71,7 +71,7 @@ func main() {
 
 		r.Get("/users/{id}", handlers.ClientGetUser)
 		r.Post("/reviews/{psychologist_id}", handlers.CreateReview)
-		r.Put("/users/self/updateuser", handlers.UpdateSelfUser)
+		r.Put("/users/self/updateuser", handlers.ClientSelfUpdate)
 
 	})
 
