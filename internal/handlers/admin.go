@@ -24,7 +24,7 @@ import (
 // @Param        user body models.User true "User data"
 // @Success      201 {object} map[string]interface{}
 // @Failure      400 {object} map[string]interface{}
-// @Router       /admin/users [post]
+// @Router       /api/admin/users [post]
 // @Security BearerAuth
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
@@ -56,7 +56,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Param        id path int true "User ID"
 // @Success      200 {object} models.User
 // @Failure      404 {object} map[string]interface{}
-// @Router       /admin/users/{id} [get]
+// @Router       /api/admin/users/{id} [get]
 // @Security BearerAuth
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
@@ -81,7 +81,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 // @Param        user body models.User true "Updated user data"
 // @Success      200 {object} map[string]interface{}
 // @Failure      400,404,500 {object} map[string]interface{}
-// @Router       /admin/users/{id} [put]
+// @Router       /api/admin/users/{id} [put]
 // @Security BearerAuth
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
@@ -141,7 +141,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Param        skill body models.Skill true "Skill data"
 // @Success      201 {object} map[string]interface{}
 // @Failure      400,409,500 {object} map[string]interface{}
-// @Router       /admin/skills [post]
+// @Router       /api/admin/skills [post]
 // @Security     BearerAuth
 func CreateSkill(w http.ResponseWriter, r *http.Request) {
     var skill models.Skill
@@ -177,7 +177,7 @@ func CreateSkill(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Success      200 {array} models.Skill
 // @Failure      500 {object} map[string]interface{}
-// @Router       /admin/skills [get]
+// @Router       /api/admin/skills [get]
 // @Security     BearerAuth
 func GetSkills(w http.ResponseWriter, r *http.Request) {
     var skills []models.Skill
@@ -199,7 +199,7 @@ func GetSkills(w http.ResponseWriter, r *http.Request) {
 // @Param        category body models.Category true "Category data"
 // @Success      201 {object} map[string]interface{}
 // @Failure      400,409,500 {object} map[string]interface{}
-// @Router       /admin/skills/categories [post]
+// @Router       /api/admin/skills/categories [post]
 // @Security     BearerAuth
 func CreateSkillCategory(w http.ResponseWriter, r *http.Request) {
     var category models.Category
@@ -235,7 +235,7 @@ func CreateSkillCategory(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Success      200 {array} models.Category
 // @Failure      500 {object} map[string]interface{}
-// @Router       /admin/skills/categories [get]
+// @Router       /api/admin/skills/categories [get]
 // @Security     BearerAuth
 func GetSkillCategories(w http.ResponseWriter, r *http.Request) {
     var categories []models.Category

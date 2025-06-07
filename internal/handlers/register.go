@@ -25,7 +25,7 @@ import (
 // @Param        user body models.User true "User data"
 // @Success      201 {object} map[string]interface{}
 // @Failure      400 {object} map[string]interface{}
-// @Router       /register [post]
+// @Router       /api/register [post]
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
     var user models.User
     if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -82,7 +82,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 // @Param        token query string true "Verification token"
 // @Success      200 {object} map[string]interface{}
 // @Failure      400,404,410,500 {object} map[string]interface{}
-// @Router       /verify [get]
+// @Router       /api/verify [get]
 func VerifyEmail(w http.ResponseWriter, r *http.Request) {
     token := r.URL.Query().Get("token")
     if token == "" {

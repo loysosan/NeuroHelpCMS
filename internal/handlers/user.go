@@ -78,7 +78,7 @@ func generateAndSaveVerification(user *models.User) (string, error) {
 // @Param        id path int true "User ID"
 // @Success      200 {object} models.User
 // @Failure      404 {object} map[string]interface{}
-// @Router       /users/{id} [get]
+// @Router       /api/users/{id} [get]
 // @Security BearerAuth
 func ClientGetUser(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
@@ -98,7 +98,7 @@ func ClientGetUser(w http.ResponseWriter, r *http.Request) {
 // @Tags         Actions for admistrators
 // @Produce      json
 // @Success      200 {array} models.User
-// @Router       /admin/users [get]
+// @Router       /api/admin/users [get]
 // @Security BearerAuth
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
@@ -121,7 +121,7 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 // @Failure      403 {object} map[string]string "Access denied"
 // @Failure      404 {object} map[string]string "Psychologist not found"
 // @Failure      500 {object} map[string]string "Server error"
-// @Router       /reviews/{psychologist_id} [post]
+// @Router       /api/reviews/{psychologist_id} [post]
 // @Security     BearerAuth
 func CreateReview(w http.ResponseWriter, r *http.Request) {
     // Get psychologist ID from URL
@@ -211,7 +211,7 @@ func CreateReview(w http.ResponseWriter, r *http.Request) {
 // @Param        user body models.User true "Updated user data"
 // @Success      200 {object} map[string]interface{}
 // @Failure      400,401,403,404,500 {object} map[string]interface{}
-// @Router       /users/self/updateuser [put]
+// @Router       /api/users/self/updateuser [put]
 // @Security     BearerAuth
 func ClientSelfUpdate(w http.ResponseWriter, r *http.Request) {
     // Get client email from context (set by auth middleware)

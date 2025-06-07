@@ -32,7 +32,7 @@ type Claims struct {
 // @Param        user body Credentials true "User data"
 // @Success      201 {object} map[string]interface{}
 // @Failure      400 {object} map[string]interface{}
-// @Router       /admin/login [post]
+// @Router       /api/admin/login [post]
 func AdminLogin(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
 	json.NewDecoder(r.Body).Decode(&creds)
@@ -76,7 +76,7 @@ func AdminLogin(w http.ResponseWriter, r *http.Request) {
 // @Param        user body Credentials true "User data"
 // @Success      201 {object} map[string]interface{}
 // @Failure      400 {object} map[string]interface{}
-// @Router       /login [post]
+// @Router       /api/login [post]
 func UserLogin(w http.ResponseWriter, r *http.Request) {
     var creds Credentials
     json.NewDecoder(r.Body).Decode(&creds)

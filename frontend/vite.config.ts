@@ -8,7 +8,7 @@ export default defineConfig({
     proxy: {
       // Проксіруємо всі виклики, що починаються з /api, на Go-API-сервіс (ім'я сервісу "api" у docker-compose)
       '/api': {
-        target: 'http://api:8080',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false
       }

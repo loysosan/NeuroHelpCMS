@@ -14,7 +14,7 @@ import (
 // @Produce      json
 // @Success      200 {object} map[string]string
 // @Failure      503 {object} map[string]string
-// @Router       /healthz [get]
+// @Router       /api/healthz [get]
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	sqlDB, err := db.DB.DB()
 	status := "ok"
