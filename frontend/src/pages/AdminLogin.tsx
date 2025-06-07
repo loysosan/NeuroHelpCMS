@@ -30,7 +30,7 @@ const AdminLogin: React.FC = () => {
           <label className="block mb-2">
             Email:
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
