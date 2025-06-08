@@ -44,39 +44,39 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Post("/api/admin/login", handlers.AdminLogin)
 	// User login endpoint
-	r.Post("/api//login", handlers.UserLogin)
+	r.Post("/api/login", handlers.UserLogin)
 
 	// Security admin URI
 	r.Group(func(r chi.Router) {
 		r.Use(authmw.RequireAdmin)
 
-		r.Post("/api//admin/users", handlers.CreateUser)
-		r.Get("/api//admin/{id}", handlers.GetUser)
-		r.Get("/api//admin/users", handlers.GetAllUsers)		
-		r.Put("/api//admin/users/{id}", handlers.UpdateUser)
-		r.Post("/api//admin/skills", handlers.CreateSkill)
-		r.Get("/api//admin/skills", handlers.GetSkills)
-		r.Post("/api//admin/skills/categories", handlers.CreateSkillCategory)
-		r.Get("/api//admin/skills/categories", handlers.GetSkillCategories)
+		r.Post("/api/admin/users", handlers.CreateUser)
+		r.Get("/api/admin/{id}", handlers.GetUser)
+		r.Get("/api/admin/users", handlers.GetAllUsers)		
+		r.Put("/api/admin/users/{id}", handlers.UpdateUser)
+		r.Post("/api/admin/skills", handlers.CreateSkill)
+		r.Get("/api/admin/skills", handlers.GetSkills)
+		r.Post("/api/admin/skills/categories", handlers.CreateSkillCategory)
+		r.Get("/api/admin/skills/categories", handlers.GetSkillCategories)
 
 	})
 
 	// Public registration and verification routes
-	r.Post("/api//register", handlers.RegisterUser)
-	r.Get("/api//verify", handlers.VerifyEmail)
+	r.Post("/api/register", handlers.RegisterUser)
+	r.Get("/api/verify", handlers.VerifyEmail)
 	
 	// Protected user endpoints
 	r.Group(func(r chi.Router) {
 		r.Use(authmw.RequireUser)
 
-		r.Get("/api//users/{id}", handlers.ClientGetUser)
-		r.Post("/api//reviews/{psychologist_id}", handlers.CreateReview)
-		r.Put("/api//users/self/updateuser", handlers.ClientSelfUpdate)
+		r.Get("/api/users/{id}", handlers.ClientGetUser)
+		r.Post("/api/reviews/{psychologist_id}", handlers.CreateReview)
+		r.Put("/api/users/self/updateuser", handlers.ClientSelfUpdate)
 
 	})
 
 	// Services API endpoints
-	r.Get("/api//healthz", healthz.HealthCheck)
+	r.Get("/api/healthz", healthz.HealthCheck)
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	log.Println("Server runned on: 8080")
