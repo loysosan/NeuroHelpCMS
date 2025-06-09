@@ -72,6 +72,11 @@ func main() {
 		r.Get("/api/users/{id}", handlers.ClientGetUser)
 		r.Post("/api/reviews/{psychologist_id}", handlers.CreateReview)
 		r.Put("/api/users/self/updateuser", handlers.ClientSelfUpdate)
+		
+		r.Post("/api/users/blog", handlers.CreateBlogPost)
+		r.Get("/api/users/blog/{psychologist_id}", handlers.GetBlogPosts)
+
+
 
 	})
 

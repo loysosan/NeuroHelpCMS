@@ -264,3 +264,77 @@ func ClientSelfUpdate(w http.ResponseWriter, r *http.Request) {
         "data":    user,
     })
 }
+
+// CreateBlogPost godoc
+// @Summary      Додати запис у блог
+// @Description  Дозволяє психологу додати новий запис у свій блог
+// @Tags         Blog
+// @Accept       json
+// @Produce      json
+// @Param        post body models.BlogPost true "Дані блогу"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400,401,403,500 {object} map[string]interface{}
+// @Router       /api/users/blog [post]
+// @Security     BearerAuth
+func CreateBlogPost(w http.ResponseWriter, r *http.Request) {
+    email, ok := r.Context().Value("email").(string)
+    if !ok || email == "" {
+        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+        return
+    }
+
+    var user models.User
+    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+        return
+    }
+    if user.Role != "psychologist" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can add blog posts")
+        return
+    }
+
+    var post models.BlogPost
+    if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+        return
+    }
+    post.PsychologistID = user.ID
+
+    if err := db.DB.Create(&post).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to create blog post")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "data":    post,
+    })
+}
+
+// GetBlogPosts godoc
+// @Summary      Переглянути записи блогу психолога
+// @Description  Повертає всі записи блогу для вказаного психолога
+// @Tags         Blog
+// @Produce      json
+// @Param        psychologist_id path int true "ID психолога"
+// @Success      200 {array} models.BlogPost
+// @Failure      404,500 {object} map[string]interface{}
+// @Router       /api/users/blog/{psychologist_id} [get]
+func GetBlogPosts(w http.ResponseWriter, r *http.Request) {
+    psychologistID, err := strconv.ParseUint(chi.URLParam(r, "psychologist_id"), 10, 64)
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid psychologist ID")
+        return
+    }
+
+    var posts []models.BlogPost
+    if err := db.DB.Where("psychologist_id = ?", psychologistID).Order("created_at desc").Find(&posts).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch blog posts")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(posts)
+}
