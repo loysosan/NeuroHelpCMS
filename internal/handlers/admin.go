@@ -18,7 +18,7 @@ import (
 // CreateUser godoc
 // @Summary      Create user
 // @Description  Add new user (client or psychologist)
-// @Tags         Actions for admistrators
+// @Tags         Actions for administrators
 // @Accept       json
 // @Produce      json
 // @Param        user body models.User true "User data"
@@ -51,7 +51,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 // GetUser godoc
 // @Summary      Отримати користувача
 // @Description  Повертає користувача за ID
-// @Tags         Actions for admistrators
+// @Tags         Actions for administrators
 // @Produce      json
 // @Param        id path int true "User ID"
 // @Success      200 {object} models.User
@@ -74,7 +74,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 // UpdateUser godoc
 // @Summary      Update user information
 // @Description  Update user's data by ID
-// @Tags         Actions for admistrators
+// @Tags         Actions for administrators
 // @Accept       json
 // @Produce      json
 // @Param        id path int true "User ID"
