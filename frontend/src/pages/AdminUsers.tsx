@@ -13,26 +13,32 @@ const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch('/api/admin/users', {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          }
-        });
-        if (!res.ok) {
-          throw new Error('Не вдалося отримати список користувачів');
+useEffect(() => {
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('/api/admin/users', {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
         }
-        const data = await res.json();
-        setUsers(data.users);
-      } catch (err: any) {
-        setError(err.message);
+      });
+      if (!res.ok) {
+        throw new Error('Не вдалося отримати список користувачів');
       }
-    };
-    fetchUsers();
-  }, [token]);
+      const data = await res.json();
+      setUsers(data.map((u: any) => ({
+        id: u.ID,
+        email: u.Email,
+        firstName: u.FirstName,
+        lastName: u.LastName,
+        Status: u.Status
+      })));
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+  fetchUsers();
+}, [token]);
 
   return (
     <div className="p-8 bg-gray-100 min-h-screen">
@@ -47,6 +53,7 @@ const AdminUsers: React.FC = () => {
               <th className="p-2 text-left">Email</th>
               <th className="p-2 text-left">Ім’я</th>
               <th className="p-2 text-left">Прізвище</th>
+              <th className="p-2 text-left">Статус</th>
             </tr>
           </thead>
           <tbody>
@@ -56,6 +63,7 @@ const AdminUsers: React.FC = () => {
                 <td className="p-2">{u.email}</td>
                 <td className="p-2">{u.firstName}</td>
                 <td className="p-2">{u.lastName}</td>
+                <td className="p-2">{u.Status}</td>
               </tr>
             ))}
           </tbody>
