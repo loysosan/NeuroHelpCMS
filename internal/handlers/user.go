@@ -16,7 +16,10 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
+
 )
+
+
 
 // processUserCreation centralizes validation, password hashing, existence check, and DB creation.
 // Returns true if user was created successfully, false if a response has already been written.
