@@ -6,11 +6,18 @@ import AdminUsers from '../pages/AdminUsers';
 import UserHome from '../pages/UserHome';
 import NotFound from '../pages/NotFound';
 import PrivateRoute from '../utils/PrivateRoute';
+import Register from '../pages/Register';
+import RegistrationSuccess from '../pages/RegistrationSuccess';
+
+
 
 const AppRoutes: React.FC = () => (
   <Routes>
     {/* Публічна сторінка для звичайного користувача */}
     <Route path="/" element={<UserHome />} />
+    <Route path="/register" element={<Register />} />
+    <Route path="/registration-success" element={<RegistrationSuccess />} />
+
 
     {/* Адмінська частина */}
     <Route path="/admin/login" element={<AdminLogin />} />
@@ -34,6 +41,7 @@ const AppRoutes: React.FC = () => (
 
     {/* Якщо не знайдено жодного шляху */}
     <Route path="*" element={<NotFound />} />
+
   </Routes>
 );
 
