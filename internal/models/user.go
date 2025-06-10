@@ -13,7 +13,7 @@ type User struct {
 	FirstName    string    `gorm:"type:varchar(100);not null"`
 	LastName     string    `gorm:"type:varchar(100);not null"`
 	Phone        *string   `gorm:"type:varchar(20)"`
-	Status       string    `gorm:"type:enum('Active', 'Disabled');not null;default:Active"`
+	Status       string    `gorm:"type:enum('Active', 'Disabled');not null;default:Disabled"`
 	PlanID       *uint64   `gorm:""`
 	CreatedAt    time.Time `gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
