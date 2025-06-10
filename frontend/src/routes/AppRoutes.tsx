@@ -8,6 +8,8 @@ import NotFound from '../pages/NotFound';
 import PrivateRoute from '../utils/PrivateRoute';
 import Register from '../pages/Register';
 import RegistrationSuccess from '../pages/RegistrationSuccess';
+import AdminEditUser from '../pages/AdminEditUser'; 
+
 
 
 
@@ -35,6 +37,14 @@ const AppRoutes: React.FC = () => (
       element={
         <PrivateRoute>
           <AdminUsers />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/admin/users/:id/edit"
+      element={
+        <PrivateRoute>
+          <AdminEditUser />
         </PrivateRoute>
       }
     />

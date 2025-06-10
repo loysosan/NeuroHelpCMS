@@ -51,7 +51,7 @@ func main() {
 		r.Use(authmw.RequireAdmin)
 
 		r.Post("/api/admin/users", handlers.CreateUser)
-		r.Get("/api/admin/{id}", handlers.GetUser)
+		r.Get("/api/admin/users/{id}", handlers.GetUser)
 		r.Get("/api/admin/users", handlers.GetAllUsers)		
 		r.Put("/api/admin/users/{id}", handlers.UpdateUser)
 		r.Post("/api/admin/skills", handlers.CreateSkill)

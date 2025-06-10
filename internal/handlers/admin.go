@@ -48,9 +48,24 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetAllUsers godoc
+// @Summary      Get all users
+// @Description  Returns a list of all users in the system
+// @Tags         Actions for administrators
+// @Produce      json
+// @Success      200 {array} models.User
+// @Router       /api/admin/users [get]
+// @Security BearerAuth
+func GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	var users []models.User
+	db.DB.Find(&users)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}
+
 // GetUser godoc
-// @Summary      Отримати користувача
-// @Description  Повертає користувача за ID
+// @Summary      Get user by ID
+// @Description  Retrieve user information by ID
 // @Tags         Actions for administrators
 // @Produce      json
 // @Param        id path int true "User ID"
@@ -84,52 +99,72 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/users/{id} [put]
 // @Security BearerAuth
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	var user models.User
-	if err := db.DB.First(&user, id).Error; err != nil {
-		utils.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
-		return
-	}
+    id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+    var user models.User
+    if err := db.DB.First(&user, id).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+        return
+    }
 
-	var updatedUser map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updatedUser); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
-		return
-	}
+    var updatedUser map[string]interface{}
+    if err := json.NewDecoder(r.Body).Decode(&updatedUser); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+        return
+    }
 
-	for key, value := range updatedUser {
-		switch key {
-		case "FirstName":
-			user.FirstName = value.(string)
-		case "LastName":
-			user.LastName = value.(string)
-		case "Email":
-			user.Email = value.(string)
-		case "Role":
-			user.Role = value.(string)
-		case "Phone":
-			user.Phone = value.(*string)
-		case "PlanID":
-			user.PlanID = value.(*uint64)
-		case "Status":
-			user.Status = value.(string)
-		case "Portfolio":
-			user.Portfolio = value.(models.Portfolio)
-		case "Verified":
-			user.Verified = value.(bool)
-		}
-	}
+    for key, value := range updatedUser {
+        switch key {
+        case "FirstName":
+            if str, ok := value.(string); ok {
+                user.FirstName = str
+            }
+        case "LastName":
+            if str, ok := value.(string); ok {
+                user.LastName = str
+            }
+        case "Email":
+            if str, ok := value.(string); ok {
+                user.Email = str
+            }
+        case "Role":
+            if str, ok := value.(string); ok {
+                user.Role = str
+            }
+        case "Phone":
+            if value == nil {
+                user.Phone = nil
+            } else if str, ok := value.(string); ok {
+                user.Phone = &str
+            }
+        case "PlanID":
+            if value == nil {
+                user.PlanID = nil
+            } else if num, ok := value.(float64); ok {
+                planID := uint64(num)
+                user.PlanID = &planID
+            }
+        case "Status":
+            if str, ok := value.(string); ok {
+                user.Status = str
+            }
+        case "Verified":
+            if b, ok := value.(bool); ok {
+                user.Verified = b
+            }
+        }
+    }
 
-	if err := db.DB.Save(&user).Error; err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update user data")
-		return
-	}
+    if err := db.DB.Model(&user).Updates(user).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update user data")
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "User data updated successfully",
-	})
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "User data updated successfully",
+        "data": user,
+    })
 }
 
 // CreateSkill godoc

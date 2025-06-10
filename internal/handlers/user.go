@@ -95,21 +95,6 @@ func ClientGetUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
-// GetAllUsers godoc
-// @Summary      Отримати всіх користувачів
-// @Description  Повертає список усіх користувачів
-// @Tags         Actions for admistrators
-// @Produce      json
-// @Success      200 {array} models.User
-// @Router       /api/admin/users [get]
-// @Security BearerAuth
-func GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	var users []models.User
-	db.DB.Find(&users)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
-}
-
 
 // CreateReview godoc
 // @Summary      Create a review for a psychologist

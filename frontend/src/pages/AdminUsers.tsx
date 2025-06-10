@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom'; 
 
 type UserItem = {
   id: number;
@@ -54,6 +55,7 @@ useEffect(() => {
               <th className="p-2 text-left">Ім’я</th>
               <th className="p-2 text-left">Прізвище</th>
               <th className="p-2 text-left">Статус</th>
+              <th className="p-2 text-left">Дії</th>
             </tr>
           </thead>
           <tbody>
@@ -64,6 +66,14 @@ useEffect(() => {
                 <td className="p-2">{u.firstName}</td>
                 <td className="p-2">{u.lastName}</td>
                 <td className="p-2">{u.Status}</td>
+                <td className="p-2">
+                  <Link
+                    to={`/admin/users/${u.id}/edit`}
+                    className="text-indigo-600 hover:text-indigo-900 font-medium"
+                  >
+                    Редагувати
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>
