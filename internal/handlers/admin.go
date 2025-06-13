@@ -282,3 +282,43 @@ func GetSkillCategories(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(categories)
 }
+
+// DeleteUser godoc
+// @Summary      Delete user
+// @Description  Delete user by ID (admin only)
+// @Tags         Actions for administrators
+// @Produce      json
+// @Param        id path int true "User ID"
+// @Success      200 {object} map[string]interface{}
+// @Failure      404 {object} map[string]interface{}
+// @Failure      500 {object} map[string]interface{}
+// @Router       /api/admin/users/{id} [delete]
+// @Security     BearerAuth
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+    // Get user ID from URL parameters
+    id, err := strconv.Atoi(chi.URLParam(r, "id"))
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID format")
+        return
+    }
+
+    // Check if user exists
+    var user models.User
+    if err := db.DB.First(&user, id).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+        return
+    }
+
+    // Delete user
+    if err := db.DB.Delete(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete user")
+        return
+    }
+
+    // Return success response
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "User successfully deleted",
+    })
+}
