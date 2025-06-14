@@ -59,6 +59,10 @@ func main() {
 		r.Post("/api/admin/skills/categories", handlers.CreateSkillCategory)
 		r.Get("/api/admin/skills/categories", handlers.GetSkillCategories)
 		r.Delete("/api/admin/users/{id}", handlers.DeleteUser)
+		r.Get("/api/admin/plans", handlers.GetPlans)
+    	r.Post("/api/admin/plans", handlers.CreatePlan)
+    	r.Delete("/api/admin/plans/{id}", handlers.DeletePlan)
+
 
 	})
 

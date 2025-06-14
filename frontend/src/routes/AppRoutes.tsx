@@ -9,7 +9,7 @@ import PrivateRoute from '../utils/PrivateRoute';
 import Register from '../pages/Register';
 import RegistrationSuccess from '../pages/RegistrationSuccess';
 import AdminEditUser from '../pages/AdminEditUser'; 
-
+import AdminPlans from '../pages/AdminPlans';
 
 
 
@@ -48,6 +48,11 @@ const AppRoutes: React.FC = () => (
         </PrivateRoute>
       }
     />
+    <Route path="/admin/plans" element={
+      <PrivateRoute>
+        <AdminPlans />
+      </PrivateRoute>
+    } />
 
     {/* Якщо не знайдено жодного шляху */}
     <Route path="*" element={<NotFound />} />

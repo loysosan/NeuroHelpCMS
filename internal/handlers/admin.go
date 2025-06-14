@@ -322,3 +322,112 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
         "message": "User successfully deleted",
     })
 }
+
+// GetPlans godoc
+// @Summary      Get all plans
+// @Description  Retrieve all available plans (admin only)
+// @Tags         Actions for administrators
+// @Produce      json
+// @Success      200 {array} models.Plan
+// @Failure      500 {object} map[string]interface{}
+// @Router       /api/admin/plans [get]
+// @Security     BearerAuth
+func GetPlans(w http.ResponseWriter, r *http.Request) {
+    var plans []models.Plan
+    if err := db.DB.Find(&plans).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve plans")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(plans)
+}
+
+// CreatePlan godoc
+// @Summary      Create a new plan
+// @Description  Add a new plan (admin only)
+// @Tags         Actions for administrators
+// @Accept       json
+// @Produce      json
+// @Param        plan body models.Plan true "Plan data"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400,409,500 {object} map[string]interface{}
+// @Router       /api/admin/plans [post]
+// @Security     BearerAuth
+func CreatePlan(w http.ResponseWriter, r *http.Request) {
+    var plan models.Plan
+    if err := json.NewDecoder(r.Body).Decode(&plan); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+        return
+    }
+
+    // Check if plan with the same name already exists
+    var existing models.Plan
+    if err := db.DB.Where("name = ?", plan.Name).First(&existing).Error; err == nil {
+        utils.WriteError(w, http.StatusConflict, "PLAN_EXISTS", "Plan with this name already exists")
+        return
+    }
+
+    if err := db.DB.Create(&plan).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create plan")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "data":    plan,
+    })
+}
+
+// DeletePlan godoc
+// @Summary      Delete plan
+// @Description  Delete plan by ID (admin only)
+// @Tags         Actions for administrators
+// @Produce      json
+// @Param        id path int true "Plan ID"
+// @Success      200 {object} map[string]interface{}
+// @Failure      404 {object} map[string]interface{}
+// @Failure      500 {object} map[string]interface{}
+// @Router       /api/admin/plans/{id} [delete]
+// @Security     BearerAuth
+func DeletePlan(w http.ResponseWriter, r *http.Request) {
+    // Get plan ID from URL parameters
+    id, err := strconv.Atoi(chi.URLParam(r, "id"))
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid plan ID format")
+        return
+    }
+
+    // Check if plan exists
+    var plan models.Plan
+    if err := db.DB.First(&plan, id).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "PLAN_NOT_FOUND", "Plan not found")
+        return
+    }
+
+    // Check if any users are using this plan
+    var count int64
+    if err := db.DB.Model(&models.User{}).Where("plan_id = ?", id).Count(&count).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to check plan usage")
+        return
+    }
+
+    if count > 0 {
+        utils.WriteError(w, http.StatusConflict, "PLAN_IN_USE", "Cannot delete plan that is being used by users")
+        return
+    }
+
+    // Delete plan
+    if err := db.DB.Delete(&plan).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete plan")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "Plan successfully deleted",
+    })
+}
