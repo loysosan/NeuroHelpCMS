@@ -11,6 +11,7 @@ type UserItem = {
   firstName: string;
   lastName: string;
   Status: string;
+  Role: string;
 };
 
 const AdminUsers: React.FC = () => {
@@ -42,7 +43,8 @@ const AdminUsers: React.FC = () => {
         Phone: u.Phone,
         firstName: u.FirstName,
         lastName: u.LastName,
-        Status: u.Status
+        Status: u.Status,
+        Role: u.Role
       })));
     } catch (err: any) {
       setError(err.message);
@@ -158,6 +160,7 @@ const AdminUsers: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ім'я</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Прізвище</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Роль</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дії</th>
               </tr>
             </thead>
@@ -176,6 +179,7 @@ const AdminUsers: React.FC = () => {
                       {user.Status}
                     </span>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">{user.Role}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
                     <Link
                       to={`/admin/users/${user.id}/edit`}

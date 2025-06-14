@@ -20,7 +20,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     lastName: '',
     password: '',
     role: 'user',
-    status: 'active'
+    status: 'disabled'
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,7 +60,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
               type="phone"
               required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              value={formData.email}
+              value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             />
           </div>
@@ -104,9 +104,8 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             >
-              <option value="user">Користувач</option>
+              <option value="client">Користувач</option>
               <option value="psychologist">Психолог</option>
-              <option value="admin">Адміністратор</option>
             </select>
           </div>
 

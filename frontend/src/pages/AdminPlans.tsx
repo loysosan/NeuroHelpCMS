@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/ConfirmationModal';
+import CreatePlanModal from '../components/CreatePlanModal';
 
+// Оновлюємо тип Plan відповідно до структури з бекенду
 type Plan = {
   ID: number;
   Name: string;
   Description: string;
   Price: number;
-  Duration: number;
-  Features: string[];
+  DurationDays: number; // змінено з Duration
+  Features: string;     // змінено з string[]
+  CreatedAt: string;
+  UpdatedAt: string;
 };
 
 const AdminPlans: React.FC = () => {
@@ -60,6 +64,26 @@ const AdminPlans: React.FC = () => {
       setPlans(plans.filter(plan => plan.ID !== planToDelete));
       setIsDeleteModalOpen(false);
       setPlanToDelete(null);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleCreatePlan = async (planData: any) => {
+    try {
+      const res = await fetch('/api/admin/plans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(planData)
+      });
+
+      if (!res.ok) throw new Error('Не вдалося створити план');
+
+      await fetchPlans(); // Refresh plans after creation
+      setIsCreateModalOpen(false);
     } catch (err: any) {
       setError(err.message);
     }
@@ -129,22 +153,27 @@ const AdminPlans: React.FC = () => {
               
               <div className="mb-4">
                 <p className="text-2xl font-bold">${plan.Price}</p>
-                <p className="text-gray-600">{plan.Duration} днів</p>
+                <p className="text-gray-600">{plan.DurationDays} днів</p>
               </div>
 
-              <ul className="space-y-2">
-                {plan.Features.map((feature, index) => (
-                  <li key={index} className="flex items-center text-gray-700">
-                    <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
+              <div className="text-gray-700">
+                {/* Відображаємо Features як текст, а не масив */}
+                <p className="flex items-center">
+                  <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {plan.Features}
+                </p>
+              </div>
             </div>
           ))}
         </div>
+
+        <CreatePlanModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={handleCreatePlan}
+        />
 
         <ConfirmationModal
           isOpen={isDeleteModalOpen}
