@@ -64,6 +64,8 @@ func main() {
     	r.Delete("/api/admin/plans/{id}", handlers.DeletePlan)
     	r.Delete("/api/admin/skills/{id}", handlers.DeleteSkill)
     	r.Delete("/api/admin/skills/categories/{id}", handlers.DeleteSkillCategory)
+    	r.Put("/api/admin/skills/{id}", handlers.UpdateSkill)
+    	r.Put("/api/admin/skills/categories/{id}", handlers.UpdateSkillCategory)
 
 
 	})
