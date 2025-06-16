@@ -22,6 +22,9 @@ const AdminDashboard: React.FC = () => {
           <Link to="/admin/plans" className="text-blue-600 hover:underline">
             Плани підписки
           </Link>
+          <Link to="/admin/skills" className="text-blue-600 hover:underline">
+            Навички
+          </Link>
           {/* Можна додати інші посилання: /admin/settings, /admin/reports */}
         </nav>
       </main>

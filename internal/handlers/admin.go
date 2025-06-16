@@ -431,3 +431,87 @@ func DeletePlan(w http.ResponseWriter, r *http.Request) {
         "message": "Plan successfully deleted",
     })
 }
+
+// DeleteSkill godoc
+// @Summary      Delete skill
+// @Description  Delete skill by ID (admin only)
+// @Tags         Actions for administrators
+// @Produce      json
+// @Param        id path int true "Skill ID"
+// @Success      200 {object} map[string]interface{}
+// @Failure      404 {object} map[string]interface{}
+// @Failure      500 {object} map[string]interface{}
+// @Router       /api/admin/skills/{id} [delete]
+// @Security     BearerAuth
+func DeleteSkill(w http.ResponseWriter, r *http.Request) {
+    id := chi.URLParam(r, "id")
+    skillID, err := strconv.Atoi(id)
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid skill ID format")
+        return
+    }
+
+    // Перевіряємо чи існує навичка
+    var skill models.Skill
+    if err := db.DB.First(&skill, skillID).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "SKILL_NOT_FOUND", "Skill not found")
+        return
+    }
+
+    // Видаляємо навичку
+    if err := db.DB.Delete(&skill).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete skill")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "Skill successfully deleted",
+    })
+}
+
+// DeleteSkillCategory godoc
+// @Summary      Delete skill category
+// @Description  Delete skill category by ID (admin only)
+// @Tags         Actions for administrators
+// @Produce      json
+// @Param        id path int true "Category ID"
+// @Success      200 {object} map[string]interface{}
+// @Failure      404 {object} map[string]interface{}
+// @Failure      500 {object} map[string]interface{}
+// @Router       /api/admin/skills/categories/{id} [delete]
+// @Security     BearerAuth
+func DeleteSkillCategory(w http.ResponseWriter, r *http.Request) {
+    id := chi.URLParam(r, "id")
+    categoryID, err := strconv.Atoi(id)
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid category ID format")
+        return
+    }
+
+    // Перевіряємо чи існує категорія
+    var category models.Category
+    if err := db.DB.First(&category, categoryID).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "CATEGORY_NOT_FOUND", "Category not found")
+        return
+    }
+
+    // Оновлюємо всі навички цієї категорії на null
+    if err := db.DB.Model(&models.Skill{}).Where("category_id = ?", categoryID).Update("category_id", nil).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update skills")
+        return
+    }
+
+    // Видаляємо категорію
+    if err := db.DB.Delete(&category).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete category")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "Category successfully deleted",
+    })
+}
