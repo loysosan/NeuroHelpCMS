@@ -32,6 +32,7 @@ const AdminSkills: React.FC = () => {
   const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
   const [isDeleteCategoryModalOpen, setIsDeleteCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
 
   const fetchSkills = async () => {
     try {
@@ -175,9 +176,15 @@ const AdminSkills: React.FC = () => {
     }
   };
 
-  const handleUpdateCategory = async (categoryId: number, categoryData: any) => {
+  const handleEditSkill = (skill: Skill) => {
+    setEditingSkill(skill);
+  };
+
+  const handleUpdateCategory = async (categoryData: { Name: string }) => {
+    if (!editingCategory) return;
+    
     try {
-      const res = await fetch(`/api/admin/skills/categories/${categoryId}`, {
+      const res = await fetch(`/api/admin/skills/categories/${editingCategory.ID}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -189,6 +196,7 @@ const AdminSkills: React.FC = () => {
       if (!res.ok) throw new Error('Не вдалося оновити категорію');
 
       await fetchCategories();
+      setEditingCategory(null); // Закриваємо модальне вікно після успішного оновлення
     } catch (err: any) {
       setError(err.message);
     }
@@ -347,6 +355,18 @@ const AdminSkills: React.FC = () => {
           onClose={() => setIsCreateModalOpen(false)}
           onSubmit={handleCreateSkill}
           categories={categories}
+        />
+
+        <CreateSkillModal
+          isOpen={!!editingSkill}
+          onClose={() => setEditingSkill(null)}
+          onSubmit={(skillData) => {
+            handleUpdateSkill(editingSkill!.ID, skillData);
+            setEditingSkill(null);
+          }}
+          categories={categories}
+          initialData={editingSkill}
+          isEditing
         />
       </div>
     </div>
