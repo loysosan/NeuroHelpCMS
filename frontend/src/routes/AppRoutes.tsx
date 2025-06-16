@@ -10,6 +10,7 @@ import Register from '../pages/Register';
 import RegistrationSuccess from '../pages/RegistrationSuccess';
 import AdminEditUser from '../pages/AdminEditUser'; 
 import AdminPlans from '../pages/AdminPlans';
+import AdminSkills from '../pages/AdminSkills';
 
 
 
@@ -51,6 +52,11 @@ const AppRoutes: React.FC = () => (
     <Route path="/admin/plans" element={
       <PrivateRoute>
         <AdminPlans />
+      </PrivateRoute>
+    } />
+    <Route path="/admin/skills" element={
+      <PrivateRoute>
+        <AdminSkills />
       </PrivateRoute>
     } />
 
