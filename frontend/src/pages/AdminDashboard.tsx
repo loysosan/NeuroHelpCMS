@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
+  
   return (
     <div className="p-8 bg-gray-100 min-h-screen">
       <header className="flex justify-between items-center mb-6">
@@ -14,13 +15,11 @@ const AdminDashboard: React.FC = () => {
       </header>
       <main>
         <p className="mb-4">Ласкаво просимо до адміністративної частини.</p>
-        <nav className="space-x-4">
+        <nav className="flex flex-col space-y-2">
           <Link to="/admin/users" className="text-blue-600 hover:underline">
             Користувачі
           </Link>
-          <Link 
-            to="/admin/plans" 
-            className="px-4 py-2 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <Link to="/admin/plans" className="text-blue-600 hover:underline">
             Плани підписки
           </Link>
           {/* Можна додати інші посилання: /admin/settings, /admin/reports */}
