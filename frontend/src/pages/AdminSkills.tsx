@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CreateSkillModal from '../components/CreateSkillModal';
 import CreateCategoryModal from '../components/CreateCategoryModal';
+import AdminLayout from '../components/AdminLayout';
 
 type Skill = {
   ID: number;
@@ -216,8 +217,12 @@ const AdminSkills: React.FC = () => {
   }
 
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
+    <AdminLayout>
       <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold">Керування навичками</h2>
+        </div>
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
@@ -369,7 +374,7 @@ const AdminSkills: React.FC = () => {
           isEditing
         />
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

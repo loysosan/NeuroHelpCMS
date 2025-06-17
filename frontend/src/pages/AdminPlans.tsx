@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CreatePlanModal from '../components/CreatePlanModal';
+import AdminLayout from '../components/AdminLayout';
 
 // Оновлюємо тип Plan відповідно до структури з бекенду
 type Plan = {
@@ -102,29 +103,10 @@ const AdminPlans: React.FC = () => {
   }
 
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
+    <AdminLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6">
           <h2 className="text-2xl font-semibold">Плани підписки</h2>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center"
-          >
-            <svg 
-              className="w-5 h-5 mr-2" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M12 4v16m8-8H4" 
-              />
-            </svg>
-            Створити план
-          </button>
         </div>
 
         {error && (
@@ -183,7 +165,7 @@ const AdminPlans: React.FC = () => {
           message="Ви впевнені, що хочете видалити цей план? Цю дію неможливо скасувати."
         />
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

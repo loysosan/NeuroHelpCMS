@@ -51,21 +51,28 @@ func main() {
 		r.Use(authmw.RequireAdmin)
 
 		r.Post("/api/admin/users", handlers.CreateUser)
+		r.Delete("/api/admin/users/{id}", handlers.DeleteUser)
 		r.Get("/api/admin/users/{id}", handlers.GetUser)
 		r.Get("/api/admin/users", handlers.GetAllUsers)		
 		r.Put("/api/admin/users/{id}", handlers.UpdateUser)
+
 		r.Post("/api/admin/skills", handlers.CreateSkill)
 		r.Get("/api/admin/skills", handlers.GetSkills)
 		r.Post("/api/admin/skills/categories", handlers.CreateSkillCategory)
 		r.Get("/api/admin/skills/categories", handlers.GetSkillCategories)
-		r.Delete("/api/admin/users/{id}", handlers.DeleteUser)
-		r.Get("/api/admin/plans", handlers.GetPlans)
-    	r.Post("/api/admin/plans", handlers.CreatePlan)
-    	r.Delete("/api/admin/plans/{id}", handlers.DeletePlan)
-    	r.Delete("/api/admin/skills/{id}", handlers.DeleteSkill)
+		r.Delete("/api/admin/skills/{id}", handlers.DeleteSkill)
     	r.Delete("/api/admin/skills/categories/{id}", handlers.DeleteSkillCategory)
     	r.Put("/api/admin/skills/{id}", handlers.UpdateSkill)
     	r.Put("/api/admin/skills/categories/{id}", handlers.UpdateSkillCategory)
+		
+		r.Get("/api/admin/plans", handlers.GetPlans)
+    	r.Post("/api/admin/plans", handlers.CreatePlan)
+    	r.Delete("/api/admin/plans/{id}", handlers.DeletePlan)
+
+    	r.Post("/api/admin/administrators", handlers.CreateAdmin)
+    	r.Put("/api/admin/administrators/{id}", handlers.UpdateAdmin)
+    	r.Delete("/api/admin/administrators/{id}", handlers.DeleteAdmin)
+    	r.Get("/api/admin/administrators", handlers.GetAdministrators)
 
 
 	})

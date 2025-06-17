@@ -13,7 +13,7 @@ type Administrator struct {
 	LastName     string    `gorm:"type:varchar(100);not null"`
 	Phone        *string   `gorm:"type:varchar(20)"`
 	Status       string    `gorm:"type:enum('Active', 'Disabled');not null;default:Active"`
-	Role         string    `gorm:"type:enum('admin', 'moderator');not null;default:'admin'"`
+	Role         string    `gorm:"type:enum('admin', 'moderator', 'master');not null;default:'admin'"`
 
 	CreatedAt    time.Time `gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime"`

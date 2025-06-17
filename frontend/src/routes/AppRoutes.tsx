@@ -11,6 +11,7 @@ import RegistrationSuccess from '../pages/RegistrationSuccess';
 import AdminEditUser from '../pages/AdminEditUser'; 
 import AdminPlans from '../pages/AdminPlans';
 import AdminSkills from '../pages/AdminSkills';
+import AdminAdministrators from '../pages/AdminAdministrators';
 
 
 
@@ -59,6 +60,14 @@ const AppRoutes: React.FC = () => (
         <AdminSkills />
       </PrivateRoute>
     } />
+    <Route
+      path="/admin/administrators"
+      element={
+        <PrivateRoute>
+          <AdminAdministrators />
+        </PrivateRoute>
+      }
+    />
 
     {/* Якщо не знайдено жодного шляху */}
     <Route path="*" element={<NotFound />} />
