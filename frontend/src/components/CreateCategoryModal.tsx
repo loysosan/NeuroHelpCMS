@@ -1,22 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+interface Category {
+  Name: string;
+}
 
 interface CreateCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (categoryData: { Name: string }) => Promise<void>;
+  initialData?: Category | null;
+  isEditing?: boolean;
 }
 
 const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
   isOpen,
   onClose,
-  onSubmit
+  onSubmit,
+  initialData,
+  isEditing = false
 }) => {
   const [name, setName] = useState('');
+
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.Name);
+    }
+  }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit({ Name: name });
     setName('');
+    onClose();
   };
 
   if (!isOpen) return null;

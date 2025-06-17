@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CreateUserModal from '../components/CreateUserModal';
+import AdminLayout from '../components/AdminLayout';
 
 type UserItem = {
   id: number;
@@ -116,8 +117,12 @@ const AdminUsers: React.FC = () => {
   }
 
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
+    <AdminLayout>
       <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold">Користувачі</h2>
+        </div>
+        
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold">Список користувачів</h2>
           <button
@@ -221,7 +226,7 @@ const AdminUsers: React.FC = () => {
           message="Ви впевнені, що хочете видалити цього користувача? Цю дію неможливо скасувати."
         />
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

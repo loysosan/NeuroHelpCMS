@@ -1,22 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+interface Skill {
+  Name: string;
+  CategoryID: number;
+}
 
 interface CreateSkillModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (skillData: any) => Promise<void>;
   categories: Array<{ ID: number; Name: string; }>;
+  initialData?: Skill | null;
+  isEditing?: boolean;
 }
 
 const CreateSkillModal: React.FC<CreateSkillModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  categories
+  categories,
+  initialData,
+  isEditing = false
 }) => {
   const [formData, setFormData] = useState({
     Name: '',
     CategoryID: ''
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        Name: initialData.Name,
+        CategoryID: String(initialData.CategoryID)
+      });
+    }
+  }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,8 +51,12 @@ const CreateSkillModal: React.FC<CreateSkillModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full m-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">Додати нову навичку</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+          <h3 className="text-xl font-semibold">
+            {isEditing ? 'Редагувати навичку' : 'Додати нову навичку'}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            ✕
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -78,7 +100,7 @@ const CreateSkillModal: React.FC<CreateSkillModalProps> = ({
               type="submit"
               className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
             >
-              Створити
+              {isEditing ? 'Зберегти' : 'Створити'}
             </button>
           </div>
         </form>

@@ -3,17 +3,15 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"user-api/internal/db"
 	"user-api/internal/models"
+    "user-api/internal/utils"
 
-	"user-api/internal/utils"
 	"github.com/go-chi/chi/v5"
-	"strconv"
-
 	"github.com/rs/zerolog/log"
-
+	"golang.org/x/crypto/bcrypt"
 )
-
 
 // CreateUser godoc
 // @Summary      Create user
@@ -613,4 +611,200 @@ func UpdateSkillCategory(w http.ResponseWriter, r *http.Request) {
         "success": true,
         "data": category,
     })
+}
+
+// CreateAdmin creates a new administrator (requires admin or master role)
+// @Summary      Create administrator
+// @Description  Add a new administrator (admin or master role only)
+// @Tags         Actions for administrators
+// @Accept       json
+// @Produce      json
+// @Param        admin body models.Administrator true "Administrator data"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400,403,409,500 {object} map[string]interface{}
+// @Router       /api/admin/administrators [post]
+// @Security     BearerAuth
+func CreateAdmin(w http.ResponseWriter, r *http.Request) {
+    // Get current admin from context
+    currentAdmin := r.Context().Value("admin").(*models.Administrator)
+
+    // Check permissions
+    if currentAdmin.Role == "moderator" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Moderators cannot create administrators")
+        return
+    }
+
+    var newAdmin models.Administrator
+    if err := json.NewDecoder(r.Body).Decode(&newAdmin); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_INPUT", "Invalid request body")
+        return
+    }
+
+    // Prevent creation of master role
+    if newAdmin.Role == "master" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Cannot create master role")
+        return
+    }
+
+    // Hash password
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newAdmin.Password), bcrypt.DefaultCost)
+    if err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "PASSWORD_HASH_ERROR", "Failed to hash password")
+        return
+    }
+    newAdmin.Password = string(hashedPassword)
+
+    if err := db.DB.Create(&newAdmin).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to create administrator")
+        return
+    }
+
+    newAdmin.Password = "" // Don't return password in response
+    json.NewEncoder(w).Encode(newAdmin)
+}
+
+// UpdateAdmin updates administrator details
+// @Summary      Update administrator
+// @Description  Update administrator details by ID (admin or master role only)
+// @Tags         Actions for administrators
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "Administrator ID"
+// @Param        admin body models.Administrator true "Updated administrator data"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,403,404,500 {object} map[string]interface{}
+// @Router       /api/admin/administrators/{id} [put]
+// @Security     BearerAuth
+func UpdateAdmin(w http.ResponseWriter, r *http.Request) {
+    currentAdmin := r.Context().Value("admin").(*models.Administrator)
+    adminID := chi.URLParam(r, "id")
+
+    // Get admin to update
+    var admin models.Administrator
+    if err := db.DB.First(&admin, adminID).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Administrator not found")
+        return
+    }
+
+    // Check permissions
+    if currentAdmin.Role == "moderator" || 
+       (currentAdmin.Role == "admin" && admin.Role == "master") {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Insufficient permissions")
+        return
+    }
+
+    var updates struct {
+        FirstName string `json:"firstName"`
+        LastName  string `json:"lastName"`
+        Email     string `json:"email"`
+        Phone     string `json:"phone"`
+        Status    string `json:"status"`
+        Role      string `json:"role"`
+    }
+
+    if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_INPUT", "Invalid request body")
+        return
+    }
+
+    // Prevent changing master role
+    if admin.Role == "master" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Cannot modify master account")
+        return
+    }
+
+    // Update fields
+    admin.FirstName = updates.FirstName
+    admin.LastName = updates.LastName
+    admin.Email = updates.Email
+    admin.Phone = &updates.Phone
+    admin.Status = updates.Status
+    
+    // Only master can change roles
+    if currentAdmin.Role == "master" {
+        admin.Role = updates.Role
+    }
+
+    if err := db.DB.Save(&admin).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update administrator")
+        return
+    }
+
+    admin.Password = "" // Don't return password
+    json.NewEncoder(w).Encode(admin)
+}
+
+// DeleteAdmin deletes an administrator
+// @Summary      Delete administrator
+// @Description  Delete administrator by ID (admin or master role only)
+// @Tags         Actions for administrators
+// @Produce      json
+// @Param        id path int true "Administrator ID"
+// @Success      204 {object} map[string]interface{}
+// @Failure      404,403,500 {object} map[string]interface{}
+// @Router       /api/admin/administrators/{id} [delete]
+// @Security     BearerAuth
+func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
+    currentAdmin := r.Context().Value("admin").(*models.Administrator)
+    adminID := chi.URLParam(r, "id")
+
+    var admin models.Administrator
+    if err := db.DB.First(&admin, adminID).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Administrator not found")
+        return
+    }
+
+    // Prevent deleting master account
+    if admin.Role == "master" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Cannot delete master account")
+        return
+    }
+
+    // Check permissions
+    if currentAdmin.Role == "moderator" || 
+       (currentAdmin.Role == "admin" && admin.Role == "admin") {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Insufficient permissions")
+        return
+    }
+
+    if err := db.DB.Delete(&admin).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to delete administrator")
+        return
+    }
+
+    w.WriteHeader(http.StatusNoContent)
+}
+
+// GetAdministrators godoc
+// @Summary      Get all administrators
+// @Description  Retrieve all administrators (admin or master role only)
+// @Tags         Actions for administrators
+// @Produce      json
+// @Success      200 {array} models.Administrator
+// @Failure      403,500 {object} map[string]interface{}
+// @Router       /api/admin/administrators [get]
+// @Security     BearerAuth
+func GetAdministrators(w http.ResponseWriter, r *http.Request) {
+    // Get current admin from context
+    currentAdmin := r.Context().Value("admin").(*models.Administrator)
+
+    // Check permissions
+    if currentAdmin.Role == "moderator" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Moderators cannot view administrators list")
+        return
+    }
+
+    var administrators []models.Administrator
+    if err := db.DB.Find(&administrators).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to retrieve administrators")
+        return
+    }
+
+    // Remove sensitive data
+    for i := range administrators {
+        administrators[i].Password = ""
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(administrators)
 }

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CreateSkillModal from '../components/CreateSkillModal';
 import CreateCategoryModal from '../components/CreateCategoryModal';
+import AdminLayout from '../components/AdminLayout';
 
 type Skill = {
   ID: number;
@@ -32,6 +33,7 @@ const AdminSkills: React.FC = () => {
   const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
   const [isDeleteCategoryModalOpen, setIsDeleteCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
 
   const fetchSkills = async () => {
     try {
@@ -175,9 +177,15 @@ const AdminSkills: React.FC = () => {
     }
   };
 
-  const handleUpdateCategory = async (categoryId: number, categoryData: any) => {
+  const handleEditSkill = (skill: Skill) => {
+    setEditingSkill(skill);
+  };
+
+  const handleUpdateCategory = async (categoryData: { Name: string }) => {
+    if (!editingCategory) return;
+    
     try {
-      const res = await fetch(`/api/admin/skills/categories/${categoryId}`, {
+      const res = await fetch(`/api/admin/skills/categories/${editingCategory.ID}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -189,6 +197,7 @@ const AdminSkills: React.FC = () => {
       if (!res.ok) throw new Error('Не вдалося оновити категорію');
 
       await fetchCategories();
+      setEditingCategory(null); // Закриваємо модальне вікно після успішного оновлення
     } catch (err: any) {
       setError(err.message);
     }
@@ -208,8 +217,12 @@ const AdminSkills: React.FC = () => {
   }
 
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
+    <AdminLayout>
       <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold">Керування навичками</h2>
+        </div>
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
@@ -348,8 +361,20 @@ const AdminSkills: React.FC = () => {
           onSubmit={handleCreateSkill}
           categories={categories}
         />
+
+        <CreateSkillModal
+          isOpen={!!editingSkill}
+          onClose={() => setEditingSkill(null)}
+          onSubmit={(skillData) => {
+            handleUpdateSkill(editingSkill!.ID, skillData);
+            setEditingSkill(null);
+          }}
+          categories={categories}
+          initialData={editingSkill}
+          isEditing
+        />
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 
