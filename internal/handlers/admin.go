@@ -777,34 +777,25 @@ func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
 
 // GetAdministrators godoc
 // @Summary      Get all administrators
-// @Description  Retrieve all administrators (admin or master role only)
+// @Description  Returns a list of all administrators
 // @Tags         Actions for administrators
 // @Produce      json
 // @Success      200 {array} models.Administrator
-// @Failure      403,500 {object} map[string]interface{}
+// @Failure      500 {object} map[string]interface{}
 // @Router       /api/admin/administrators [get]
 // @Security     BearerAuth
 func GetAdministrators(w http.ResponseWriter, r *http.Request) {
-    // Get current admin from context
-    currentAdmin := r.Context().Value("admin").(*models.Administrator)
-
-    // Check permissions
-    if currentAdmin.Role == "moderator" {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Moderators cannot view administrators list")
+    var admins []models.Administrator
+    if err := db.DB.Find(&admins).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve administrators")
         return
     }
 
-    var administrators []models.Administrator
-    if err := db.DB.Find(&administrators).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to retrieve administrators")
-        return
-    }
-
-    // Remove sensitive data
-    for i := range administrators {
-        administrators[i].Password = ""
+    // Не віддавати паролі
+    for i := range admins {
+        admins[i].Password = ""
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(administrators)
+    json.NewEncoder(w).Encode(admins)
 }
