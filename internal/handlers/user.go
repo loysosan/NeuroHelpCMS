@@ -326,3 +326,63 @@ func GetBlogPosts(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(posts)
 }
+
+// SetSpecialistSkills godoc
+// @Summary      Встановити навички психолога
+// @Description  Дозволяє психологу вибрати свої навички з доступних
+// @Tags         Psychologist
+// @Accept       json
+// @Produce      json
+// @Param        skills body []uint64 true "Масив ID навичок"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/self/skills [put]
+// @Security     BearerAuth
+func SetSpecialistSkills(w http.ResponseWriter, r *http.Request) {
+    email, ok := r.Context().Value("email").(string)
+    if !ok || email == "" {
+        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+        return
+    }
+
+    var user models.User
+    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+        return
+    }
+    if user.Role != "psychologist" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can set skills")
+        return
+    }
+
+    var skillIDs []uint64
+    if err := json.NewDecoder(r.Body).Decode(&skillIDs); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+        return
+    }
+
+    // Перевіряємо чи всі навички існують
+    var skills []models.Skill
+    if len(skillIDs) > 0 {
+        if err := db.DB.Where("id IN ?", skillIDs).Find(&skills).Error; err != nil {
+            utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch skills")
+            return
+        }
+        if len(skills) != len(skillIDs) {
+            utils.WriteError(w, http.StatusBadRequest, "INVALID_SKILL", "One or more skills not found")
+            return
+        }
+    }
+
+    // Оновлюємо many2many зв'язок
+    if err := db.DB.Model(&user).Association("Skills").Replace(skills); err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update skills")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "Skills updated",
+    })
+}
