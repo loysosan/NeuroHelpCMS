@@ -625,8 +625,12 @@ func UpdateSkillCategory(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/administrators [post]
 // @Security     BearerAuth
 func CreateAdmin(w http.ResponseWriter, r *http.Request) {
-    // Get current admin from context
-    currentAdmin := r.Context().Value("admin").(*models.Administrator)
+    adminVal := r.Context().Value("admin")
+    currentAdmin, ok := adminVal.(*models.Administrator)
+    if !ok || currentAdmin == nil {
+        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required")
+        return
+    }
 
     // Check permissions
     if currentAdmin.Role == "moderator" {

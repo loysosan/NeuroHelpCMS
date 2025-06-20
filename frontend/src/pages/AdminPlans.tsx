@@ -105,8 +105,14 @@ const AdminPlans: React.FC = () => {
   return (
     <AdminLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-semibold">Плани підписки</h2>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded"
+          >
+            + Створити план
+          </button>
         </div>
 
         {error && (
