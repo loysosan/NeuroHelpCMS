@@ -92,6 +92,8 @@ func main() {
 		r.Post("/api/users/blog", handlers.CreateBlogPost)
 		r.Get("/api/users/blog/{psychologist_id}", handlers.GetBlogPosts)
 
+		r.Put("/api/users/self/skills", handlers.SetSpecialistSkills)
+
 
 
 	})

@@ -46,8 +46,15 @@ func RequireAdmin(next http.Handler) http.Handler {
 
 		log.Info().Str("username", claims.Username).Msg("RequireAdmin: Authorized admin access")
 
-		r = r.WithContext(context.WithValue(r.Context(), "username", claims.Username))
-		next.ServeHTTP(w, r)
+		// Після перевірки токена:
+		var admin models.Administrator
+		if err := db.DB.Where("role = ?", claims.Username).First(&admin).Error; err != nil {
+			log.Warn().Err(err).Msg("RequireAdmin: Failed to load admin from DB")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "admin", &admin)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
