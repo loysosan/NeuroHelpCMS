@@ -94,6 +94,9 @@ func main() {
 
 		r.Put("/api/users/self/skills", handlers.SetSpecialistSkills)
 
+		r.Get("/api/users/skills", handlers.GetAllSkillsByCategory)
+		r.Get("/api/users/{user_id}/skills", handlers.GetUserSkills)
+
 
 
 	})

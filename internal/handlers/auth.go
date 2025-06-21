@@ -26,7 +26,7 @@ type Claims struct {
 // Admin Login godoc
 // @Summary      Autorize admin user
 // @Description  Autorize admin user
-// @Tags         Login for admin
+// @Tags         Login for user and admin
 // @Accept       json
 // @Produce      json
 // @Param        user body Credentials true "User data"
@@ -70,7 +70,7 @@ func AdminLogin(w http.ResponseWriter, r *http.Request) {
 // UserLogin godoc
 // @Summary      Authorize normal user
 // @Description  Authorize normal user
-// @Tags         Login for user
+// @Tags         Login for user and admin
 // @Accept       json
 // @Produce      json
 // @Param        user body Credentials true "User data"

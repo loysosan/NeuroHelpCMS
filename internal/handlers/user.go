@@ -99,7 +99,7 @@ func ClientGetUser(w http.ResponseWriter, r *http.Request) {
 // CreateReview godoc
 // @Summary      Create a review for a psychologist
 // @Description  A client can add a rating and an optional comment for a psychologist
-// @Tags         Client Actions
+// @Tags         Actions for users
 // @Accept       json
 // @Produce      json
 // @Param        psychologist_id path int true "Psychologist ID"
@@ -256,7 +256,7 @@ func ClientSelfUpdate(w http.ResponseWriter, r *http.Request) {
 // CreateBlogPost godoc
 // @Summary      Додати запис у блог
 // @Description  Дозволяє психологу додати новий запис у свій блог
-// @Tags         Blog
+// @Tags         Actions for users
 // @Accept       json
 // @Produce      json
 // @Param        post body models.BlogPost true "Дані блогу"
@@ -304,7 +304,7 @@ func CreateBlogPost(w http.ResponseWriter, r *http.Request) {
 // GetBlogPosts godoc
 // @Summary      Переглянути записи блогу психолога
 // @Description  Повертає всі записи блогу для вказаного психолога
-// @Tags         Blog
+// @Tags         Actions for users
 // @Produce      json
 // @Param        psychologist_id path int true "ID психолога"
 // @Success      200 {array} models.BlogPost
@@ -330,7 +330,7 @@ func GetBlogPosts(w http.ResponseWriter, r *http.Request) {
 // SetSpecialistSkills godoc
 // @Summary      Встановити навички психолога
 // @Description  Дозволяє психологу вибрати свої навички з доступних
-// @Tags         Psychologist
+// @Tags         Actions for users
 // @Accept       json
 // @Produce      json
 // @Param        skills body []uint64 true "Масив ID навичок"
@@ -385,4 +385,59 @@ func SetSpecialistSkills(w http.ResponseWriter, r *http.Request) {
         "success": true,
         "message": "Skills updated",
     })
+}
+
+
+// GetAllSkillsByCategory godoc
+// @Summary      Отримати всі скіли з категоріями
+// @Description  Повертає всі навички, згруповані по категоріях
+// @Tags         Actions for users
+// @Produce      json
+// @Success      200 {array} map[string]interface{}
+// @Failure      500 {object} map[string]interface{}
+// @Router       /api/users/skills [get]
+func GetAllSkillsByCategory(w http.ResponseWriter, r *http.Request) {
+    var categories []models.Category
+    if err := db.DB.Preload("Skills").Find(&categories).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch skills")
+        return
+    }
+
+    result := make([]map[string]interface{}, 0, len(categories))
+    for _, cat := range categories {
+        result = append(result, map[string]interface{}{
+            "id":    cat.ID,
+            "name":  cat.Name,
+            "skills": cat.Skills,
+        })
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(result)
+}
+
+// GetUserSkills godoc
+// @Summary      Отримати всі скіли користувача
+// @Description  Повертає всі навички, які призначені конкретному користувачу
+// @Tags         Actions for users
+// @Produce      json
+// @Param        user_id path int true "User ID"
+// @Success      200 {array} models.Skill
+// @Failure      404,500 {object} map[string]interface{}
+// @Router       /api/users/{user_id}/skills [get]
+func GetUserSkills(w http.ResponseWriter, r *http.Request) {
+    userID, err := strconv.ParseUint(chi.URLParam(r, "user_id"), 10, 64)
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
+        return
+    }
+
+    var user models.User
+    if err := db.DB.Preload("Skills").First(&user, userID).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(user.Skills)
 }
