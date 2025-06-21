@@ -22,7 +22,7 @@ type User struct {
 	VerificationToken string    `gorm:"type:varchar(64);index"`
 	TokenSentAt       time.Time `gorm:"autoCreateTime"`
 	Portfolio    Portfolio `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
-	Skills       []Skill   `gorm:"many2many:psychologist_skills"`
+    Skills []Skill `gorm:"many2many:psychologist_skills;joinForeignKey:PsychologistID;joinReferences:SkillID"`
 	Reviews      []Review  `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	BlogPosts    []BlogPost `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	Sessions     []Session `gorm:"foreignKey:PsychologistID;constraint:OnDelete:SET NULL"`
