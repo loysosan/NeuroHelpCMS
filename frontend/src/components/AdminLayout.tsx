@@ -30,6 +30,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <div className="w-64 bg-indigo-800 text-white">
         <div className="p-4">
           <h1 className="text-xl font-bold">Адмін-панель</h1>
+          <p className="text-sm text-indigo-300 mt-1">{user?.Role}</p>
         </div>
         <nav className="mt-4">
           <Link
@@ -39,6 +40,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <span className="mr-2">📊</span>
             Головна
           </Link>
+
+          {/* Користувачі - видимі для всіх */}
           <Link
             to="/admin/users"
             className={`flex items-center px-4 py-2 hover:bg-indigo-700 ${isActive('/admin/users')}`}
@@ -46,13 +49,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <span className="mr-2">👥</span>
             Користувачі
           </Link>
-          <Link
-            to="/admin/plans"
-            className={`flex items-center px-4 py-2 hover:bg-indigo-700 ${isActive('/admin/plans')}`}
-          >
-            <span className="mr-2">📋</span>
-            Плани підписки
-          </Link>
+
+          {/* Управління навичками - видимі для всіх */}
           <Link
             to="/admin/skills"
             className={`flex items-center px-4 py-2 hover:bg-indigo-700 ${isActive('/admin/skills')}`}
@@ -60,15 +58,28 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <span className="mr-2">🎯</span>
             Навички
           </Link>
-          
-          {/* New administrator management link */}
-          <Link
-            to="/admin/administrators"
-            className={`flex items-center px-4 py-2 hover:bg-indigo-700 ${isActive('/admin/administrators')}`}
-          >
-            <span className="mr-2">👨‍💼</span>
-            Адміністратори
-          </Link>
+
+          {/* Управління планами - тільки для адміністраторів та майстрів */}
+          {(user?.Role === 'admin' || user?.Role === 'master') && (
+            <Link
+              to="/admin/plans"
+              className={`flex items-center px-4 py-2 hover:bg-indigo-700 ${isActive('/admin/plans')}`}
+            >
+              <span className="mr-2">📋</span>
+              Плани підписки
+            </Link>
+          )}
+
+          {/* Управління адміністраторами - тільки для адміністраторів та майстрів */}
+          {(user?.Role === 'admin' || user?.Role === 'master') && (
+            <Link
+              to="/admin/administrators"
+              className={`flex items-center px-4 py-2 hover:bg-indigo-700 ${isActive('/admin/administrators')}`}
+            >
+              <span className="mr-2">👨‍💼</span>
+              Адміністратори
+            </Link>
+          )}
         </nav>
         <div className="absolute bottom-0 w-64 p-4">
           <button
