@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 interface AdminLayoutProps {
@@ -7,8 +7,18 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { logout } = useAuth();
+  const { logout, token } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/admin/login', { replace: true });
+    }
+    // Якщо потрібно перевіряти токен на бекенді, зробіть тут fetch і якщо 401 — logout()
+  }, [token, navigate]);
+
+  if (!token) return null; // Не рендеримо нічого, поки не перевірено токен
 
   const isActive = (path: string) => {
     return location.pathname === path ? 'bg-indigo-700' : '';
