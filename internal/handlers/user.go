@@ -327,6 +327,154 @@ func GetBlogPosts(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(posts)
 }
 
+// GetBlogPost godoc
+// @Summary      Отримати один запис блогу
+// @Description  Повертає один запис блогу за його ID
+// @Tags         Actions for users
+// @Produce      json
+// @Param        blog_id path int true "ID блогу"
+// @Success      200 {object} models.BlogPost
+// @Failure      404,500 {object} map[string]interface{}
+// @Router       /api/users/blog/post/{blog_id} [get]
+func GetBlogPost(w http.ResponseWriter, r *http.Request) {
+    blogID, err := strconv.ParseUint(chi.URLParam(r, "blog_id"), 10, 64)
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid blog post ID")
+        return
+    }
+
+    var post models.BlogPost
+    if err := db.DB.First(&post, blogID).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Blog post not found")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(post)
+}
+
+// UpdateBlogPost godoc
+// @Summary      Редагувати запис блогу
+// @Description  Дозволяє психологу редагувати свій запис блогу
+// @Tags         Actions for users
+// @Accept       json
+// @Produce      json
+// @Param        blog_id path int true "ID блогу"
+// @Param        post body models.BlogPost true "Оновлені дані блогу"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/blog/post/{blog_id} [put]
+// @Security     BearerAuth
+func UpdateBlogPost(w http.ResponseWriter, r *http.Request) {
+    email, ok := r.Context().Value("email").(string)
+    if !ok || email == "" {
+        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+        return
+    }
+
+    blogID, err := strconv.ParseUint(chi.URLParam(r, "blog_id"), 10, 64)
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid blog post ID")
+        return
+    }
+
+    var user models.User
+    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+        return
+    }
+
+    var post models.BlogPost
+    if err := db.DB.First(&post, blogID).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Blog post not found")
+        return
+    }
+
+    // Only author can edit
+    if post.PsychologistID != user.ID {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "You can edit only your own blog posts")
+        return
+    }
+
+    var updateData models.BlogPost
+    if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+        return
+    }
+
+    // Update allowed fields
+    if updateData.Title != "" {
+        post.Title = updateData.Title
+    }
+    if updateData.Content != "" {
+        post.Content = updateData.Content
+    }
+
+    if err := db.DB.Save(&post).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update blog post")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "data":    post,
+    })
+}
+
+// DeleteBlogPost godoc
+// @Summary      Видалити запис блогу
+// @Description  Дозволяє психологу видалити свій запис блогу
+// @Tags         Actions for users
+// @Produce      json
+// @Param        blog_id path int true "ID блогу"
+// @Success      200 {object} map[string]interface{}
+// @Failure      401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/blog/post/{blog_id} [delete]
+// @Security     BearerAuth
+func DeleteBlogPost(w http.ResponseWriter, r *http.Request) {
+    email, ok := r.Context().Value("email").(string)
+    if !ok || email == "" {
+        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+        return
+    }
+
+    blogID, err := strconv.ParseUint(chi.URLParam(r, "blog_id"), 10, 64)
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid blog post ID")
+        return
+    }
+
+    var user models.User
+    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+        return
+    }
+
+    var post models.BlogPost
+    if err := db.DB.First(&post, blogID).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Blog post not found")
+        return
+    }
+
+    // Only author can delete
+    if post.PsychologistID != user.ID {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "You can delete only your own blog posts")
+        return
+    }
+
+    if err := db.DB.Delete(&post).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to delete blog post")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "Blog post deleted",
+    })
+}
+
 // SetSpecialistSkills godoc
 // @Summary      Встановити навички психолога
 // @Description  Дозволяє психологу вибрати свої навички з доступних

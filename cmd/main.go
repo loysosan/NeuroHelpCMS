@@ -90,7 +90,9 @@ func main() {
 		r.Put("/api/users/self/updateuser", handlers.ClientSelfUpdate)
 		
 		r.Post("/api/users/blog", handlers.CreateBlogPost)
-		r.Get("/api/users/blog/{psychologist_id}", handlers.GetBlogPosts)
+
+		r.Put("/api/users/blog/post/{blog_id}", handlers.UpdateBlogPost)
+		r.Delete("/api/users/blog/post/{blog_id}", handlers.DeleteBlogPost)
 
 		r.Put("/api/users/self/skills", handlers.SetSpecialistSkills)
 
@@ -100,6 +102,9 @@ func main() {
 
 
 	})
+	// Public user endpoints
+	r.Get("/api/users/blog/{psychologist_id}", handlers.GetBlogPosts)
+	r.Get("/api/users/blog/post/{blog_id}", handlers.GetBlogPost)
 
 	// Services API endpoints
 	r.Get("/api/healthz", healthz.HealthCheck)
