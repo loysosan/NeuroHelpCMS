@@ -10,6 +10,7 @@ type BlogPost struct {
 	PsychologistID uint64   `gorm:"not null"`
 	Title         string    `gorm:"type:varchar(255);not null"`
 	Content       string    `gorm:"type:text;not null"`
+	Visible       string    `gorm:"type:enum('public', 'registed', 'shadow', 'deleted');not null;default:'public'"`
 	CreatedAt     time.Time `gorm:"autoCreateTime"`
 	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
 }
