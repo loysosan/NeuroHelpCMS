@@ -14,6 +14,7 @@ import (
 
 	_ "user-api/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
+
 	
 )
 
@@ -76,6 +77,8 @@ func main() {
 
 
 	})
+	// Serve static files from the uploads directory
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 
 	// Public registration and verification routes
 	r.Post("/api/register", handlers.RegisterUser)
@@ -98,6 +101,8 @@ func main() {
 
 		r.Get("/api/users/skills", handlers.GetAllSkillsByCategory)
 		r.Get("/api/users/{user_id}/skills", handlers.GetUserSkills)
+
+		r.Post("/api/users/portfolio/photo", handlers.UploadPortfolioPhoto)
 
 
 
