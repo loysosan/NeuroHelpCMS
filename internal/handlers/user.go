@@ -17,6 +17,10 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 
+    "os"
+    "io"
+    "path/filepath"
+
 )
 
 
@@ -589,3 +593,79 @@ func GetUserSkills(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(user.Skills)
 }
+
+// UploadPortfolioPhoto godoc
+// @Summary      Завантажити фото до портфоліо
+// @Description  Дозволяє психологу додати фото до свого портфоліо
+// @Tags         Actions for users
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        photo formData file true "Фото"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400,401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/portfolio/photo [post]
+// @Security     BearerAuth
+func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
+    email, ok := r.Context().Value("email").(string)
+    if !ok || email == "" {
+        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+        return
+    }
+
+    var user models.User
+    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+        return
+    }
+    if user.Role != "psychologist" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can upload photos")
+        return
+    }
+
+    // Отримати файл з форми
+    file, handler, err := r.FormFile("photo")
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_FILE", "No file uploaded")
+        return
+    }
+    defer file.Close()
+
+    // Зберегти файл у локальну папку (наприклад, ./uploads)
+    uploadDir := "./uploads"
+    if err := os.MkdirAll(uploadDir, 0755); err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DIR_ERROR", "Failed to create upload directory")
+        return
+    }
+    filename := fmt.Sprintf("%d_%d_%s", user.ID, time.Now().Unix(), handler.Filename)
+    filepath := filepath.Join(uploadDir, filename)
+
+    out, err := os.Create(filepath)
+    if err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "SAVE_ERROR", "Failed to save file")
+        return
+    }
+    defer out.Close()
+    if _, err = io.Copy(out, file); err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "COPY_ERROR", "Failed to save file")
+        return
+    }
+
+    // Додати запис у БД
+    photo := models.Photo{
+        PortfolioID: user.ID, // або user.Portfolio.ID, якщо у вас є окрема таблиця портфоліо
+        URL:         "/uploads/" + filename,
+    }
+    if err := db.DB.Create(&photo).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to save photo info")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "url":     photo.URL,
+        "photo_id": photo.ID,
+    })
+}
+
