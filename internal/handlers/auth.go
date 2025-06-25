@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"user-api/internal/db"
 	"user-api/internal/models"
+	"user-api/internal/utils"
 
 	"github.com/golang-jwt/jwt/v4"
 	"time"
@@ -109,4 +110,43 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+}
+
+// RefreshToken godoc
+// @Summary      Оновити access token
+// @Description  Оновлює access token за допомогою refresh token
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} map[string]interface{}
+// @Failure      401 {object} map[string]interface{}
+// @Router       /api/auth/refresh [post]
+func RefreshToken(w http.ResponseWriter, r *http.Request) {
+    cookie, err := r.Cookie("refresh_token")
+    if err != nil {
+        utils.WriteError(w, http.StatusUnauthorized, "NO_REFRESH_TOKEN", "No refresh token")
+        return
+    }
+    refreshToken := cookie.Value
+
+    // Перевірити refresh token (JWT або випадковий рядок)
+    claims, err := ParseRefreshToken(refreshToken)
+    if err != nil {
+        utils.WriteError(w, http.StatusUnauthorized, "INVALID_REFRESH_TOKEN", "Invalid refresh token")
+        return
+    }
+
+    // Перевірити чи є такий користувач і чи співпадає refresh token у БД
+    var user models.User
+    if err := db.DB.Where("email = ?", claims.Username).First(&user).Error; err != nil || user.RefreshToken != refreshToken {
+        utils.WriteError(w, http.StatusUnauthorized, "INVALID_REFRESH_TOKEN", "Invalid refresh token")
+        return
+    }
+
+    // Згенерувати новий access token
+    accessToken := GenerateAccessToken(&user)
+
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "access_token": accessToken,
+    })
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog/log"
 	"github.com/go-ini/ini"
+	"encoding/json"
 )
 
 var cfg *ini.File
@@ -97,5 +98,55 @@ func RequireUser(next http.Handler) http.Handler {
 
 		r = r.WithContext(context.WithValue(r.Context(), "email", claims.Username))
 		next.ServeHTTP(w, r)
+	})
+}
+
+// Псевдокод для login handler
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		log.Warn().Err(err).Msg("LoginHandler: Invalid request payload")
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Validate user credentials (this is just pseudocode, implement your own logic)
+	if user.Email == "" || user.Password == "" {
+		http.Error(w, "Email and password are required", http.StatusBadRequest)
+		return
+	}
+
+	// Check if user exists and password matches
+	var dbUser models.User
+	if err := db.DB.Where("email = ?", user.Email).First(&dbUser).Error; err != nil {
+		log.Warn().Err(err).Msg("LoginHandler: User not found")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Generate JWT tokens
+	accessToken := handlers.GenerateAccessToken(&dbUser)
+	refreshToken := handlers.GenerateRefreshToken(&dbUser)
+
+	// Update refresh token in DB
+	dbUser.RefreshToken = refreshToken
+	if err := db.DB.Save(&dbUser).Error; err != nil {
+		log.Error().Err(err).Msg("LoginHandler: Failed to save refresh token")
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Set refresh token cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		HttpOnly: true,
+		Path:     "/api/auth/refresh",
+		MaxAge:   7 * 24 * 3600,
+	})
+
+	// Respond with access token
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"access_token": accessToken,
 	})
 }
