@@ -30,6 +30,8 @@ type User struct {
 	MessagesReceived []Message `gorm:"foreignKey:ReceiverID;constraint:OnDelete:SET NULL"`
 	Availability []Availability `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	Rating       Rating    `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
+	RefreshToken string `gorm:"type:varchar(512);"`
+
 	
 }
 

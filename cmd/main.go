@@ -46,6 +46,8 @@ func main() {
 	r.Post("/api/admin/login", handlers.AdminLogin)
 	// User login endpoint
 	r.Post("/api/login", handlers.UserLogin)
+	// User registration endpoint
+	r.Post("/api/auth/refresh", handlers.RefreshToken)
 
 	// Security admin URI
 	r.Group(func(r chi.Router) {
@@ -83,6 +85,7 @@ func main() {
 	// Public registration and verification routes
 	r.Post("/api/register", handlers.RegisterUser)
 	r.Get("/api/verify", handlers.VerifyEmail)
+	
 	
 	// Protected user endpoints
 	r.Group(func(r chi.Router) {
