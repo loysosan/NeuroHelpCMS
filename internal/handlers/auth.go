@@ -130,7 +130,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
     refreshToken := cookie.Value
 
     // Перевірити refresh token (JWT або випадковий рядок)
-    claims, err := ParseRefreshToken(refreshToken)
+    claims, err := utils.ParseRefreshToken(refreshToken)
     if err != nil {
         utils.WriteError(w, http.StatusUnauthorized, "INVALID_REFRESH_TOKEN", "Invalid refresh token")
         return
@@ -144,7 +144,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
     }
 
     // Згенерувати новий access token
-    accessToken := GenerateAccessToken(&user)
+    accessToken, _ := utils.GenerateAccessToken(&user)
 
     json.NewEncoder(w).Encode(map[string]interface{}{
         "access_token": accessToken,

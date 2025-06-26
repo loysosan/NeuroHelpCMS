@@ -7,6 +7,7 @@ import (
 	"user-api/internal/handlers"
 	"user-api/internal/models"
 	"user-api/internal/db"
+	"user-api/internal/utils"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog/log"
@@ -124,9 +125,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate JWT tokens
-	accessToken := handlers.GenerateAccessToken(&dbUser)
-	refreshToken := handlers.GenerateRefreshToken(&dbUser)
+	accessToken, _ := utils.GenerateAccessToken(&dbUser)
+	refreshToken, _ := utils.GenerateRefreshToken(&dbUser)
 
 	// Update refresh token in DB
 	dbUser.RefreshToken = refreshToken
