@@ -24,6 +24,8 @@ type Claims struct {
 	Role     string `json:"role"`
 	jwt.RegisteredClaims
 }
+
+
 // Admin Login godoc
 // @Summary      Authorize admin user
 // @Description  Authorize admin user
@@ -80,7 +82,10 @@ func AdminLogin(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/login [post]
 func UserLogin(w http.ResponseWriter, r *http.Request) {
     var creds Credentials
-    json.NewDecoder(r.Body).Decode(&creds)
+    if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
+        http.Error(w, "Invalid request format", http.StatusBadRequest)
+        return
+    }
 
     var user models.User
     if err := db.DB.Where("email = ?", creds.Username).First(&user).Error; err != nil {
@@ -95,6 +100,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // Generate access token
     expirationTime := time.Now().Add(24 * time.Hour)
     claims := &Claims{
         Username: user.Email,
@@ -104,12 +110,40 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
         },
     }
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    tokenString, _ := token.SignedString(jwtUserKey)
+    accessToken, err := token.SignedString(jwtUserKey)
+    if err != nil {
+        http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+        return
+    }
+
+    // Generate refresh token
+    refreshToken, err := utils.GenerateRefreshToken(&user)
+    if err != nil {
+        log.Error().Err(err).Msg("Failed to generate refresh token")
+        // Continue without refresh token for now
+    } else {
+        // Save refresh token to DB
+        user.RefreshToken = refreshToken
+        if err := db.DB.Save(&user).Error; err != nil {
+            log.Error().Err(err).Msg("Failed to save refresh token")
+        } else {
+            // Set refresh token cookie
+            http.SetCookie(w, &http.Cookie{
+                Name:     "refresh_token",
+                Value:    refreshToken,
+                HttpOnly: true,
+                Path:     "/",
+                MaxAge:   7 * 24 * 3600, // 7 days
+                Secure:   false, // set to true for HTTPS
+                SameSite: http.SameSiteLaxMode,
+            })
+        }
+    }
 
     log.Info().Str("email", creds.Username).Msg("User login successful")
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+    json.NewEncoder(w).Encode(map[string]string{"access_token": accessToken})
 }
 
 // RefreshToken godoc
@@ -119,7 +153,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} map[string]interface{}
-// @Failure      401 {object} map[string]interface{}
+// @Failure      401 {object} map[string]interface{}  
 // @Router       /api/auth/refresh [post]
 func RefreshToken(w http.ResponseWriter, r *http.Request) {
     cookie, err := r.Cookie("refresh_token")
@@ -144,8 +178,13 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
     }
 
     // Generate new access token
-    accessToken, _ := utils.GenerateAccessToken(&user)
+    accessToken, err := utils.GenerateAccessToken(&user)
+    if err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "TOKEN_ERROR", "Failed to generate access token")
+        return
+    }
 
+    w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(map[string]interface{}{
         "access_token": accessToken,
     })
