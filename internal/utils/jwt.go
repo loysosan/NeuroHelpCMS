@@ -7,10 +7,29 @@ import (
     "user-api/internal/models"
 )
 
+// Структура для claims access токена
+type AccessClaims struct {
+    Username string `json:"username"`
+    Role     string `json:"role"`
+    jwt.RegisteredClaims
+}
+
 // Структура для claims refresh токена
 type RefreshClaims struct {
     Username string `json:"username"`
     jwt.RegisteredClaims
+}
+
+// Парсинг та перевірка access токена
+func ParseAccessToken(tokenStr string) (*AccessClaims, error) {
+    claims := &AccessClaims{}
+    token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+        return []byte("YOUR_ACCESS_SECRET"), nil // замініть на ваш секрет
+    })
+    if err != nil || !token.Valid {
+        return nil, errors.New("invalid access token")
+    }
+    return claims, nil
 }
 
 // Парсинг та перевірка refresh токена
@@ -27,10 +46,13 @@ func ParseRefreshToken(tokenStr string) (*RefreshClaims, error) {
 
 // Генерація access токена
 func GenerateAccessToken(user *models.User) (string, error) {
-    claims := jwt.MapClaims{
-        "username": user.Email,
-        "role":     user.Role,
-        "exp":      time.Now().Add(15 * time.Minute).Unix(),
+    claims := AccessClaims{
+        Username: user.Email,
+        Role:     user.Role,
+        RegisteredClaims: jwt.RegisteredClaims{
+            ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+            IssuedAt:  jwt.NewNumericDate(time.Now()),
+        },
     }
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
     return token.SignedString([]byte("YOUR_ACCESS_SECRET")) // замініть на ваш секрет
