@@ -79,7 +79,7 @@ func generateAndSaveVerification(user *models.User) (string, error) {
 
 // GetUser godoc
 // @Summary      Get selected user information
-// @Description  Recive user information via ID
+// @Description  Receive user information via ID
 // @Tags         Actions for users
 // @Produce      json
 // @Param        id path int true "User ID"
@@ -258,12 +258,12 @@ func ClientSelfUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateBlogPost godoc
-// @Summary      Додати запис у блог
-// @Description  Дозволяє психологу додати новий запис у свій блог
+// @Summary      Add a blog post
+// @Description  Allows a psychologist to add a new blog post
 // @Tags         Actions for users
 // @Accept       json
 // @Produce      json
-// @Param        post body models.BlogPost true "Дані блогу"
+// @Param        post body models.BlogPost true "Blog data"
 // @Success      201 {object} map[string]interface{}
 // @Failure      400,401,403,500 {object} map[string]interface{}
 // @Router       /api/users/blog [post]
@@ -306,11 +306,11 @@ func CreateBlogPost(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetBlogPosts godoc
-// @Summary      Переглянути записи блогу психолога
-// @Description  Повертає всі записи блогу для вказаного психолога
+// @Summary      View psychologist's blog posts
+// @Description  Returns all blog posts for the specified psychologist
 // @Tags         Actions for users
 // @Produce      json
-// @Param        psychologist_id path int true "ID психолога"
+// @Param        psychologist_id path int true "Psychologist ID"
 // @Success      200 {array} models.BlogPost
 // @Failure      404,500 {object} map[string]interface{}
 // @Router       /api/users/blog/{psychologist_id} [get]
@@ -332,11 +332,11 @@ func GetBlogPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetBlogPost godoc
-// @Summary      Отримати один запис блогу
-// @Description  Повертає один запис блогу за його ID
+// @Summary      Get a single blog post
+// @Description  Returns a single blog post by its ID
 // @Tags         Actions for users
 // @Produce      json
-// @Param        blog_id path int true "ID блогу"
+// @Param        blog_id path int true "Blog post ID"
 // @Success      200 {object} models.BlogPost
 // @Failure      404,500 {object} map[string]interface{}
 // @Router       /api/users/blog/post/{blog_id} [get]
@@ -358,13 +358,13 @@ func GetBlogPost(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateBlogPost godoc
-// @Summary      Редагувати запис блогу
-// @Description  Дозволяє психологу редагувати свій запис блогу
+// @Summary      Edit a blog post
+// @Description  Allows a psychologist to edit their blog post
 // @Tags         Actions for users
 // @Accept       json
 // @Produce      json
-// @Param        blog_id path int true "ID блогу"
-// @Param        post body models.BlogPost true "Оновлені дані блогу"
+// @Param        blog_id path int true "Blog post ID"
+// @Param        post body models.BlogPost true "Updated blog data"
 // @Success      200 {object} map[string]interface{}
 // @Failure      400,401,403,404,500 {object} map[string]interface{}
 // @Router       /api/users/blog/post/{blog_id} [put]
@@ -427,11 +427,11 @@ func UpdateBlogPost(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteBlogPost godoc
-// @Summary      Видалити запис блогу
-// @Description  Дозволяє психологу видалити свій запис блогу
+// @Summary      Delete a blog post
+// @Description  Allows a psychologist to delete their blog post
 // @Tags         Actions for users
 // @Produce      json
-// @Param        blog_id path int true "ID блогу"
+// @Param        blog_id path int true "Blog post ID"
 // @Success      200 {object} map[string]interface{}
 // @Failure      401,403,404,500 {object} map[string]interface{}
 // @Router       /api/users/blog/post/{blog_id} [delete]
@@ -480,12 +480,12 @@ func DeleteBlogPost(w http.ResponseWriter, r *http.Request) {
 }
 
 // SetSpecialistSkills godoc
-// @Summary      Встановити навички психолога
-// @Description  Дозволяє психологу вибрати свої навички з доступних
+// @Summary      Set psychologist skills
+// @Description  Allows a psychologist to select their skills from available ones
 // @Tags         Actions for users
 // @Accept       json
 // @Produce      json
-// @Param        skills body []uint64 true "Масив ID навичок"
+// @Param        skills body []uint64 true "Array of skill IDs"
 // @Success      200 {object} map[string]interface{}
 // @Failure      400,401,403,404,500 {object} map[string]interface{}
 // @Router       /api/users/self/skills [put]
@@ -513,7 +513,7 @@ func SetSpecialistSkills(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Перевіряємо чи всі навички існують
+    // Check if all skills exist
     var skills []models.Skill
     if len(skillIDs) > 0 {
         if err := db.DB.Where("id IN ?", skillIDs).Find(&skills).Error; err != nil {
@@ -526,7 +526,7 @@ func SetSpecialistSkills(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    // Оновлюємо many2many зв'язок
+    // Update many2many relation
     if err := db.DB.Model(&user).Association("Skills").Replace(skills); err != nil {
         utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update skills")
         return
@@ -541,8 +541,8 @@ func SetSpecialistSkills(w http.ResponseWriter, r *http.Request) {
 
 
 // GetAllSkillsByCategory godoc
-// @Summary      Отримати всі скіли з категоріями
-// @Description  Повертає всі навички, згруповані по категоріях
+// @Summary      Get all skills with categories
+// @Description  Returns all skills grouped by categories
 // @Tags         Actions for users
 // @Produce      json
 // @Success      200 {array} map[string]interface{}
@@ -569,8 +569,8 @@ func GetAllSkillsByCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUserSkills godoc
-// @Summary      Отримати всі скіли користувача
-// @Description  Повертає всі навички, які призначені конкретному користувачу
+// @Summary      Get all user skills
+// @Description  Returns all skills assigned to a specific user
 // @Tags         Actions for users
 // @Produce      json
 // @Param        user_id path int true "User ID"
@@ -595,12 +595,12 @@ func GetUserSkills(w http.ResponseWriter, r *http.Request) {
 }
 
 // UploadPortfolioPhoto godoc
-// @Summary      Завантажити фото до портфоліо
-// @Description  Дозволяє психологу додати фото до свого портфоліо
+// @Summary      Upload a portfolio photo
+// @Description  Allows a psychologist to add a photo to their portfolio
 // @Tags         Actions for users
 // @Accept       multipart/form-data
 // @Produce      json
-// @Param        photo formData file true "Фото"
+// @Param        photo formData file true "Photo"
 // @Success      201 {object} map[string]interface{}
 // @Failure      400,401,403,404,500 {object} map[string]interface{}
 // @Router       /api/users/portfolio/photo [post]
@@ -622,7 +622,7 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Отримати файл з форми
+    // Get file from form
     file, handler, err := r.FormFile("photo")
     if err != nil {
         utils.WriteError(w, http.StatusBadRequest, "INVALID_FILE", "No file uploaded")
@@ -630,7 +630,7 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
     }
     defer file.Close()
 
-    // Зберегти файл у локальну папку (наприклад, ./uploads)
+    // Save file to local folder (e.g., ./uploads)
     uploadDir := "./uploads"
     if err := os.MkdirAll(uploadDir, 0755); err != nil {
         utils.WriteError(w, http.StatusInternalServerError, "DIR_ERROR", "Failed to create upload directory")
@@ -650,9 +650,9 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Додати запис у БД
+    // Add record to DB
     photo := models.Photo{
-        PortfolioID: user.ID, // або user.Portfolio.ID, якщо у вас є окрема таблиця портфоліо
+        PortfolioID: user.ID, // or user.Portfolio.ID if you have a separate portfolio table
         URL:         "/uploads/" + filename,
     }
     if err := db.DB.Create(&photo).Error; err != nil {
