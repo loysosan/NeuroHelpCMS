@@ -25,8 +25,8 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 // Admin Login godoc
-// @Summary      Autorize admin user
-// @Description  Autorize admin user
+// @Summary      Authorize admin user
+// @Description  Authorize admin user
 // @Tags         Login for user and admin
 // @Accept       json
 // @Produce      json
@@ -35,37 +35,37 @@ type Claims struct {
 // @Failure      400 {object} map[string]interface{}
 // @Router       /api/admin/login [post]
 func AdminLogin(w http.ResponseWriter, r *http.Request) {
-	var creds Credentials
-	json.NewDecoder(r.Body).Decode(&creds)
+    var creds Credentials
+    json.NewDecoder(r.Body).Decode(&creds)
 
-	var admin models.Administrator
-	if err := db.DB.Where("username = ?", creds.Username).First(&admin).Error; err != nil {
-		log.Warn().Str("username", creds.Username).Msg("Login failed: user not found")
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
+    var admin models.Administrator
+    if err := db.DB.Where("username = ?", creds.Username).First(&admin).Error; err != nil {
+        log.Warn().Str("username", creds.Username).Msg("Login failed: user not found")
+        http.Error(w, "unauthorized", http.StatusUnauthorized)
+        return
+    }
 
-	if err := bcrypt.CompareHashAndPassword([]byte(admin.Password), []byte(creds.Password)); err != nil {
-		log.Warn().Str("username", creds.Username).Msg("Login failed: invalid password")
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
+    if err := bcrypt.CompareHashAndPassword([]byte(admin.Password), []byte(creds.Password)); err != nil {
+        log.Warn().Str("username", creds.Username).Msg("Login failed: invalid password")
+        http.Error(w, "unauthorized", http.StatusUnauthorized)
+        return
+    }
 
-	expirationTime := time.Now().Add(2 * time.Hour)
-	claims := &Claims{
-		Username: admin.Username,
-		Role:     admin.Role,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString(jwtKey)
+    expirationTime := time.Now().Add(2 * time.Hour)
+    claims := &Claims{
+        Username: admin.Username,
+        Role:     admin.Role,
+        RegisteredClaims: jwt.RegisteredClaims{
+            ExpiresAt: jwt.NewNumericDate(expirationTime),
+        },
+    }
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    tokenString, _ := token.SignedString(jwtKey)
 
-	log.Info().Str("username", creds.Username).Msg("Login: 	Admin login successful")
+    log.Info().Str("username", creds.Username).Msg("Login: 	Admin login successful")
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
 // UserLogin godoc
@@ -113,8 +113,8 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // RefreshToken godoc
-// @Summary      Оновити access token
-// @Description  Оновлює access token за допомогою refresh token
+// @Summary      Refresh access token
+// @Description  Refreshes access token using refresh token
 // @Tags         Auth
 // @Accept       json
 // @Produce      json
@@ -129,21 +129,21 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
     }
     refreshToken := cookie.Value
 
-    // Перевірити refresh token (JWT або випадковий рядок)
+    // Validate refresh token (JWT or random string)
     claims, err := utils.ParseRefreshToken(refreshToken)
     if err != nil {
         utils.WriteError(w, http.StatusUnauthorized, "INVALID_REFRESH_TOKEN", "Invalid refresh token")
         return
     }
 
-    // Перевірити чи є такий користувач і чи співпадає refresh token у БД
+    // Check if user exists and refresh token matches the one in DB
     var user models.User
     if err := db.DB.Where("email = ?", claims.Username).First(&user).Error; err != nil || user.RefreshToken != refreshToken {
         utils.WriteError(w, http.StatusUnauthorized, "INVALID_REFRESH_TOKEN", "Invalid refresh token")
         return
     }
 
-    // Згенерувати новий access token
+    // Generate new access token
     accessToken, _ := utils.GenerateAccessToken(&user)
 
     json.NewEncoder(w).Encode(map[string]interface{}{
