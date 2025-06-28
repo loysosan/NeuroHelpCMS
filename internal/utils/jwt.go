@@ -48,7 +48,7 @@ func ParseAccessToken(tokenStr string) (*AccessClaims, error) {
 func ParseRefreshToken(tokenStr string) (*RefreshClaims, error) {
     claims := &RefreshClaims{}
     token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-        return []byte("YOUR_REFRESH_SECRET"), nil // замініть на ваш секрет
+        return []byte(cfg.Section("auth").Key("jwt_user_refresh_secret").String()), nil
     })
     if err != nil || !token.Valid {
         return nil, errors.New("invalid refresh token")

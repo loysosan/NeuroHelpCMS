@@ -55,6 +55,21 @@ func processUserCreation(w http.ResponseWriter, user *models.User) bool {
         utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create user")
         return false
     }
+
+    // Создаём портфолио для психолога
+    if user.Role == "psychologist" {
+        portfolio := models.Portfolio{
+            PsychologistID: user.ID,  // Используем PsychologistID вместо UserID
+            Description:    "",
+            ContactEmail:   nil,
+            ContactPhone:   nil,
+        }
+        if err := db.DB.Create(&portfolio).Error; err != nil {
+            log.Error().Err(err).Uint64("user_id", user.ID).Msg("processUserCreation: failed to create portfolio")
+            // Не возвращаем ошибку, так как пользователь уже создан
+        }
+    }
+
     return true
 }
 
@@ -613,12 +628,18 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
     }
 
     var user models.User
-    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+    if err := db.DB.Preload("Portfolio").Where("email = ?", email).First(&user).Error; err != nil {
         utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
         return
     }
     if user.Role != "psychologist" {
         utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can upload photos")
+        return
+    }
+
+    // Портфолио должно существовать, так как создается при регистрации
+    if user.Portfolio.ID == 0 {
+        utils.WriteError(w, http.StatusInternalServerError, "NO_PORTFOLIO", "Portfolio not found")
         return
     }
 
@@ -650,9 +671,9 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Add record to DB
+    // Add record to DB с правильным portfolio_id
     photo := models.Photo{
-        PortfolioID: user.ID, // or user.Portfolio.ID if you have a separate portfolio table
+        PortfolioID: user.Portfolio.ID, // Используем ID портфолио
         URL:         "/uploads/" + filename,
     }
     if err := db.DB.Create(&photo).Error; err != nil {

@@ -307,9 +307,60 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Delete user
-    if err := db.DB.Delete(&user).Error; err != nil {
+    // Start transaction
+    tx := db.DB.Begin()
+    if tx.Error != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to start transaction")
+        return
+    }
+
+    // Delete related data in correct order
+    
+    // 1. Delete photos from portfolio if exists
+    if err := tx.Exec("DELETE photos FROM photos INNER JOIN portfolios ON photos.portfolio_id = portfolios.id WHERE portfolios.psychologist_id = ?", id).Error; err != nil {
+        tx.Rollback()
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete photos")
+        return
+    }
+
+    // 2. Delete portfolio
+    if err := tx.Where("psychologist_id = ?", id).Delete(&models.Portfolio{}).Error; err != nil {
+        tx.Rollback()
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete portfolio")
+        return
+    }
+
+    // 3. Delete blog posts
+    if err := tx.Where("psychologist_id = ?", id).Delete(&models.BlogPost{}).Error; err != nil {
+        tx.Rollback()
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete blog posts")
+        return
+    }
+
+    // 4. Delete reviews (both given and received)
+    if err := tx.Where("client_id = ? OR psychologist_id = ?", id, id).Delete(&models.Review{}).Error; err != nil {
+        tx.Rollback()
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete reviews")
+        return
+    }
+
+    // 5. Delete psychologist skills (many-to-many relationship)
+    if err := tx.Where("psychologist_id = ?", id).Delete(&models.PsychologistSkills{}).Error; err != nil {
+        tx.Rollback()
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete skills")
+        return
+    }
+
+    // 6. Finally delete user
+    if err := tx.Delete(&user).Error; err != nil {
+        tx.Rollback()
         utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete user")
+        return
+    }
+
+    // Commit transaction
+    if err := tx.Commit().Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to commit transaction")
         return
     }
 
@@ -317,7 +368,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(map[string]interface{}{
         "success": true,
-        "message": "User successfully deleted",
+        "message": "User and all related data successfully deleted",
     })
 }
 
