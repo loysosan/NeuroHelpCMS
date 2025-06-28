@@ -107,6 +107,7 @@ func main() {
 
 		r.Post("/api/users/portfolio/photo", handlers.UploadPortfolioPhoto)
 
+		r.Get("/api/users/self", handlers.GetSelfProfile)
 
 
 	})
