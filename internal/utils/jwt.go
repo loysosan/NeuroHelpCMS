@@ -2,6 +2,8 @@ package utils
 
 import (
     "github.com/golang-jwt/jwt/v4"
+    "github.com/go-ini/ini"
+    "github.com/rs/zerolog/log"
     "errors"
     "time"
     "user-api/internal/models"
@@ -20,11 +22,21 @@ type RefreshClaims struct {
     jwt.RegisteredClaims
 }
 
+var cfg *ini.File
+
+func init() {
+    var err error
+    cfg, err = ini.Load("config.ini")
+    if err != nil {
+        log.Fatal().Err(err).Msg("Failed to load config.ini")
+    }
+}
+
 // Парсинг та перевірка access токена
 func ParseAccessToken(tokenStr string) (*AccessClaims, error) {
     claims := &AccessClaims{}
     token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-        return []byte("YOUR_ACCESS_SECRET"), nil // замініть на ваш секрет
+        return []byte(cfg.Section("auth").Key("jwt_user_secret").String()), nil
     })
     if err != nil || !token.Valid {
         return nil, errors.New("invalid access token")
@@ -50,12 +62,12 @@ func GenerateAccessToken(user *models.User) (string, error) {
         Username: user.Email,
         Role:     user.Role,
         RegisteredClaims: jwt.RegisteredClaims{
-            ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+            ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
         },
     }
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    return token.SignedString([]byte("YOUR_ACCESS_SECRET")) // замініть на ваш секрет
+    return token.SignedString([]byte(cfg.Section("auth").Key("jwt_user_secret").String()))
 }
 
 // Генерація refresh токена
@@ -68,6 +80,6 @@ func GenerateRefreshToken(user *models.User) (string, error) {
         },
     }
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    return token.SignedString([]byte("YOUR_REFRESH_SECRET")) // замініть на ваш секрет
+    return token.SignedString([]byte(cfg.Section("auth").Key("jwt_refresh_secret").String()))
 }
 

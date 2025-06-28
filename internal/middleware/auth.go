@@ -84,7 +84,8 @@ func RequireUser(next http.Handler) http.Handler {
 		}
 
 		// Add user info to context
-		ctx := context.WithValue(r.Context(), "email", claims.Username)
+		ctx := context.WithValue(r.Context(), "username", claims.Username)
+		ctx = context.WithValue(ctx, "email", claims.Username) // Добавляем email тоже
 		ctx = context.WithValue(ctx, "role", claims.Role)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

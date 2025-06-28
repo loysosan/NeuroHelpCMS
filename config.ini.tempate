@@ -57,3 +57,6 @@ jwt_admin_secret = your-admin-jwt-secret
 
 # JWT secret for regular users
 jwt_user_secret  = your-user-jwt-secret
+
+# JWT secret for user refresh tokens
+jwt_user_refresh_secret = your-user-refresh-jwt-secret

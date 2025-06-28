@@ -679,7 +679,7 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/users/self [get]
 // @Security     BearerAuth
 func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
-    email, ok := r.Context().Value("email").(string)
+    email, ok := r.Context().Value("username").(string)
     if !ok || email == "" {
         utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
         return
