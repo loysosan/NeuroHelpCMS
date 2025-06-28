@@ -12,6 +12,7 @@ import AdminEditUser from '../pages/AdminEditUser';
 import AdminPlans from '../pages/AdminPlans';
 import AdminSkills from '../pages/AdminSkills';
 import AdminAdministrators from '../pages/AdminAdministrators';
+import UserProfile from '../pages/UserProfile'; // Додайте цей імпорт
 
 
 
@@ -21,6 +22,7 @@ const AppRoutes: React.FC = () => (
     <Route path="/" element={<UserHome />} />
     <Route path="/register" element={<Register />} />
     <Route path="/registration-success" element={<RegistrationSuccess />} />
+    <Route path="/profile" element={<UserProfile />} /> {/* Додайте цей роут */}
 
 
     {/* Адмінська частина */}

@@ -55,6 +55,21 @@ func processUserCreation(w http.ResponseWriter, user *models.User) bool {
         utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create user")
         return false
     }
+
+    // Создаём портфолио для психолога
+    if user.Role == "psychologist" {
+        portfolio := models.Portfolio{
+            PsychologistID: user.ID,  // Используем PsychologistID вместо UserID
+            Description:    "",
+            ContactEmail:   nil,
+            ContactPhone:   nil,
+        }
+        if err := db.DB.Create(&portfolio).Error; err != nil {
+            log.Error().Err(err).Uint64("user_id", user.ID).Msg("processUserCreation: failed to create portfolio")
+            // Не возвращаем ошибку, так как пользователь уже создан
+        }
+    }
+
     return true
 }
 
@@ -221,10 +236,10 @@ func ClientSelfUpdate(w http.ResponseWriter, r *http.Request) {
     }
 
     // Only allow clients to update their data
-    if user.Role != "client" {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only clients can update their profile")
-        return
-    }
+    //if user.Role != "client" {
+    //    utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only clients can update their profile")
+    //    return
+    //}
 
     // Parse request body
     var updateData models.User
@@ -613,12 +628,18 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
     }
 
     var user models.User
-    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+    if err := db.DB.Preload("Portfolio").Where("email = ?", email).First(&user).Error; err != nil {
         utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
         return
     }
     if user.Role != "psychologist" {
         utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can upload photos")
+        return
+    }
+
+    // Портфолио должно существовать, так как создается при регистрации
+    if user.Portfolio.ID == 0 {
+        utils.WriteError(w, http.StatusInternalServerError, "NO_PORTFOLIO", "Portfolio not found")
         return
     }
 
@@ -650,9 +671,9 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Add record to DB
+    // Add record to DB с правильным portfolio_id
     photo := models.Photo{
-        PortfolioID: user.ID, // or user.Portfolio.ID if you have a separate portfolio table
+        PortfolioID: user.Portfolio.ID, // Используем ID портфолио
         URL:         "/uploads/" + filename,
     }
     if err := db.DB.Create(&photo).Error; err != nil {
@@ -667,5 +688,63 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
         "url":     photo.URL,
         "photo_id": photo.ID,
     })
+}
+
+// GetSelfProfile godoc
+// @Summary      Get own profile
+// @Description  Returns the authenticated user's profile information
+// @Tags         Actions for users  
+// @Produce      json
+// @Success      200 {object} models.User
+// @Failure      401,404,500 {object} map[string]interface{}
+// @Router       /api/users/self [get]
+// @Security     BearerAuth
+func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
+    email, ok := r.Context().Value("username").(string)
+    if !ok || email == "" {
+        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+        return
+    }
+
+    var user models.User
+    // Завантажуємо всі зв'язані дані
+    if err := db.DB.Preload("Skills").Preload("Portfolio").Preload("Portfolio.Photos").Where("email = ?", email).First(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+        return
+    }
+
+    // Очищуємо конфіденційні дані
+    user.Password = ""
+    user.RefreshToken = ""
+    user.VerificationToken = ""
+
+    // Додаємо рейтинг для психологів
+    response := map[string]interface{}{
+        "id":         user.ID,
+        "email":      user.Email,
+        "firstName":  user.FirstName,
+        "lastName":   user.LastName,
+        "phone":      user.Phone,
+        "role":       user.Role,
+        "status":     user.Status,
+        "verified":   user.Verified,
+        "createdAt":  user.CreatedAt,
+        "updatedAt":  user.UpdatedAt,
+        "skills":     user.Skills,
+        "portfolio":  user.Portfolio,
+    }
+
+    if user.Role == "psychologist" {
+        var rating models.Rating
+        if err := db.DB.Where("psychologist_id = ?", user.ID).First(&rating).Error; err == nil {
+            response["rating"] = map[string]interface{}{
+                "averageRating": rating.AverageRating,
+                "reviewCount":   rating.ReviewCount,
+            }
+        }
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }
 

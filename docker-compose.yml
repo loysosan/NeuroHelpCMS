@@ -35,6 +35,8 @@ services:
       DB_HOST: db
       DB_PORT: 3306
       DB_NAME: userdb
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -59,3 +61,4 @@ services:
 
 volumes:
   dbdata:
+  uploads:
