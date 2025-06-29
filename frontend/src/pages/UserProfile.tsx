@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUserAuth } from '../context/UserAuthContext';
+import UserHeader from '../components/UserHeader';
 
 interface UserProfile {
   id: number;
@@ -28,10 +29,10 @@ interface Portfolio {
 }
 
 interface Photo {
-  ID: number;        // Изменено с id на ID  
-  URL: string;       // Изменено с url на URL
+  ID: number;
+  URL: string;
   PortfolioID: number;
-  CreatedAt: string; // Изменено с createdAt на CreatedAt
+  CreatedAt: string;
 }
 
 interface Skill {
@@ -46,7 +47,7 @@ interface Rating {
 }
 
 const UserProfile: React.FC = () => {
-  const { token, logout } = useUserAuth();
+  const { token } = useUserAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -443,28 +444,7 @@ const UserProfile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Мій профіль</h1>
-            <div className="flex space-x-4">
-              <a 
-                href="/"
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-              >
-                Головна
-              </a>
-              <button
-                onClick={logout}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Вихід
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <UserHeader title="Мій профіль" />
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
