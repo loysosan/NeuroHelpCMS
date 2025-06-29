@@ -14,8 +14,6 @@ import (
 
 	_ "user-api/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
-
-	
 )
 
 // @title           User API
@@ -40,7 +38,6 @@ func main() {
 	_ = godotenv.Load(".env")
 	db.Connect()
 
-	// Login Administrator
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Post("/api/admin/login", handlers.AdminLogin)
@@ -80,7 +77,7 @@ func main() {
 
 	})
 	// Serve static files from the uploads directory
-	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
+	r.Handle("/api/uploads/*", http.StripPrefix("/api/uploads/", http.FileServer(http.Dir("./uploads"))))
 
 	// Public registration and verification routes
 	r.Post("/api/register", handlers.RegisterUser)
@@ -91,7 +88,7 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(authmw.RequireUser)
 
-		r.Get("/api/users/{id}", handlers.ClientGetUser)
+		r.Get("/api/users/{id}", handlers.GetUserProfile) // Змініть з GetUser на GetUserProfile
 		r.Post("/api/reviews/{psychologist_id}", handlers.CreateReview)
 		r.Put("/api/users/self/updateuser", handlers.ClientSelfUpdate)
 		
@@ -106,8 +103,10 @@ func main() {
 		r.Get("/api/users/{user_id}/skills", handlers.GetUserSkills)
 
 		r.Post("/api/users/portfolio/photo", handlers.UploadPortfolioPhoto)
+		r.Delete("/api/users/portfolio/photo/{photo_id}", handlers.DeletePortfolioPhoto)
 
 		r.Get("/api/users/self", handlers.GetSelfProfile)
+		r.Put("/api/users/self/portfolio", handlers.UpdateSelfPortfolio)
 
 
 	})

@@ -21,13 +21,13 @@ const UserHome: React.FC = () => {
                 className="mr-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 onClick={() => setShowLogin(true)}
               >
-                Login
+                Увійти
               </button>
               <button
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                 onClick={() => setShowRegister(true)}
               >
-                Register
+                Реєстрація
               </button>
             </>
           ) : (
@@ -36,13 +36,13 @@ const UserHome: React.FC = () => {
                 href="/profile"
                 className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
               >
-                Profile
+                Профіль
               </a>
               <button
                 onClick={logout}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
-                Logout
+                Вихід
               </button>
             </div>
           )}
@@ -50,11 +50,11 @@ const UserHome: React.FC = () => {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center">
-        <h2 className="text-3xl font-bold mb-4">Welcome to the site!</h2>
+        <h2 className="text-3xl font-bold mb-4">Ласкаво просимо на сайт!</h2>
         <p className="text-gray-600">
           {isLoggedIn
-            ? 'You are logged in! Visit your profile to manage your account.'
-            : 'Please login or register to continue.'}
+            ? 'Ви увійшли в систему! Відвідайте свій профіль для керування обліковим записом.'
+            : 'Будь ласка, увійдіть або зареєструйтеся для продовження.'}
         </p>
       </main>
 
