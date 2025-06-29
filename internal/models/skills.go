@@ -30,6 +30,8 @@ type Portfolio struct {
 	ID            uint64    `gorm:"primaryKey;autoIncrement"`
 	PsychologistID uint64   `gorm:"unique;not null"`
 	Description   string    `gorm:"type:text"`
+	Experience    int       `gorm:"type:int;default:0"`
+	Education     string    `gorm:"type:text"`
 	ContactEmail  *string   `gorm:"type:varchar(255)"`
 	ContactPhone  *string   `gorm:"type:varchar(20)"`
 	CreatedAt     time.Time `gorm:"autoCreateTime"`

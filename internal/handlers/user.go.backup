@@ -690,6 +690,90 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
     })
 }
 
+
+
+// UpdateSelfPortfolio godoc
+// @Summary      Update own portfolio
+// @Description  Allows a psychologist to update their portfolio information
+// @Tags         Actions for users
+// @Accept       json
+// @Produce      json
+// @Param        portfolio body models.Portfolio true "Updated portfolio data"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/self/portfolio [put]
+// @Security     BearerAuth
+func UpdateSelfPortfolio(w http.ResponseWriter, r *http.Request) {
+    email, ok := r.Context().Value("email").(string)
+    if !ok || email == "" {
+        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+        return
+    }
+
+    var user models.User
+    if err := db.DB.Preload("Portfolio").Where("email = ?", email).First(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+        return
+    }
+
+    if user.Role != "psychologist" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can update portfolio")
+        return
+    }
+
+    // Parse request body - додаємо experience та education
+    var updateData struct {
+        Description  string  `json:"description"`
+        Experience   int     `json:"experience"`
+        Education    string  `json:"education"`
+        ContactEmail *string `json:"contactEmail"`
+        ContactPhone *string `json:"contactPhone"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+        return
+    }
+
+    // Create portfolio if it doesn't exist
+    if user.Portfolio.ID == 0 {
+        portfolio := models.Portfolio{
+            PsychologistID: user.ID,
+            Description:    updateData.Description,
+            Experience:     updateData.Experience,
+            Education:      updateData.Education,
+            ContactEmail:   updateData.ContactEmail,
+            ContactPhone:   updateData.ContactPhone,
+        }
+        
+        if err := db.DB.Create(&portfolio).Error; err != nil {
+            utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to create portfolio")
+            return
+        }
+        
+        user.Portfolio = portfolio
+    } else {
+        // Update existing portfolio
+        user.Portfolio.Description = updateData.Description
+        user.Portfolio.Experience = updateData.Experience
+        user.Portfolio.Education = updateData.Education
+        user.Portfolio.ContactEmail = updateData.ContactEmail
+        user.Portfolio.ContactPhone = updateData.ContactPhone
+        
+        if err := db.DB.Save(&user.Portfolio).Error; err != nil {
+            utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update portfolio")
+            return
+        }
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "Portfolio updated successfully",
+        "data":    user.Portfolio,
+    })
+}
+
+
 // GetSelfProfile godoc
 // @Summary      Get own profile
 // @Description  Returns the authenticated user's profile information
@@ -700,7 +784,7 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/users/self [get]
 // @Security     BearerAuth
 func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
-    email, ok := r.Context().Value("username").(string)
+    email, ok := r.Context().Value("email").(string)
     if !ok || email == "" {
         utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
         return
@@ -708,7 +792,7 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 
     var user models.User
     // Завантажуємо всі зв'язані дані
-    if err := db.DB.Preload("Skills").Preload("Portfolio").Preload("Portfolio.Photos").Where("email = ?", email).First(&user).Error; err != nil {
+    if err := db.DB.Preload("Portfolio").Preload("Portfolio.Photos").Preload("Skills").Preload("Skills.Category").Where("email = ?", email).First(&user).Error; err != nil {
         utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
         return
     }
@@ -718,7 +802,7 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
     user.RefreshToken = ""
     user.VerificationToken = ""
 
-    // Додаємо рейтинг для психологів
+    // Формуємо відповідь з правильною структурою
     response := map[string]interface{}{
         "id":         user.ID,
         "email":      user.Email,
@@ -731,10 +815,22 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
         "createdAt":  user.CreatedAt,
         "updatedAt":  user.UpdatedAt,
         "skills":     user.Skills,
-        "portfolio":  user.Portfolio,
     }
 
+    // Додаємо портфоліо тільки для психологів
     if user.Role == "psychologist" {
+        portfolioData := map[string]interface{}{
+            "id":           user.Portfolio.ID,
+            "description":  user.Portfolio.Description,
+            "experience":   user.Portfolio.Experience,
+            "education":    user.Portfolio.Education,
+            "contactEmail": user.Portfolio.ContactEmail,
+            "contactPhone": user.Portfolio.ContactPhone,
+            "photos":       user.Portfolio.Photos,
+        }
+        response["portfolio"] = portfolioData
+
+        // Додаємо рейтинг для психологів
         var rating models.Rating
         if err := db.DB.Where("psychologist_id = ?", user.ID).First(&rating).Error; err == nil {
             response["rating"] = map[string]interface{}{
@@ -746,5 +842,74 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(response)
+}
+
+// DeletePortfolioPhoto godoc
+// @Summary      Delete a portfolio photo
+// @Description  Allows a psychologist to delete a photo from their portfolio
+// @Tags         Actions for users
+// @Produce      json
+// @Param        photo_id path int true "Photo ID"
+// @Success      200 {object} map[string]interface{}
+// @Failure      401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/portfolio/photo/{photo_id} [delete]
+// @Security     BearerAuth
+func DeletePortfolioPhoto(w http.ResponseWriter, r *http.Request) {
+    email, ok := r.Context().Value("email").(string)
+    if !ok || email == "" {
+        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+        return
+    }
+
+    photoID, err := strconv.ParseUint(chi.URLParam(r, "photo_id"), 10, 64)
+    if err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid photo ID")
+        return
+    }
+
+    var user models.User
+    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+        return
+    }
+
+    if user.Role != "psychologist" {
+        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can delete photos")
+        return
+    }
+
+    // Find photo and verify ownership
+    var photo models.Photo
+    if err := db.DB.Joins("JOIN portfolios ON photos.portfolio_id = portfolios.id").
+        Where("photos.id = ? AND portfolios.psychologist_id = ?", photoID, user.ID).
+        First(&photo).Error; err != nil {
+        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Photo not found or access denied")
+        return
+    }
+
+    // Delete file from filesystem
+    if photo.URL != "" {
+        // Remove leading slash if present
+        filePath := photo.URL
+        if filePath[0] == '/' {
+            filePath = "." + filePath
+        }
+        if err := os.Remove(filePath); err != nil {
+            // Log error but don't fail the request
+            log.Warn().Err(err).Str("file", filePath).Msg("Failed to delete photo file")
+        }
+    }
+
+    // Delete from database
+    if err := db.DB.Delete(&photo).Error; err != nil {
+        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to delete photo")
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "message": "Photo deleted successfully",
+    })
 }
 
