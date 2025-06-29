@@ -28,9 +28,10 @@ interface Portfolio {
 }
 
 interface Photo {
-  id: number;
-  url: string;
-  createdAt: string;
+  ID: number;        // Изменено с id на ID  
+  URL: string;       // Изменено с url на URL
+  PortfolioID: number;
+  CreatedAt: string; // Изменено с createdAt на CreatedAt
 }
 
 interface Skill {
@@ -110,10 +111,17 @@ const UserProfile: React.FC = () => {
       
       // Додайте цю перевірку:
       if (data.portfolio?.photos) {
+        console.log('Photos found:', data.portfolio.photos.length);
         data.portfolio.photos.forEach((photo: any, index: number) => {
-          console.log(`Photo ${index}:`, photo);
-          console.log(`Photo ID: ${photo.id}, type: ${typeof photo.id}`);
+          console.log(`Photo ${index}:`, {
+            ID: photo.ID,           // Изменено на заглавные
+            URL: photo.URL,         // Изменено на заглавные
+            finalUrl: getImageUrl(photo.URL),
+            IDtype: typeof photo.ID
+          });
         });
+      } else {
+        console.log('No photos in portfolio');
       }
       
       setProfile(data);
@@ -387,10 +395,32 @@ const UserProfile: React.FC = () => {
   const isValidPhoto = (photo: any): photo is Photo => {
     return photo && 
            typeof photo === 'object' && 
-           photo.id && 
-           photo.url && 
-           typeof photo.id === 'number' && 
-           typeof photo.url === 'string';
+           photo.ID &&           // Изменено с photo.id на photo.ID
+           photo.URL &&          // Изменено с photo.url на photo.URL
+           typeof photo.ID === 'number' && 
+           typeof photo.URL === 'string';
+  };
+
+  // Создайте функцию для формирования относительных URL
+  const getImageUrl = (photoUrl: string): string => {
+    if (!photoUrl) return '';
+    
+    // Если URL уже полный, возвращаем как есть
+    if (photoUrl.startsWith('http')) {
+      return photoUrl;
+    }
+    
+    // Используем относительные пути
+    if (photoUrl.startsWith('/api/uploads/')) {
+      return photoUrl; // Уже правильный путь
+    }
+    
+    if (photoUrl.startsWith('/uploads/')) {
+      return `/api${photoUrl}`; // Добавляем /api
+    }
+    
+    // В остальных случаях формируем полный путь
+    return `/api/uploads/${photoUrl}`;
   };
 
   if (isLoading) {
@@ -455,17 +485,18 @@ const UserProfile: React.FC = () => {
           <div className="bg-white shadow rounded-lg mb-6 p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                {/* Profile Photo - виправлення аватарки */}
+                {/* Profile Photo - исправление аватарки */}
                 <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
                   {profile.portfolio?.photos && 
                    profile.portfolio.photos.length > 0 && 
                    isValidPhoto(profile.portfolio.photos[0]) ? (
                     <img 
-                      src={`http://localhost:8080${profile.portfolio.photos[0].url}`} 
+                      src={getImageUrl(profile.portfolio.photos[0].URL)} // Изменено на .URL
                       alt="Профіль" 
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        console.error('Failed to load avatar:', profile.portfolio.photos[0].url);
+                        console.error('Failed to load avatar:', profile.portfolio.photos[0].URL);
+                        console.error('Attempted URL:', getImageUrl(profile.portfolio.photos[0].URL));
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
                         
@@ -488,7 +519,7 @@ const UserProfile: React.FC = () => {
                         }
                       }}
                       onLoad={() => {
-                        console.log('Avatar loaded successfully');
+                        console.log('Avatar loaded successfully:', getImageUrl(profile.portfolio.photos[0].URL));
                       }}
                     />
                   ) : (
@@ -756,10 +787,10 @@ const UserProfile: React.FC = () => {
                 </div>
               )}
 
-              {/* Photos Tab - з додатковими перевірками */}
+              {/* Photos Tab - исправление полей */}
               {activeTab === 'photos' && isPsychologist && (
                 <div className="space-y-6">
-                  {/* Upload new photo */}
+                  {/* Upload new photo остается без изменений */}
                   <div>
                     <h3 className="text-lg font-medium mb-4">Завантажити нове фото</h3>
                     <div className="flex items-center space-x-4">
@@ -801,41 +832,58 @@ const UserProfile: React.FC = () => {
                     {profile.portfolio?.photos && profile.portfolio.photos.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {profile.portfolio.photos
-                          .filter(isValidPhoto) // Фільтруємо тільки валідні фото
+                          .filter(isValidPhoto)
                           .map((photo, index) => {
-                            console.log('Rendering valid photo:', photo);
+                            console.log('Rendering photo:', photo);
+                            console.log('Image URL will be:', getImageUrl(photo.URL)); // Изменено на .URL
                             
                             return (
-                              <div key={photo.id} className="relative">
+                              <div key={photo.ID} className="relative"> {/* Изменено на photo.ID */}
                                 <img
-                                  src={`http://localhost:8080${photo.url}`}
+                                  src={getImageUrl(photo.URL)} // Изменено на .URL
                                   alt={`Портфоліо ${index + 1}`}
-                                  className="w-full h-32 object-cover rounded-lg"
+                                  className="w-full h-32 object-cover rounded-lg border border-gray-200 shadow-sm"
                                   onError={(e) => {
-                                    console.error('Failed to load image:', photo.url);
+                                    console.error('Failed to load image:', photo.URL);
+                                    console.error('Attempted URL:', getImageUrl(photo.URL));
                                     const target = e.target as HTMLImageElement;
-                                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjOTk5Ii8+Cjwvc3ZnPgo=';
+                                    target.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f3f4f6"/%3E%3Ctext x="50" y="50" font-family="Arial, sans-serif" font-size="12" fill="%236b7280" text-anchor="middle" dy=".3em"%3EНе вдалося завантажити%3C/text%3E%3C/svg%3E';
+                                    target.className = "w-full h-32 object-cover rounded-lg border border-red-200";
                                   }}
                                   onLoad={() => {
-                                    console.log('Image loaded successfully:', photo.url);
+                                    console.log('Image loaded successfully:', getImageUrl(photo.URL));
                                   }}
                                 />
                                 <button
                                   onClick={() => {
-                                    console.log('Deleting photo:', photo);
-                                    handleDeletePhoto(photo.id);
+                                    console.log('Attempting to delete photo:', photo);
+                                    if (photo.ID && typeof photo.ID === 'number') { // Изменено на photo.ID
+                                      handleDeletePhoto(photo.ID); // Изменено на photo.ID
+                                    } else {
+                                      console.error('Invalid photo ID:', photo.ID);
+                                      setError('Помилка: некоректний ID фото');
+                                    }
                                   }}
-                                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
-                                  title={`Видалити фото (ID: ${photo.id})`}
+                                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 shadow-md transition-colors"
+                                  title={`Видалити фото (ID: ${photo.ID})`} // Изменено на photo.ID
                                 >
                                   ×
                                 </button>
+                                {/* Отладочная информация */}
+                                <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                                  ID: {photo.ID} {/* Изменено на photo.ID */}
+                                </div>
                               </div>
                             );
                           })}
                       </div>
                     ) : (
-                      <p className="text-gray-500">Фотографії ще не завантажено.</p>
+                      <div className="text-center py-8">
+                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-gray-500 mt-2">Фотографії ще не завантажено.</p>
+                      </div>
                     )}
                   </div>
                 </div>
