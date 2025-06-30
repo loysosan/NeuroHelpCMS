@@ -13,6 +13,7 @@ import AdminPlans from '../pages/AdminPlans';
 import AdminSkills from '../pages/AdminSkills';
 import AdminAdministrators from '../pages/AdminAdministrators';
 import UserProfile from '../pages/UserProfile'; // Додайте цей імпорт
+import AdminNews from '../pages/AdminNews'; // Додайте цей імпорт
 
 
 
@@ -70,6 +71,11 @@ const AppRoutes: React.FC = () => (
         </PrivateRoute>
       }
     />
+    <Route path="/admin/news" element={
+      <PrivateRoute>
+        <AdminNews />
+      </PrivateRoute>
+    } />
 
     {/* Якщо не знайдено жодного шляху */}
     <Route path="*" element={<NotFound />} />

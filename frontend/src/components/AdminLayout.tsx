@@ -59,6 +59,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             Навички
           </Link>
 
+          {/* Управління новинами - видимі для всіх */}
+          <Link
+            to="/admin/news"
+            className={`flex items-center px-4 py-2 hover:bg-indigo-700 ${isActive('/admin/news')}`}
+          >
+            <span className="mr-2">📰</span>
+            Новини
+          </Link>
+
+
           {/* Управління планами - тільки для адміністраторів та майстрів */}
           {(user?.Role === 'admin' || user?.Role === 'master') && (
             <Link

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUserAuth } from '../context/UserAuthContext';
+import UserHeader from '../components/UserHeader';
 
 interface UserProfile {
   id: number;
@@ -28,10 +29,10 @@ interface Portfolio {
 }
 
 interface Photo {
-  ID: number;        // Изменено с id на ID  
-  URL: string;       // Изменено с url на URL
+  ID: number;
+  URL: string;
   PortfolioID: number;
-  CreatedAt: string; // Изменено с createdAt на CreatedAt
+  CreatedAt: string;
 }
 
 interface Skill {
@@ -40,13 +41,18 @@ interface Skill {
   category: string;
 }
 
+interface SkillCategory {
+  category: string;
+  skills: Skill[];
+}
+
 interface Rating {
   averageRating: number;
   reviewCount: number;
 }
 
 const UserProfile: React.FC = () => {
-  const { token, logout } = useUserAuth();
+  const { token } = useUserAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,6 +84,11 @@ const UserProfile: React.FC = () => {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // Додайте ці стани після існуючих
+  const [skillCategories, setSkillCategories] = useState<SkillCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
   // Завантаження профілю
   const fetchProfile = async () => {
@@ -168,7 +179,30 @@ const UserProfile: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Skills received:', data);
+        
         setAllSkills(data);
+        
+        // Групуємо навички по категоріях
+        const grouped = data.reduce((acc: { [key: string]: Skill[] }, skill: Skill) => {
+          if (!acc[skill.category]) {
+            acc[skill.category] = [];
+          }
+          acc[skill.category].push(skill);
+          return acc;
+        }, {});
+        
+        // Конвертуємо в масив категорій
+        const categories: SkillCategory[] = Object.keys(grouped).map(category => ({
+          category,
+          skills: grouped[category]
+        }));
+        
+        setSkillCategories(categories);
+        setAvailableCategories(Object.keys(grouped));
+        
+        console.log('Skill categories:', categories);
+        console.log('Available categories:', Object.keys(grouped));
       }
     } catch (err) {
       console.error('Failed to fetch skills:', err);
@@ -296,6 +330,28 @@ const UserProfile: React.FC = () => {
         ? prev.filter(id => id !== skillId)
         : [...prev, skillId]
     );
+  };
+
+  // Додайте цю функцію після handleSkillToggle
+  const handleClearCategory = () => {
+    setSelectedCategory('');
+  };
+
+  // Функція для швидкого вибору всіх навичок категорії
+  const handleSelectAllInCategory = (category: string) => {
+    const categorySkills = skillCategories.find(cat => cat.category === category)?.skills || [];
+    const categorySkillIds = categorySkills.map(skill => skill.id);
+    
+    // Перевіряємо чи всі навички категорії вже обрані
+    const allSelected = categorySkillIds.every(id => selectedSkills.includes(id));
+    
+    if (allSelected) {
+      // Якщо всі обрані, то видаляємо їх
+      setSelectedSkills(prev => prev.filter(id => !categorySkillIds.includes(id)));
+    } else {
+      // Якщо не всі обрані, то додаємо всі
+      setSelectedSkills(prev => [...new Set([...prev, ...categorySkillIds])]);
+    }
   };
 
   // Завантаження фото
@@ -443,28 +499,7 @@ const UserProfile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Мій профіль</h1>
-            <div className="flex space-x-4">
-              <a 
-                href="/"
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-              >
-                Головна
-              </a>
-              <button
-                onClick={logout}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Вихід
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <UserHeader title="Мій профіль" />
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -757,33 +792,188 @@ const UserProfile: React.FC = () => {
                 </form>
               )}
 
-              {/* Skills Tab (только для психологів) */}
+              {/* Skills Tab - нова версія з категоріями */}
               {activeTab === 'skills' && isPsychologist && (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium">Оберіть ваші навички</h3>
                     <button
                       onClick={handleSaveSkills}
                       className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                      Зберегти навички
+                      Зберегти навички ({selectedSkills.length})
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {allSkills.map((skill) => (
-                      <label key={skill.id} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedSkills.includes(skill.id)}
-                          onChange={() => handleSkillToggle(skill.id)}
-                          className="form-checkbox h-4 w-4 text-blue-600"
-                        />
-                        <span className="text-sm">{skill.name}</span>
-                        <span className="text-xs text-gray-500">({skill.category})</span>
-                      </label>
-                    ))}
+                  {/* Поточні обрані навички */}
+                  {selectedSkills.length > 0 && (
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <h4 className="text-sm font-medium text-blue-900 mb-2">
+                        Обрані навички ({selectedSkills.length}):
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {allSkills
+                          .filter(skill => selectedSkills.includes(skill.id))
+                          .map(skill => (
+                            <span
+                              key={skill.id}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
+                            >
+                              {skill.name}
+                              <button
+                                onClick={() => handleSkillToggle(skill.id)}
+                                className="ml-1 text-blue-600 hover:text-blue-800"
+                                title="Видалити навичку"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Селектор категорій */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Оберіть категорію навичок:
+                    </label>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">-- Оберіть категорію --</option>
+                      {availableCategories.map(category => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+
+                  {/* Навички обраної категорії */}
+                  {selectedCategory && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">
+                        Навички в категорії "{selectedCategory}":
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {skillCategories
+                          .find(cat => cat.category === selectedCategory)
+                          ?.skills.map((skill) => {
+                            const isSelected = selectedSkills.includes(skill.id);
+                            return (
+                              <label 
+                                key={skill.id} 
+                                className={`flex items-center space-x-2 p-2 rounded cursor-pointer border transition-colors ${
+                                  isSelected 
+                                    ? 'bg-blue-50 border-blue-200' 
+                                    : 'bg-white border-gray-200 hover:bg-gray-50'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleSkillToggle(skill.id)}
+                                  className="form-checkbox h-4 w-4 text-blue-600"
+                                />
+                                <span className={`text-sm ${isSelected ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
+                                  {skill.name}
+                                </span>
+                                {isSelected && (
+                                  <span className="text-xs text-blue-600">✓</span>
+                                )}
+                              </label>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Додайте цей блок перед навичками обраної категорії, після селектора */}
+                  {selectedCategory && (
+                    <div className="flex space-x-2 mb-4">
+                      <button
+                        onClick={() => handleSelectAllInCategory(selectedCategory)}
+                        className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                      >
+                        {skillCategories
+                          .find(cat => cat.category === selectedCategory)
+                          ?.skills.every(skill => selectedSkills.includes(skill.id))
+                          ? 'Зняти всі в категорії'
+                          : 'Обрати всі в категорії'
+                        }
+                      </button>
+                      <button
+                        onClick={handleClearCategory}
+                        className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                      >
+                        Показати всі категорії
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Всі категорії одним списком (альтернативний вигляд) */}
+                  {!selectedCategory && availableCategories.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">
+                        Або оберіть зі всіх категорій:
+                      </h4>
+                      <div className="space-y-6">
+                        {skillCategories.map((categoryGroup) => (
+                          <div key={categoryGroup.category} className="border border-gray-200 rounded-lg p-4">
+                            <h5 className="font-medium text-gray-900 mb-3 flex items-center">
+                              {categoryGroup.category}
+                              <span className="ml-2 text-xs text-gray-500">
+                                ({categoryGroup.skills.filter(skill => selectedSkills.includes(skill.id)).length}/{categoryGroup.skills.length})
+                              </span>
+                            </h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                              {categoryGroup.skills.map((skill) => {
+                                const isSelected = selectedSkills.includes(skill.id);
+                                return (
+                                  <label 
+                                    key={skill.id} 
+                                    className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${
+                                      isSelected 
+                                        ? 'bg-blue-50 text-blue-900' 
+                                        : 'hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => handleSkillToggle(skill.id)}
+                                      className="form-checkbox h-4 w-4 text-blue-600"
+                                    />
+                                    <span className="text-sm">
+                                      {skill.name}
+                                    </span>
+                                    {isSelected && (
+                                      <span className="text-xs text-blue-600">✓</span>
+                                    )}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Кнопка очистити всі навички */}
+                  {selectedSkills.length > 0 && (
+                    <div className="text-center">
+                      <button
+                        onClick={() => setSelectedSkills([])}
+                        className="px-4 py-2 text-red-600 border border-red-300 rounded hover:bg-red-50"
+                      >
+                        Очистити всі навички
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
