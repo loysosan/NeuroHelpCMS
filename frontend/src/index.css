@@ -6,3 +6,20 @@
 body {
   @apply m-0 p-0 font-sans bg-gray-100;
 }
+
+/* Стили для WYSIWYG редактора */
+.wysiwyg-editor .ql-editor {
+  min-height: 200px;
+}
+
+.wysiwyg-editor .ql-toolbar {
+  border-top: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+}
+
+.wysiwyg-editor .ql-container {
+  border-bottom: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+}

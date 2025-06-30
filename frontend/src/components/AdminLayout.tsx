@@ -69,6 +69,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <span className="mr-2">👨‍💼</span>
             Адміністратори
           </Link>
+
+          {/* Управління новинами - видимі для всіх */}
+          <Link
+            to="/admin/news"
+            className={`flex items-center px-4 py-2 hover:bg-indigo-700 ${isActive('/admin/news')}`}
+          >
+            <span className="mr-2">📰</span>
+            Новини
+          </Link>
         </nav>
         <div className="absolute bottom-0 w-64 p-4">
           <button
