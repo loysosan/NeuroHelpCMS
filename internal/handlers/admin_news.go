@@ -6,11 +6,10 @@ import (
 	"strconv"
 	"user-api/internal/db"
 	"user-api/internal/models"
-    "user-api/internal/utils"
+	"user-api/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
-
 )
 
 // CreateNews godoc
@@ -25,46 +24,57 @@ import (
 // @Router       /api/admin/news [post]
 // @Security     BearerAuth
 func CreateNews(w http.ResponseWriter, r *http.Request) {
-    adminVal := r.Context().Value("admin")
-    currentAdmin, ok := adminVal.(*models.Administrator)
-    if !ok || currentAdmin == nil {
-        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required")
-        return
-    }
+	adminVal := r.Context().Value("admin")
+	currentAdmin, ok := adminVal.(*models.Administrator)
+	if !ok || currentAdmin == nil {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required")
+		return
+	}
 
-    var news models.News
-    if err := json.NewDecoder(r.Body).Decode(&news); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
-        return
-    }
+	var news models.News
+	if err := json.NewDecoder(r.Body).Decode(&news); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+		return
+	}
 
-    // Валідація
-    if news.Title == "" || news.Content == "" {
-        utils.WriteError(w, http.StatusBadRequest, "MISSING_FIELDS", "Title and content are required")
-        return
-    }
+	// Валідація
+	if news.Title == "" || news.Content == "" {
+		utils.WriteError(w, http.StatusBadRequest, "MISSING_FIELDS", "Title and content are required")
+		return
+	}
 
-    // Встановлюємо автора та значення за замовчуванням
-    news.AuthorID = currentAdmin.ID
-    news.Views = 0
+	// Встановлюємо автора та значення за замовчуванням
+	news.AuthorID = currentAdmin.ID
+	news.Views = 0
 
-    if err := db.DB.Create(&news).Error; err != nil {
-        log.Error().Err(err).Msg("Failed to create news")
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create news")
-        return
-    }
+	// Якщо вибрано показ на головній сторінці, перевіряємо ліміт
+	if news.ShowOnHome {
+		var homeNewsCount int64
+		db.DB.Model(&models.News{}).Where("show_on_home = ? AND published = ?", true, true).Count(&homeNewsCount)
 
-    // Завантажуємо автора для відповіді
-    db.DB.Preload("Author").First(&news, news.ID)
+		if homeNewsCount >= 4 {
+			utils.WriteError(w, http.StatusBadRequest, "HOME_NEWS_LIMIT", "Maximum 4 news articles can be shown on home page")
+			return
+		}
+	}
 
-    log.Info().Uint64("news_id", news.ID).Str("title", news.Title).Msg("News created")
+	if err := db.DB.Create(&news).Error; err != nil {
+		log.Error().Err(err).Msg("Failed to create news")
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create news")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "data":    news,
-    })
+	// Завантажуємо автора для відповіді
+	db.DB.Preload("Author").First(&news, news.ID)
+
+	log.Info().Uint64("news_id", news.ID).Str("title", news.Title).Bool("show_on_home", news.ShowOnHome).Msg("News created")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    news,
+	})
 }
 
 // GetAllNews godoc
@@ -79,36 +89,36 @@ func CreateNews(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/news [get]
 // @Security     BearerAuth
 func GetAllNews(w http.ResponseWriter, r *http.Request) {
-    query := db.DB.Model(&models.News{}).Preload("Author")
+	query := db.DB.Model(&models.News{}).Preload("Author")
 
-    // Фільтрація
-    if published := r.URL.Query().Get("published"); published == "true" {
-        query = query.Where("published = ?", true)
-    } else if published == "false" {
-        query = query.Where("published = ?", false)
-    }
+	// Фільтрація
+	if published := r.URL.Query().Get("published"); published == "true" {
+		query = query.Where("published = ?", true)
+	} else if published == "false" {
+		query = query.Where("published = ?", false)
+	}
 
-    if public := r.URL.Query().Get("public"); public == "true" {
-        query = query.Where("is_public = ?", true)
-    } else if public == "false" {
-        query = query.Where("is_public = ?", false)
-    }
+	if public := r.URL.Query().Get("public"); public == "true" {
+		query = query.Where("is_public = ?", true)
+	} else if public == "false" {
+		query = query.Where("is_public = ?", false)
+	}
 
-    var news []models.News
-    if err := query.Order("created_at DESC").Find(&news).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve news")
-        return
-    }
+	var news []models.News
+	if err := query.Order("created_at DESC").Find(&news).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve news")
+		return
+	}
 
-    // Очищаємо паролі авторів
-    for i := range news {
-        if news[i].Author.Password != "" {
-            news[i].Author.Password = ""
-        }
-    }
+	// Очищаємо паролі авторів
+	for i := range news {
+		if news[i].Author.Password != "" {
+			news[i].Author.Password = ""
+		}
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(news)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(news)
 }
 
 // GetNews godoc
@@ -122,23 +132,23 @@ func GetAllNews(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/news/{id} [get]
 // @Security     BearerAuth
 func GetNews(w http.ResponseWriter, r *http.Request) {
-    id, err := strconv.Atoi(chi.URLParam(r, "id"))
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid news ID format")
-        return
-    }
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid news ID format")
+		return
+	}
 
-    var news models.News
-    if err := db.DB.Preload("Author").First(&news, id).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NEWS_NOT_FOUND", "News article not found")
-        return
-    }
+	var news models.News
+	if err := db.DB.Preload("Author").First(&news, id).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NEWS_NOT_FOUND", "News article not found")
+		return
+	}
 
-    // Очищаємо пароль автора
-    news.Author.Password = ""
+	// Очищаємо пароль автора
+	news.Author.Password = ""
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(news)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(news)
 }
 
 // UpdateNews godoc
@@ -154,57 +164,69 @@ func GetNews(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/news/{id} [put]
 // @Security     BearerAuth
 func UpdateNews(w http.ResponseWriter, r *http.Request) {
-    currentAdmin := r.Context().Value("admin").(*models.Administrator)
-    
-    id, err := strconv.Atoi(chi.URLParam(r, "id"))
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid news ID format")
-        return
-    }
+	currentAdmin := r.Context().Value("admin").(*models.Administrator)
 
-    var news models.News
-    if err := db.DB.First(&news, id).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NEWS_NOT_FOUND", "News article not found")
-        return
-    }
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid news ID format")
+		return
+	}
 
-    // Перевірка прав (автор або адмін/мастер)
-    if currentAdmin.Role != "admin" && currentAdmin.Role != "master" && news.AuthorID != currentAdmin.ID {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "You can only edit your own articles")
-        return
-    }
+	var news models.News
+	if err := db.DB.First(&news, id).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NEWS_NOT_FOUND", "News article not found")
+		return
+	}
 
-    var updatedNews models.News
-    if err := json.NewDecoder(r.Body).Decode(&updatedNews); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
-        return
-    }
+	// Перевірка прав (автор або адмін/мастер)
+	if currentAdmin.Role != "admin" && currentAdmin.Role != "master" && news.AuthorID != currentAdmin.ID {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "You can only edit your own articles")
+		return
+	}
 
-    if updatedNews.Title == "" || updatedNews.Content == "" {
-        utils.WriteError(w, http.StatusBadRequest, "MISSING_FIELDS", "Title and content are required")
-        return
-    }
+	var updatedNews models.News
+	if err := json.NewDecoder(r.Body).Decode(&updatedNews); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+		return
+	}
 
-    // Оновлюємо поля
-    news.Title = updatedNews.Title
-    news.Content = updatedNews.Content
-    news.Summary = updatedNews.Summary
-    news.ImageURL = updatedNews.ImageURL
-    news.IsPublic = updatedNews.IsPublic
-    news.Published = updatedNews.Published
+	if updatedNews.Title == "" || updatedNews.Content == "" {
+		utils.WriteError(w, http.StatusBadRequest, "MISSING_FIELDS", "Title and content are required")
+		return
+	}
 
-    if err := db.DB.Save(&news).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update news")
-        return
-    }
+	// Перевіряємо ліміт новин на головній сторінці
+	if updatedNews.ShowOnHome && !news.ShowOnHome {
+		var homeNewsCount int64
+		db.DB.Model(&models.News{}).Where("show_on_home = ? AND published = ? AND id != ?", true, true, news.ID).Count(&homeNewsCount)
 
-    log.Info().Uint64("news_id", news.ID).Msg("News updated")
+		if homeNewsCount >= 4 {
+			utils.WriteError(w, http.StatusBadRequest, "HOME_NEWS_LIMIT", "Maximum 4 news articles can be shown on home page")
+			return
+		}
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "data":    news,
-    })
+	// Оновлюємо поля
+	news.Title = updatedNews.Title
+	news.Content = updatedNews.Content
+	news.Summary = updatedNews.Summary
+	news.ImageURL = updatedNews.ImageURL
+	news.IsPublic = updatedNews.IsPublic
+	news.Published = updatedNews.Published
+	news.ShowOnHome = updatedNews.ShowOnHome
+
+	if err := db.DB.Save(&news).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update news")
+		return
+	}
+
+	log.Info().Uint64("news_id", news.ID).Bool("show_on_home", news.ShowOnHome).Msg("News updated")
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    news,
+	})
 }
 
 // DeleteNews godoc
@@ -218,40 +240,39 @@ func UpdateNews(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/news/{id} [delete]
 // @Security     BearerAuth
 func DeleteNews(w http.ResponseWriter, r *http.Request) {
-    currentAdmin := r.Context().Value("admin").(*models.Administrator)
-    
-    id, err := strconv.Atoi(chi.URLParam(r, "id"))
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid news ID format")
-        return
-    }
+	currentAdmin := r.Context().Value("admin").(*models.Administrator)
 
-    var news models.News
-    if err := db.DB.First(&news, id).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NEWS_NOT_FOUND", "News article not found")
-        return
-    }
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid news ID format")
+		return
+	}
 
-    // Перевірка прав
-    if currentAdmin.Role != "admin" && currentAdmin.Role != "master" && news.AuthorID != currentAdmin.ID {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "You can only delete your own articles")
-        return
-    }
+	var news models.News
+	if err := db.DB.First(&news, id).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NEWS_NOT_FOUND", "News article not found")
+		return
+	}
 
-    if err := db.DB.Delete(&news).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete news")
-        return
-    }
+	// Перевірка прав
+	if currentAdmin.Role != "admin" && currentAdmin.Role != "master" && news.AuthorID != currentAdmin.ID {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "You can only delete your own articles")
+		return
+	}
 
-    log.Info().Uint64("news_id", news.ID).Msg("News deleted")
+	if err := db.DB.Delete(&news).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete news")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "message": "News article deleted successfully",
-    })
+	log.Info().Uint64("news_id", news.ID).Msg("News deleted")
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "News article deleted successfully",
+	})
 }
-
 
 // GetPublicNews godoc
 // @Summary      Get all published news
@@ -265,50 +286,50 @@ func DeleteNews(w http.ResponseWriter, r *http.Request) {
 // @Failure      500 {object} map[string]interface{}
 // @Router       /api/news [get]
 func GetPublicNews(w http.ResponseWriter, r *http.Request) {
-    query := db.DB.Model(&models.News{}).
-        Preload("Author").
-        Where("published = ?", true) // Тільки опубліковані новини
+	query := db.DB.Model(&models.News{}).
+		Preload("Author").
+		Where("published = ?", true) // Тільки опубліковані новини
 
-    // Фільтрація за публічністю (якщо користувач не авторизований)
-    userContext := r.Context().Value("user")
-    if userContext == nil {
-        // Якщо користувач не авторизований - показуємо тільки публічні
-        query = query.Where("is_public = ?", true)
-    } else {
-        // Якщо авторизований, можна показувати і приватні
-        if public := r.URL.Query().Get("public"); public == "true" {
-            query = query.Where("is_public = ?", true)
-        }
-    }
+	// Фільтрація за публічністю (якщо користувач не авторизований)
+	userContext := r.Context().Value("user")
+	if userContext == nil {
+		// Якщо користувач не авторизований - показуємо тільки публічні
+		query = query.Where("is_public = ?", true)
+	} else {
+		// Якщо авторизований, можна показувати і приватні
+		if public := r.URL.Query().Get("public"); public == "true" {
+			query = query.Where("is_public = ?", true)
+		}
+	}
 
-    // Пагінація
-    if limit := r.URL.Query().Get("limit"); limit != "" {
-        if l, err := strconv.Atoi(limit); err == nil && l > 0 && l <= 50 {
-            query = query.Limit(l)
-        }
-    } else {
-        query = query.Limit(10) // За замовчуванням 10
-    }
+	// Пагінація
+	if limit := r.URL.Query().Get("limit"); limit != "" {
+		if l, err := strconv.Atoi(limit); err == nil && l > 0 && l <= 50 {
+			query = query.Limit(l)
+		}
+	} else {
+		query = query.Limit(10) // За замовчуванням 10
+	}
 
-    if offset := r.URL.Query().Get("offset"); offset != "" {
-        if o, err := strconv.Atoi(offset); err == nil && o >= 0 {
-            query = query.Offset(o)
-        }
-    }
+	if offset := r.URL.Query().Get("offset"); offset != "" {
+		if o, err := strconv.Atoi(offset); err == nil && o >= 0 {
+			query = query.Offset(o)
+		}
+	}
 
-    var news []models.News
-    if err := query.Order("created_at DESC").Find(&news).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve news")
-        return
-    }
+	var news []models.News
+	if err := query.Order("created_at DESC").Find(&news).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve news")
+		return
+	}
 
-    // Очищаємо паролі авторів
-    for i := range news {
-        news[i].Author.Password = ""
-    }
+	// Очищаємо паролі авторів
+	for i := range news {
+		news[i].Author.Password = ""
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(news)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(news)
 }
 
 // GetPublicNewsItem godoc
@@ -321,36 +342,36 @@ func GetPublicNews(w http.ResponseWriter, r *http.Request) {
 // @Failure      404 {object} map[string]interface{}
 // @Router       /api/news/{id} [get]
 func GetPublicNewsItem(w http.ResponseWriter, r *http.Request) {
-    id, err := strconv.Atoi(chi.URLParam(r, "id"))
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid news ID format")
-        return
-    }
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid news ID format")
+		return
+	}
 
-    query := db.DB.Preload("Author").Where("published = ?", true)
+	query := db.DB.Preload("Author").Where("published = ?", true)
 
-    // Перевіряємо чи користувач авторизований
-    userContext := r.Context().Value("user")
-    if userContext == nil {
-        // Якщо не авторизований - тільки публічні новини
-        query = query.Where("is_public = ?", true)
-    }
+	// Перевіряємо чи користувач авторизований
+	userContext := r.Context().Value("user")
+	if userContext == nil {
+		// Якщо не авторизований - тільки публічні новини
+		query = query.Where("is_public = ?", true)
+	}
 
-    var news models.News
-    if err := query.First(&news, id).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NEWS_NOT_FOUND", "News article not found or not accessible")
-        return
-    }
+	var news models.News
+	if err := query.First(&news, id).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NEWS_NOT_FOUND", "News article not found or not accessible")
+		return
+	}
 
-    // Збільшуємо лічильник переглядів
-    db.DB.Model(&news).Update("views", news.Views+1)
-    news.Views++
+	// Збільшуємо лічильник переглядів
+	db.DB.Model(&news).Update("views", news.Views+1)
+	news.Views++
 
-    // Очищаємо пароль автора
-    news.Author.Password = ""
+	// Очищаємо пароль автора
+	news.Author.Password = ""
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(news)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(news)
 }
 
 // GetNewsCount godoc
@@ -362,22 +383,59 @@ func GetPublicNewsItem(w http.ResponseWriter, r *http.Request) {
 // @Failure      500 {object} map[string]interface{}
 // @Router       /api/news/count [get]
 func GetNewsCount(w http.ResponseWriter, r *http.Request) {
-    query := db.DB.Model(&models.News{}).Where("published = ?", true)
+	query := db.DB.Model(&models.News{}).Where("published = ?", true)
 
-    // Якщо користувач не авторизований
-    userContext := r.Context().Value("user")
-    if userContext == nil {
-        query = query.Where("is_public = ?", true)
-    }
+	// Якщо користувач не авторизований
+	userContext := r.Context().Value("user")
+	if userContext == nil {
+		query = query.Where("is_public = ?", true)
+	}
 
-    var count int64
-    if err := query.Count(&count).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to count news")
-        return
-    }
+	var count int64
+	if err := query.Count(&count).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to count news")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "count": count,
-    })
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"count": count,
+	})
+}
+
+// GetHomeNews godoc
+// @Summary      Get news for home page
+// @Description  Retrieve news articles marked to show on home page (public access)
+// @Tags         Public API
+// @Produce      json
+// @Success      200 {array} models.News
+// @Failure      500 {object} map[string]interface{}
+// @Router       /api/news/home [get]
+func GetHomeNews(w http.ResponseWriter, r *http.Request) {
+	var news []models.News
+
+	query := db.DB.Model(&models.News{}).
+		Preload("Author").
+		Where("published = ? AND show_on_home = ?", true, true).
+		Order("created_at DESC").
+		Limit(4)
+
+	// Якщо користувач не авторизований - тільки публічні новини
+	userContext := r.Context().Value("user")
+	if userContext == nil {
+		query = query.Where("is_public = ?", true)
+	}
+
+	if err := query.Find(&news).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve home news")
+		return
+	}
+
+	// Очищаємо паролі авторів
+	for i := range news {
+		news[i].Author.Password = ""
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(news)
 }

@@ -8,8 +8,6 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-
-	
 )
 
 var DB *gorm.DB
@@ -46,5 +44,6 @@ func Connect() {
 		&models.Session{},
 		&models.Message{},
 		&models.Availability{},
+		&models.News{},
 	)
 }
