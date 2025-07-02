@@ -10,11 +10,13 @@ interface News {
   title: string;
   content: string;
   summary: string;
-  imageUrl?: string;
+  imageUrl: string;
   isPublic: boolean;
   published: boolean;
-  views: number;
+  showOnHome: boolean; // Добавляем поле
+  authorId: number;
   authorName: string;
+  views: number;
   createdAt: string;
   updatedAt: string;
 }

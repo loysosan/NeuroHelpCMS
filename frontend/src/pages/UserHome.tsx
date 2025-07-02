@@ -34,6 +34,7 @@ const UserHome: React.FC = () => {
 
   const fetchHomeNews = async () => {
     try {
+      // Изменяем эндпоинт для получения новостей главной страницы
       const response = await fetch('/api/news/home');
       if (response.ok) {
         const data = await response.json();
@@ -86,15 +87,15 @@ const UserHome: React.FC = () => {
           </div>
         </section>
 
-        {/* News Section */}
+        {/* News Section - Рекомендуемые новости */}
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-                Останні новини
+                Рекомендовані новини
               </h2>
               <p className="text-gray-600 text-lg">
-                Дізнайтеся про найсвіжіші події та оновлення
+                Найважливіші новини та оновлення спеціально для вас
               </p>
             </div>
 
@@ -105,7 +106,7 @@ const UserHome: React.FC = () => {
             ) : homeNews.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  {homeNews.map((article) => (
+                  {homeNews.slice(0, 4).map((article) => (
                     <NewsCard key={article.id} article={article} />
                   ))}
                 </div>
@@ -120,12 +121,18 @@ const UserHome: React.FC = () => {
               </>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">Поки що немає новин для відображення</p>
+                <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Рекомендованих новин поки що немає</h3>
+                <p className="text-gray-500 mb-6">Адміністратори ще не обрали новини для відображення на головній сторінці</p>
                 <Link
                   to="/news"
-                  className="inline-block mt-4 text-blue-600 hover:text-blue-700 font-semibold"
+                  className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
                 >
-                  Переглянути всі новини →
+                  Переглянути всі новини
                 </Link>
               </div>
             )}
