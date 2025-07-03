@@ -94,6 +94,7 @@ func main() {
 	r.Get("/api/news", handlers.GetPublicNews)
 	r.Get("/api/news/{id}", handlers.GetPublicNewsItem)
 	r.Get("/api/news/count", handlers.GetNewsCount)
+	r.Get("/api/news/home", handlers.GetHomeNews)
 
 	// Protected user endpoints
 	r.Group(func(r chi.Router) {
