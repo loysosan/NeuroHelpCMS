@@ -13,12 +13,21 @@ interface UserData {
   planId?: number;
 }
 
+interface Plan {
+  ID: number;
+  Name: string;
+  Description: string;
+  Price: number;
+  DurationDays: number;
+}
+
 const AdminEditUser: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [userData, setUserData] = useState<UserData>({
     firstName: '',
     lastName: '',
@@ -31,47 +40,62 @@ const AdminEditUser: React.FC = () => {
   });
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(`/api/admin/users/${id}`, {
+        // Fetch user data
+        const userResponse = await fetch(`/api/admin/users/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
         
-        if (!response.ok) {
-          const errorData = await response.json();
+        if (!userResponse.ok) {
+          const errorData = await userResponse.json();
           throw new Error(errorData.message || 'Failed to fetch user data');
         }
 
-        const data = await response.json();
-        console.log('Fetched user data:', data); // Додаємо для дебагу
+        const userData = await userResponse.json();
+        
+        // Fetch plans for dropdown
+        const plansResponse = await fetch('/api/admin/plans', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-        if (!data) {
+        if (!plansResponse.ok) {
+          throw new Error('Failed to fetch plans');
+        }
+
+        const plansData = await plansResponse.json();
+        setPlans(plansData || []);
+
+        if (!userData) {
           throw new Error('No data received');
         }
 
         setUserData({
-          firstName: data.FirstName || '',
-          lastName: data.LastName || '',
-          email: data.Email || '',
-          role: data.Role || 'client',
-          status: data.Status || 'Active',
-          verified: Boolean(data.Verified),
-          phone: data.Phone || '',
-          planId: data.PlanID || undefined
+          firstName: userData.FirstName || '',
+          lastName: userData.LastName || '',
+          email: userData.Email || '',
+          role: userData.Role || 'client',
+          status: userData.Status || 'Active',
+          verified: Boolean(userData.Verified),
+          phone: userData.Phone || '',
+          planId: userData.PlanID || undefined
         });
       } catch (err: any) {
-        console.error('Error fetching user:', err); // Додаємо для дебагу
-        setError(err.message || 'Failed to fetch user data');
+        console.error('Error fetching data:', err);
+        setError(err.message || 'Failed to fetch data');
       } finally {
         setLoading(false);
       }
     };
 
     if (id && token) {
-      fetchUser();
+      fetchData();
     }
   }, [id, token]);
 
@@ -94,7 +118,7 @@ const AdminEditUser: React.FC = () => {
           Status: userData.status,
           Verified: userData.verified,
           Phone: userData.phone || null,
-          PlanID: userData.planId || null
+          PlanID: userData.role === 'client' ? null : (userData.planId || null)
         })
       });
 
@@ -110,14 +134,36 @@ const AdminEditUser: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    let newValue: any = value;
+    
+    if (type === 'checkbox') {
+      newValue = (e.target as HTMLInputElement).checked;
+    } else if (name === 'planId') {
+      newValue = value === '' ? undefined : parseInt(value, 10);
+    }
+    
     setUserData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]: newValue
     }));
   };
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded mb-6"></div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="h-16 bg-gray-200 rounded"></div>
+                <div className="h-16 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -142,6 +188,7 @@ const AdminEditUser: React.FC = () => {
                   value={userData.firstName}
                   onChange={handleChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  required
                 />
               </label>
             </div>
@@ -155,6 +202,7 @@ const AdminEditUser: React.FC = () => {
                   value={userData.lastName}
                   onChange={handleChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  required
                 />
               </label>
             </div>
@@ -168,6 +216,7 @@ const AdminEditUser: React.FC = () => {
                   value={userData.email}
                   onChange={handleChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  required
                 />
               </label>
             </div>
@@ -180,6 +229,7 @@ const AdminEditUser: React.FC = () => {
                   value={userData.role}
                   onChange={handleChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  required
                 >
                   <option value="client">Client</option>
                   <option value="psychologist">Psychologist</option>
@@ -195,6 +245,7 @@ const AdminEditUser: React.FC = () => {
                   value={userData.status}
                   onChange={handleChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  required
                 >
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
@@ -212,22 +263,33 @@ const AdminEditUser: React.FC = () => {
                   value={userData.phone || ''}
                   onChange={handleChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  placeholder="+380..."
                 />
               </label>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Plan ID
-                <input
-                  type="number"
-                  name="planId"
-                  value={userData.planId || ''}
-                  onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-              </label>
-            </div>
+            {/* Поле Plan показывается только якщо роль не client */}
+            {userData.role !== 'client' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Plan
+                  <select
+                    name="planId"
+                    value={userData.planId || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  >
+                    <option value="">No Plan</option>
+                    {plans.map((plan) => (
+                      <option key={plan.ID} value={plan.ID}>
+                        {plan.Name} - ${plan.Price}
+                        {plan.DurationDays && ` (${plan.DurationDays} days)`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
 
             <div className="col-span-2">
               <label className="flex items-center space-x-2">
@@ -238,22 +300,24 @@ const AdminEditUser: React.FC = () => {
                   onChange={handleChange}
                   className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
-                <span className="text-sm font-medium text-gray-700">Verified</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Email Verified
+                </span>
               </label>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end space-x-4 pt-4">
             <button
               type="button"
               onClick={() => navigate('/admin/users')}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Save Changes
             </button>
