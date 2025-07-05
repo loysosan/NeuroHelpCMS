@@ -34,7 +34,6 @@ const UserHome: React.FC = () => {
 
   const fetchHomeNews = async () => {
     try {
-      // Изменяем эндпоинт для получения новостей главной страницы
       const response = await fetch('/api/news/home');
       if (response.ok) {
         const data = await response.json();
@@ -45,6 +44,15 @@ const UserHome: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('uk-UA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   return (
@@ -87,7 +95,7 @@ const UserHome: React.FC = () => {
           </div>
         </section>
 
-        {/* News Section - Рекомендуемые новости */}
+        {/* News Section - Построчное отображение */}
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -105,11 +113,81 @@ const UserHome: React.FC = () => {
               </div>
             ) : homeNews.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  {homeNews.slice(0, 4).map((article) => (
-                    <NewsCard key={article.id} article={article} />
+                <div className="max-w-4xl mx-auto space-y-6 mb-8">
+                  {homeNews.slice(0, 6).map((article, index) => (
+                    <div
+                      key={article.id}
+                      className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden"
+                    >
+                      <div className="flex flex-col md:flex-row">
+                        {/* Изображение */}
+                        <div className="md:w-1/3 lg:w-1/4">
+                          {article.imageUrl ? (
+                            <img
+                              src={article.imageUrl}
+                              alt={article.title}
+                              className="w-full h-48 md:h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-48 md:h-full bg-gray-200 flex items-center justify-center">
+                              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Контент */}
+                        <div className="md:w-2/3 lg:w-3/4 p-6">
+                          <div className="flex flex-col justify-between h-full">
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900 mb-2 hover:text-blue-600 transition-colors">
+                                <Link to={`/news/${article.id}`}>
+                                  {article.title}
+                                </Link>
+                              </h3>
+                              <p className="text-gray-600 mb-4 line-clamp-3">
+                                {article.summary}
+                              </p>
+                            </div>
+                            
+                            <div className="flex items-center justify-between text-sm text-gray-500">
+                              <div className="flex items-center space-x-4">
+                                <span className="flex items-center">
+                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                  </svg>
+                                  {article.author.firstName} {article.author.lastName}
+                                </span>
+                                <span className="flex items-center">
+                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  {formatDate(article.createdAt)}
+                                </span>
+                                <span className="flex items-center">
+                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  {article.views} переглядів
+                                </span>
+                              </div>
+                              
+                              <Link
+                                to={`/news/${article.id}`}
+                                className="text-blue-600 hover:text-blue-800 font-medium"
+                              >
+                                Читати далі →
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
+                
                 <div className="text-center">
                   <Link
                     to="/news"
