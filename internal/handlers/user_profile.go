@@ -1,14 +1,16 @@
 package handlers
 
 import (
-    "encoding/json"
-    "net/http"
-    "strconv"
+	"encoding/json"
+	"log"
+	"net/http"
+	"strconv"
 
-    "github.com/go-chi/chi/v5"
-    "user-api/internal/db"
-    "user-api/internal/models"
-    "user-api/internal/utils"
+	"user-api/internal/db"
+	"user-api/internal/models"
+	"user-api/internal/utils"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // GetUserProfile godoc
@@ -22,95 +24,92 @@ import (
 // @Router       /api/users/{id} [get]
 // @Security BearerAuth
 func GetUserProfile(w http.ResponseWriter, r *http.Request) {
-    userID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
-        return
-    }
+	userID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
+		return
+	}
 
-    var user models.User
-    if err := db.DB.Preload("Portfolio").Preload("Portfolio.Photos").Preload("Skills").Preload("Skills.Category").Where("id = ?", userID).First(&user).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
-        return
-    }
+	var user models.User
+	if err := db.DB.Preload("Portfolio").Preload("Portfolio.Photos").Preload("Skills").Preload("Skills.Category").Where("id = ?", userID).First(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
 
-    // Очищуємо конфіденційні дані
-    user.Password = ""
-    user.RefreshToken = ""
-    user.VerificationToken = ""
+	// Очищуємо конфіденційні дані
+	user.Password = ""
+	user.RefreshToken = ""
+	user.VerificationToken = ""
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(user)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
 }
 
 // GetSelfProfile godoc
 // @Summary      Get own profile
 // @Description  Returns the authenticated user's profile information
-// @Tags         Actions for users  
+// @Tags         Actions for users
 // @Produce      json
 // @Success      200 {object} models.User
 // @Failure      401,404,500 {object} map[string]interface{}
 // @Router       /api/users/self [get]
 // @Security     BearerAuth
 func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
-    email, ok := r.Context().Value("email").(string)
-    if !ok || email == "" {
-        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
-        return
-    }
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
 
-    var user models.User
-    // Завантажуємо всі зв'язані дані
-    if err := db.DB.Preload("Portfolio").Preload("Portfolio.Photos").Preload("Skills").Preload("Skills.Category").Where("email = ?", email).First(&user).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
-        return
-    }
+	var user models.User
+	if err := db.DB.Preload("Portfolio").Preload("Portfolio.Photos").Preload("Skills").Preload("Skills.Category").Where("email = ?", email).First(&user).Error; err != nil {
+		log.Printf("Failed to fetch user profile: %v", err)
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
 
-    // Очищуємо конфіденційні дані
-    user.Password = ""
-    user.RefreshToken = ""
-    user.VerificationToken = ""
+	var rating *models.Rating
+	if user.Role == "psychologist" {
+		if err := db.DB.Where("psychologist_id = ?", user.ID).First(&rating).Error; err != nil {
+			log.Printf("No rating found for psychologist %d: %v", user.ID, err)
+			// Не повертаємо помилку, просто залишаємо rating = nil
+		}
+	}
 
-    // Формуємо відповідь з правильною структурою
-    response := map[string]interface{}{
-        "id":         user.ID,
-        "email":      user.Email,
-        "firstName":  user.FirstName,
-        "lastName":   user.LastName,
-        "phone":      user.Phone,
-        "role":       user.Role,
-        "status":     user.Status,
-        "verified":   user.Verified,
-        "createdAt":  user.CreatedAt,
-        "updatedAt":  user.UpdatedAt,
-        "skills":     user.Skills,
-    }
+	// Форматуємо навички для фронтенду
+	var skills []map[string]interface{}
+	for _, skill := range user.Skills {
+		skills = append(skills, map[string]interface{}{
+			"id":       skill.ID,
+			"name":     skill.Name,
+			"category": skill.Category.Name,
+		})
+	}
 
-    // Додаємо портфоліо тільки для психологів
-    if user.Role == "psychologist" {
-        portfolioData := map[string]interface{}{
-            "id":           user.Portfolio.ID,
-            "description":  user.Portfolio.Description,
-            "experience":   user.Portfolio.Experience,
-            "education":    user.Portfolio.Education,
-            "contactEmail": user.Portfolio.ContactEmail,
-            "contactPhone": user.Portfolio.ContactPhone,
-            "photos":       user.Portfolio.Photos,
-        }
-        response["portfolio"] = portfolioData
+	response := map[string]interface{}{
+		"id":        user.ID,
+		"email":     user.Email,
+		"firstName": user.FirstName,
+		"lastName":  user.LastName,
+		"phone":     user.Phone,
+		"role":      user.Role,
+		"status":    user.Status,
+		"verified":  user.Verified,
+		"createdAt": user.CreatedAt,
+		"updatedAt": user.UpdatedAt,
+		"skills":    skills,
+	}
 
-        // Додаємо рейтинг для психологів
-        var rating models.Rating
-        if err := db.DB.Where("psychologist_id = ?", user.ID).First(&rating).Error; err == nil {
-            response["rating"] = map[string]interface{}{
-                "averageRating": rating.AverageRating,
-                "reviewCount":   rating.ReviewCount,
-            }
-        }
-    }
+	if user.Portfolio != nil {
+		response["portfolio"] = user.Portfolio
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+	if rating != nil {
+		response["rating"] = rating
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // ClientSelfUpdate godoc
@@ -125,43 +124,43 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/users/self/updateuser [put]
 // @Security     BearerAuth
 func ClientSelfUpdate(w http.ResponseWriter, r *http.Request) {
-    email, ok := r.Context().Value("email").(string)
-    if !ok || email == "" {
-        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
-        return
-    }
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
 
-    var user models.User
-    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
-        return
-    }
+	var user models.User
+	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
 
-    // Parse request body
-    var updateData struct {
-        FirstName string  `json:"firstName"`
-        LastName  string  `json:"lastName"`
-        Phone     *string `json:"phone"`
-    }
-    if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
-        return
-    }
+	// Parse request body
+	var updateData struct {
+		FirstName string  `json:"firstName"`
+		LastName  string  `json:"lastName"`
+		Phone     *string `json:"phone"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+		return
+	}
 
-    // Update user data
-    user.FirstName = updateData.FirstName
-    user.LastName = updateData.LastName
-    user.Phone = updateData.Phone
+	// Update user data
+	user.FirstName = updateData.FirstName
+	user.LastName = updateData.LastName
+	user.Phone = updateData.Phone
 
-    if err := db.DB.Save(&user).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update user")
-        return
-    }
+	if err := db.DB.Save(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update user")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "message": "Profile updated successfully",
-        "data":    user,
-    })
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Profile updated successfully",
+		"data":    user,
+	})
 }

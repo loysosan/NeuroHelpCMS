@@ -1,14 +1,16 @@
 package handlers
 
 import (
-    "encoding/json"
-    "net/http"
-    "strconv"
+	"encoding/json"
+	"log"
+	"net/http"
+	"strconv"
 
-    "github.com/go-chi/chi/v5"
-    "user-api/internal/db"
-    "user-api/internal/models"
-    "user-api/internal/utils"
+	"user-api/internal/db"
+	"user-api/internal/models"
+	"user-api/internal/utils"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // SetSpecialistSkills godoc
@@ -23,53 +25,62 @@ import (
 // @Router       /api/users/self/skills [put]
 // @Security     BearerAuth
 func SetSpecialistSkills(w http.ResponseWriter, r *http.Request) {
-    email, ok := r.Context().Value("email").(string)
-    if !ok || email == "" {
-        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
-        return
-    }
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
 
-    var user models.User
-    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
-        return
-    }
+	var user models.User
+	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		log.Printf("User not found: %v", err)
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
 
-    if user.Role != "psychologist" {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can set skills")
-        return
-    }
+	if user.Role != "psychologist" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can set skills")
+		return
+	}
 
-    var skillIDs []uint64
-    if err := json.NewDecoder(r.Body).Decode(&skillIDs); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
-        return
-    }
+	var skillIDs []uint64
+	if err := json.NewDecoder(r.Body).Decode(&skillIDs); err != nil {
+		log.Printf("Failed to decode request body: %v", err)
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+		return
+	}
 
-    // Verify all skill IDs exist
-    var skills []models.Skill
-    if err := db.DB.Where("id IN ?", skillIDs).Find(&skills).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to verify skills")
-        return
-    }
+	log.Printf("User %d trying to set skills: %v", user.ID, skillIDs)
 
-    if len(skills) != len(skillIDs) {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_SKILLS", "Some skill IDs are invalid")
-        return
-    }
+	// Verify all skill IDs exist
+	var skills []models.Skill
+	if err := db.DB.Where("id IN ?", skillIDs).Find(&skills).Error; err != nil {
+		log.Printf("Failed to verify skills: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to verify skills")
+		return
+	}
 
-    // Clear existing skills and set new ones
-    if err := db.DB.Model(&user).Association("Skills").Replace(skills); err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update skills")
-        return
-    }
+	if len(skills) != len(skillIDs) {
+		log.Printf("Some skill IDs are invalid. Found %d skills for %d IDs", len(skills), len(skillIDs))
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_SKILLS", "Some skill IDs are invalid")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "message": "Skills updated successfully",
-        "data":    skills,
-    })
+	// Clear existing skills and set new ones
+	if err := db.DB.Model(&user).Association("Skills").Replace(skills); err != nil {
+		log.Printf("Failed to update skills: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update skills")
+		return
+	}
+
+	log.Printf("Successfully updated skills for user %d", user.ID)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Skills updated successfully",
+		"data":    skills,
+	})
 }
 
 // GetAllSkillsByCategory godoc
@@ -81,30 +92,25 @@ func SetSpecialistSkills(w http.ResponseWriter, r *http.Request) {
 // @Failure      500 {object} map[string]interface{}
 // @Router       /api/users/skills [get]
 func GetAllSkillsByCategory(w http.ResponseWriter, r *http.Request) {
-    var skills []models.Skill
-    if err := db.DB.Preload("Category").Find(&skills).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch skills")
-        return
-    }
+	var skills []models.Skill
+	if err := db.DB.Preload("Category").Find(&skills).Error; err != nil {
+		log.Printf("Failed to fetch skills: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch skills")
+		return
+	}
 
-    // Group skills by category
-    categoryMap := make(map[string][]models.Skill)
-    for _, skill := range skills {
-        categoryName := skill.Category.Name
-        categoryMap[categoryName] = append(categoryMap[categoryName], skill)
-    }
+	// Створюємо response у форматі, який очікує фронтенд
+	var response []map[string]interface{}
+	for _, skill := range skills {
+		response = append(response, map[string]interface{}{
+			"id":       skill.ID,
+			"name":     skill.Name,
+			"category": skill.Category.Name,
+		})
+	}
 
-    // Convert to response format
-    var response []map[string]interface{}
-    for categoryName, categorySkills := range categoryMap {
-        response = append(response, map[string]interface{}{
-            "category": categoryName,
-            "skills":   categorySkills,
-        })
-    }
-
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // GetUserSkills godoc
@@ -117,23 +123,33 @@ func GetAllSkillsByCategory(w http.ResponseWriter, r *http.Request) {
 // @Failure      404,500 {object} map[string]interface{}
 // @Router       /api/users/{user_id}/skills [get]
 func GetUserSkills(w http.ResponseWriter, r *http.Request) {
-    userID, err := strconv.ParseUint(chi.URLParam(r, "user_id"), 10, 64)
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
-        return
-    }
+	userID, err := strconv.ParseUint(chi.URLParam(r, "user_id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
+		return
+	}
 
-    var user models.User
-    if err := db.DB.Preload("Skills").Preload("Skills.Category").Where("id = ?", userID).First(&user).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
-        return
-    }
+	var user models.User
+	if err := db.DB.Preload("Skills").Preload("Skills.Category").Where("id = ?", userID).First(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
 
-    if user.Role != "psychologist" {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ROLE", "Only psychologists have skills")
-        return
-    }
+	if user.Role != "psychologist" {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ROLE", "Only psychologists have skills")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(user.Skills)
+	// Форматуємо відповідь для фронтенду
+	var response []map[string]interface{}
+	for _, skill := range user.Skills {
+		response = append(response, map[string]interface{}{
+			"id":       skill.ID,
+			"name":     skill.Name,
+			"category": skill.Category.Name,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
