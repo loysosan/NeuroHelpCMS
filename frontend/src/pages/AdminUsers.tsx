@@ -115,7 +115,7 @@ const AdminUsers: React.FC = () => {
     switch (status) {
       case 'Active':
         return 'bg-green-100 text-green-800';
-      case 'Inactive':
+      case 'Disabled':
         return 'bg-yellow-100 text-yellow-800';
       case 'Blocked':
         return 'bg-red-100 text-red-800';
@@ -179,7 +179,7 @@ const AdminUsers: React.FC = () => {
                 Активні: {users.filter(u => u.Status === 'Active').length}
               </span>
               <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                Неактивні: {users.filter(u => u.Status === 'Inactive').length}
+                Неактивні: {users.filter(u => u.Status === 'Disabled').length}
               </span>
               <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
                 Заблоковані: {users.filter(u => u.Status === 'Blocked').length}

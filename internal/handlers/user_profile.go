@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -62,30 +61,18 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
+	// Завантажуємо всі зв'язані дані
 	if err := db.DB.Preload("Portfolio").Preload("Portfolio.Photos").Preload("Skills").Preload("Skills.Category").Where("email = ?", email).First(&user).Error; err != nil {
-		log.Printf("Failed to fetch user profile: %v", err)
 		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
 		return
 	}
 
-	var rating *models.Rating
-	if user.Role == "psychologist" {
-		if err := db.DB.Where("psychologist_id = ?", user.ID).First(&rating).Error; err != nil {
-			log.Printf("No rating found for psychologist %d: %v", user.ID, err)
-			// Не повертаємо помилку, просто залишаємо rating = nil
-		}
-	}
+	// Очищуємо конфіденційні дані
+	user.Password = ""
+	user.RefreshToken = ""
+	user.VerificationToken = ""
 
-	// Форматуємо навички для фронтенду
-	var skills []map[string]interface{}
-	for _, skill := range user.Skills {
-		skills = append(skills, map[string]interface{}{
-			"id":       skill.ID,
-			"name":     skill.Name,
-			"category": skill.Category.Name,
-		})
-	}
-
+	// Формуємо відповідь з правильною структурою
 	response := map[string]interface{}{
 		"id":        user.ID,
 		"email":     user.Email,
@@ -97,15 +84,30 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 		"verified":  user.Verified,
 		"createdAt": user.CreatedAt,
 		"updatedAt": user.UpdatedAt,
-		"skills":    skills,
+		"skills":    user.Skills,
 	}
 
-	if user.Portfolio != nil {
-		response["portfolio"] = user.Portfolio
-	}
+	// Додаємо портфоліо тільки для психологів
+	if user.Role == "psychologist" {
+		portfolioData := map[string]interface{}{
+			"id":           user.Portfolio.ID,
+			"description":  user.Portfolio.Description,
+			"experience":   user.Portfolio.Experience,
+			"education":    user.Portfolio.Education,
+			"contactEmail": user.Portfolio.ContactEmail,
+			"contactPhone": user.Portfolio.ContactPhone,
+			"photos":       user.Portfolio.Photos,
+		}
+		response["portfolio"] = portfolioData
 
-	if rating != nil {
-		response["rating"] = rating
+		// Додаємо рейтинг для психологів
+		var rating models.Rating
+		if err := db.DB.Where("psychologist_id = ?", user.ID).First(&rating).Error; err == nil {
+			response["rating"] = map[string]interface{}{
+				"averageRating": rating.AverageRating,
+				"reviewCount":   rating.ReviewCount,
+			}
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

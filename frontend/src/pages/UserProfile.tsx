@@ -1024,45 +1024,32 @@ const UserProfile: React.FC = () => {
                         {profile.portfolio.photos
                           .filter(isValidPhoto)
                           .map((photo, index) => {
-                            console.log('Rendering photo:', photo);
-                            console.log('Image URL will be:', getImageUrl(photo.URL)); // Изменено на .URL
-                            
                             return (
-                              <div key={photo.ID} className="relative"> {/* Изменено на photo.ID */}
+                              <div key={photo.ID} className="relative group">
                                 <img
-                                  src={getImageUrl(photo.URL)} // Изменено на .URL
-                                  alt={`Портфоліо ${index + 1}`}
-                                  className="w-full h-32 object-cover rounded-lg border border-gray-200 shadow-sm"
+                                  src={getImageUrl(photo.URL)}
+                                  alt={`Фото ${index + 1}`}
+                                  className="w-full h-48 object-cover rounded-lg"
                                   onError={(e) => {
                                     console.error('Failed to load image:', photo.URL);
-                                    console.error('Attempted URL:', getImageUrl(photo.URL));
                                     const target = e.target as HTMLImageElement;
-                                    target.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f3f4f6"/%3E%3Ctext x="50" y="50" font-family="Arial, sans-serif" font-size="12" fill="%236b7280" text-anchor="middle" dy=".3em"%3EНе вдалося завантажити%3C/text%3E%3C/svg%3E';
-                                    target.className = "w-full h-32 object-cover rounded-lg border border-red-200";
-                                  }}
-                                  onLoad={() => {
-                                    console.log('Image loaded successfully:', getImageUrl(photo.URL));
+                                    target.src = '/placeholder-image.jpg';
                                   }}
                                 />
                                 <button
                                   onClick={() => {
-                                    console.log('Attempting to delete photo:', photo);
-                                    if (photo.ID && typeof photo.ID === 'number') { // Изменено на photo.ID
-                                      handleDeletePhoto(photo.ID); // Изменено на photo.ID
+                                    if (photo.ID && typeof photo.ID === 'number') {
+                                      handleDeletePhoto(photo.ID);
                                     } else {
                                       console.error('Invalid photo ID:', photo.ID);
                                       setError('Помилка: некоректний ID фото');
                                     }
                                   }}
                                   className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 shadow-md transition-colors"
-                                  title={`Видалити фото (ID: ${photo.ID})`} // Изменено на photo.ID
+                                  title={`Видалити фото (ID: ${photo.ID})`}
                                 >
                                   ×
                                 </button>
-                                {/* Отладочная информация */}
-                                <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                                  ID: {photo.ID} {/* Изменено на photo.ID */}
-                                </div>
                               </div>
                             );
                           })}
