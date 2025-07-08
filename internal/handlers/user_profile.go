@@ -61,18 +61,25 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	// Завантажуємо всі зв'язані дані
 	if err := db.DB.Preload("Portfolio").Preload("Portfolio.Photos").Preload("Skills").Preload("Skills.Category").Where("email = ?", email).First(&user).Error; err != nil {
 		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
 		return
 	}
 
-	// Очищуємо конфіденційні дані
 	user.Password = ""
 	user.RefreshToken = ""
 	user.VerificationToken = ""
 
-	// Формуємо відповідь з правильною структурою
+	// Форматуємо навички для фронтенду
+	var skills []map[string]interface{}
+	for _, skill := range user.Skills {
+		skills = append(skills, map[string]interface{}{
+			"id":       skill.ID,
+			"name":     skill.Name,
+			"category": skill.Category.Name,
+		})
+	}
+
 	response := map[string]interface{}{
 		"id":        user.ID,
 		"email":     user.Email,
@@ -84,10 +91,9 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 		"verified":  user.Verified,
 		"createdAt": user.CreatedAt,
 		"updatedAt": user.UpdatedAt,
-		"skills":    user.Skills,
+		"skills":    skills,
 	}
 
-	// Додаємо портфоліо тільки для психологів
 	if user.Role == "psychologist" {
 		portfolioData := map[string]interface{}{
 			"id":           user.Portfolio.ID,
@@ -100,8 +106,7 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 		}
 		response["portfolio"] = portfolioData
 
-		// Додаємо рейтинг для психологів
-		var rating models.Rating
+		var rating *models.Rating
 		if err := db.DB.Where("psychologist_id = ?", user.ID).First(&rating).Error; err == nil {
 			response["rating"] = map[string]interface{}{
 				"averageRating": rating.AverageRating,

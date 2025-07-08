@@ -88,19 +88,13 @@ func GetAllSkillsByCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Group skills by category
-	categoryMap := make(map[string][]models.Skill)
-	for _, skill := range skills {
-		categoryName := skill.Category.Name
-		categoryMap[categoryName] = append(categoryMap[categoryName], skill)
-	}
-
-	// Convert to response format
+	// Создаем плоский массив навичок в формате, который ожидает фронтенд
 	var response []map[string]interface{}
-	for categoryName, categorySkills := range categoryMap {
+	for _, skill := range skills {
 		response = append(response, map[string]interface{}{
-			"category": categoryName,
-			"skills":   categorySkills,
+			"id":       skill.ID,
+			"name":     skill.Name,
+			"category": skill.Category.Name,
 		})
 	}
 
