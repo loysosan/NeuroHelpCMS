@@ -1,40 +1,38 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  ReactNode
-} from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-type AuthContextType = {
+interface AuthContextType {
   token: string | null;
   loginAdmin: (email: string, password: string) => Promise<void>;
   logout: () => void;
-};
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = (): AuthContextType => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used within AuthProvider');
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return ctx;
+  return context;
 };
 
-type AuthProviderProps = {
-  children: ReactNode;
-};
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('admin_token'));
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [token, setToken] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('admin_token');
+    if (savedToken) {
+      setToken(savedToken);
+    }
+  }, []);
 
   const loginAdmin = async (email: string, password: string) => {
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ "username": email, "password" : password })
+      body: JSON.stringify({ "username": email, "password": password })
     });
 
     if (!res.ok) {
