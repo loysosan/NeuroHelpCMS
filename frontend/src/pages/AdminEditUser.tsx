@@ -248,7 +248,7 @@ const AdminEditUser: React.FC = () => {
                   required
                 >
                   <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
+                  <option value="Disabled">Disabled</option>
                   <option value="Blocked">Blocked</option>
                 </select>
               </label>
