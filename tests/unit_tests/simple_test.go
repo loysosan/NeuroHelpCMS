@@ -7,7 +7,13 @@ import (
 
 func TestSimple(t *testing.T) {
 	t.Log("Starting simple test...")
-	t.Log("Current working directory:", os.Getwd())
+
+	// Исправленная версия - обрабатываем оба возвращаемых значения
+	if wd, err := os.Getwd(); err != nil {
+		t.Log("Error getting working directory:", err)
+	} else {
+		t.Log("Current working directory:", wd)
+	}
 
 	// Проверяем, существует ли файл config.ini
 	if _, err := os.Stat("config.ini"); os.IsNotExist(err) {
