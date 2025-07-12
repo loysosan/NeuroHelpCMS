@@ -134,10 +134,10 @@ func (suite *AdminHandlersTestSuite) createTestUser() *models.User {
 
 // Helper method для создания тестового skill
 func (suite *AdminHandlersTestSuite) createTestSkill() *models.Skill {
+	category := suite.createTestCategory()
 	skill := &models.Skill{
-		Name:        "Test Skill",
-		Description: "Test skill description",
-		CategoryID:  1,
+		Name:       "Test Skill",
+		CategoryID: category.ID,
 	}
 	err := suite.db.Create(skill).Error
 	suite.Require().NoError(err)
@@ -147,8 +147,7 @@ func (suite *AdminHandlersTestSuite) createTestSkill() *models.Skill {
 // Helper method для создания тестовой категории
 func (suite *AdminHandlersTestSuite) createTestCategory() *models.Category {
 	category := &models.Category{
-		Name:        "Test Category",
-		Description: "Test category description",
+		Name: "Test Category",
 	}
 	err := suite.db.Create(category).Error
 	suite.Require().NoError(err)
@@ -294,9 +293,8 @@ func (suite *AdminHandlersTestSuite) TestCreateSkill_Success() {
 	category := suite.createTestCategory()
 
 	skillData := map[string]interface{}{
-		"name":        "Communication",
-		"description": "Excellent communication skills",
-		"categoryId":  category.ID,
+		"name":       "Communication",
+		"categoryId": category.ID,
 	}
 
 	body, _ := json.Marshal(skillData)
@@ -313,7 +311,6 @@ func (suite *AdminHandlersTestSuite) TestCreateSkill_Success() {
 	err := suite.db.Where("name = ?", "Communication").First(&skill).Error
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Communication", skill.Name)
-	assert.Equal(suite.T(), "Excellent communication skills", skill.Description)
 	assert.Equal(suite.T(), category.ID, skill.CategoryID)
 }
 
@@ -333,18 +330,16 @@ func (suite *AdminHandlersTestSuite) TestCreateSkill_DuplicateName() {
 
 	// Создаем первый skill
 	skill1 := &models.Skill{
-		Name:        "Communication",
-		Description: "First communication skill",
-		CategoryID:  category.ID,
+		Name:       "Communication",
+		CategoryID: category.ID,
 	}
 	err := suite.db.Create(skill1).Error
 	suite.Require().NoError(err)
 
 	// Пытаемся создать второй skill с таким же именем
 	skillData := map[string]interface{}{
-		"name":        "Communication",
-		"description": "Second communication skill",
-		"categoryId":  category.ID,
+		"name":       "Communication",
+		"categoryId": category.ID,
 	}
 
 	body, _ := json.Marshal(skillData)
@@ -366,14 +361,12 @@ func (suite *AdminHandlersTestSuite) TestGetSkills_Success() {
 	// Создаем несколько тестовых skills
 	skills := []models.Skill{
 		{
-			Name:        "Communication",
-			Description: "Communication skills",
-			CategoryID:  category.ID,
+			Name:       "Communication",
+			CategoryID: category.ID,
 		},
 		{
-			Name:        "Leadership",
-			Description: "Leadership skills",
-			CategoryID:  category.ID,
+			Name:       "Leadership",
+			CategoryID: category.ID,
 		},
 	}
 
