@@ -12,6 +12,11 @@ COPY go.mod go.sum ./
 # Загружаем зависимости
 RUN go mod download
 
+# Добавляем недостающие зависимости для тестов
+RUN go get github.com/go-ini/ini
+RUN go get github.com/stretchr/testify/suite
+RUN go get github.com/stretchr/testify/assert
+
 # Копируем весь проект
 COPY . .
 
