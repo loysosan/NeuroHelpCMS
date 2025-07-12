@@ -15,8 +15,12 @@ RUN go mod download
 # Копируем весь проект
 COPY . .
 
-# Копируем тестовый конфигурационный файл в корень
+# Убедимся, что тестовый конфиг существует и копируем его
+RUN ls -la tests/ || echo "tests directory not found"
 COPY tests/config-test.ini ./config.ini
+
+# Проверяем, что файл скопирован
+RUN ls -la config.ini || echo "config.ini not found"
 
 # Создаем директории для результатов
 RUN mkdir -p coverage
