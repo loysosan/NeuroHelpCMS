@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine
+FROM golang:1.23-alpine
 
 # Установка зависимостей
 RUN apk add --no-cache git make gcc musl-dev mysql-client
