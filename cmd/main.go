@@ -42,6 +42,9 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Post("/api/admin/login", handlers.AdminLogin)
+	r.Post("/api/admin/refresh", handlers.AdminRefreshToken) // Добавляем роут для обновления админского токена
+	r.Get("/api/admin/verify", handlers.VerifyAdminToken)
+
 	// User login endpoint
 	r.Post("/api/login", handlers.UserLogin)
 	// User registration endpoint

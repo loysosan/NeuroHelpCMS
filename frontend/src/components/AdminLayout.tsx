@@ -7,17 +7,17 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { logout, token } = useAuth();
+  const { logout, token, isLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!token) {
+    if (!isLoading && !token) {
       navigate('/admin/login', { replace: true });
     }
-  }, [token, navigate]);
+  }, [token, navigate, isLoading]);
 
-  if (!token) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -26,6 +26,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </div>
       </div>
     );
+  }
+
+  if (!token) {
+    return null; // Или показать страницу загрузки
   }
 
   const isActive = (path: string) => {
