@@ -219,12 +219,12 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_Success() {
 	user := suite.createTestUser()
 
 	updateData := map[string]interface{}{
-		"firstName": "Jane",
-		"lastName":  "Smith",
-		"email":     "jane.smith@example.com",
-		"role":      "psychologist",
-		"status":    "Active",
-		"verified":  true,
+		"first_name": "Jane",  // вместо "firstName"
+		"last_name":  "Smith", // вместо "lastName"
+		"email":      "jane.smith@example.com",
+		"role":       "psychologist",
+		"status":     "Active",
+		"verified":   true,
 	}
 
 	body, _ := json.Marshal(updateData)
@@ -239,14 +239,13 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_Success() {
 
 	suite.router.ServeHTTP(w, req)
 
+	// Добавляем отладочную информацию
+	suite.T().Logf("Response status: %d", w.Code)
+	suite.T().Logf("Response body: %s", w.Body.String())
+	suite.T().Logf("Request body: %s", string(body))
+
 	// Проверяем HTTP статус
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
-
-	// Добавляем отладочную информацию
-	if w.Code != http.StatusOK {
-		suite.T().Logf("Response body: %s", w.Body.String())
-		suite.T().Logf("Response status: %d", w.Code)
-	}
 
 	// Проверяем, что пользователь действительно обновился
 	var updatedUser models.User
@@ -257,6 +256,14 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_Success() {
 	if updatedUser.FirstName != "Jane" {
 		suite.T().Logf("User was not updated. Current data: %+v", updatedUser)
 		suite.T().Logf("Expected: Jane, Got: %s", updatedUser.FirstName)
+
+		// Попробуем выполнить обновление напрямую через GORM
+		testUpdate := models.User{
+			FirstName: "Jane",
+			LastName:  "Smith",
+		}
+		err := suite.db.Model(&updatedUser).Updates(testUpdate).Error
+		suite.T().Logf("Direct GORM update result: %v", err)
 	}
 
 	assert.Equal(suite.T(), "Jane", updatedUser.FirstName)
@@ -301,6 +308,28 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_InvalidJSON() {
 	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+}
+
+func (suite *AdminHandlersTestSuite) TestUpdateUser_DirectGormTest() {
+	// Создаем пользователя
+	user := suite.createTestUser()
+	originalFirstName := user.FirstName
+
+	// Попробуем обновить через GORM напрямую
+	err := suite.db.Model(&user).Updates(models.User{
+		FirstName: "Jane",
+		LastName:  "Smith",
+	}).Error
+	suite.Require().NoError(err)
+
+	// Проверяем обновление
+	var updatedUser models.User
+	err = suite.db.First(&updatedUser, user.ID).Error
+	suite.Require().NoError(err)
+
+	suite.T().Logf("Original: %s, Updated: %s", originalFirstName, updatedUser.FirstName)
+	assert.Equal(suite.T(), "Jane", updatedUser.FirstName)
+	assert.Equal(suite.T(), "Smith", updatedUser.LastName)
 }
 
 // ============== ТЕСТЫ ДЛЯ CreateSkill ==============
