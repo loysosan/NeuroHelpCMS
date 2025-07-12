@@ -18,13 +18,8 @@ COPY . .
 # Копируем тестовый конфигурационный файл в корень
 COPY tests/config-test.ini ./config.ini
 
-# Отладочная информация
-RUN echo "=== Contents of /app directory ===" && ls -la /app/
-RUN echo "=== Config file contents ===" && cat /app/config.ini || echo "config.ini not found"
-RUN echo "=== Working directory ===" && pwd
-
 # Создаем директории для результатов
 RUN mkdir -p coverage
 
-# Команда по умолчанию - запускаем тесты из корневой директории
-CMD ["sh", "-c", "echo 'Starting tests...' && pwd && ls -la config.ini && go test ./tests/unit_tests/... -v -count=1"]
+# Команда по умолчанию
+CMD ["go", "test", "./tests/unit_tests/...", "-v"]
