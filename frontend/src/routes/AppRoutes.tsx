@@ -31,11 +31,7 @@ const AppRoutes: React.FC = () => (
 
     <Route
       path="/admin/dashboard"
-      element={
-        <PrivateRoute>
-          <AdminDashboard />
-        </PrivateRoute>
-      }
+      element={<AdminDashboard />}  // Убрали PrivateRoute
     />
     <Route
       path="/admin/users"
