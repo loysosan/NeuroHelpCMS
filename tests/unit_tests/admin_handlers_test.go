@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 	"user-api/internal/db"
 	"user-api/internal/handlers"
 	"user-api/internal/models"
@@ -73,11 +74,21 @@ func (suite *AdminHandlersTestSuite) SetupSuite() {
 }
 
 func (suite *AdminHandlersTestSuite) SetupTest() {
-	// Очистка таблиц перед каждым тестом
-	suite.db.Exec("DELETE FROM users")
-	suite.db.Exec("DELETE FROM skills")
-	suite.db.Exec("DELETE FROM categories")
-	suite.db.Exec("DELETE FROM plans")
+	// Отключаем внешние ключи для очистки
+	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 0")
+
+	// Очищаем таблицы в правильном порядке
+	suite.db.Exec("TRUNCATE TABLE psychologist_skills")
+	suite.db.Exec("TRUNCATE TABLE portfolios")
+	suite.db.Exec("TRUNCATE TABLE news")
+	suite.db.Exec("TRUNCATE TABLE users")
+	suite.db.Exec("TRUNCATE TABLE skills")
+	suite.db.Exec("TRUNCATE TABLE categories")
+	suite.db.Exec("TRUNCATE TABLE administrators")
+	suite.db.Exec("TRUNCATE TABLE plans")
+
+	// Включаем внешние ключи обратно
+	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 1")
 }
 
 func (suite *AdminHandlersTestSuite) setupRoutes() {
@@ -106,10 +117,12 @@ func (suite *AdminHandlersTestSuite) mockAdminMiddleware(next http.Handler) http
 
 // Helper method для создания тестового пользователя
 func (suite *AdminHandlersTestSuite) createTestUser() *models.User {
+	// Используем временную метку для уникальности
+	timestamp := time.Now().UnixNano()
 	user := &models.User{
 		FirstName: "John",
 		LastName:  "Doe",
-		Email:     "john.doe@example.com",
+		Email:     fmt.Sprintf("john.doe.%d@example.com", timestamp),
 		Role:      "client",
 		Status:    "Active",
 		Verified:  true,
