@@ -13,6 +13,7 @@ import (
 	"user-api/internal/models"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-ini/ini"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/mysql"
@@ -23,28 +24,34 @@ type AdminHandlersTestSuite struct {
 	suite.Suite
 	db     *gorm.DB
 	router *chi.Mux
+	config *ini.File
 }
 
 func (suite *AdminHandlersTestSuite) SetupSuite() {
-	// Получаем параметры БД из переменных окружения
+	// Загружаем тестовый конфиг
+	cfg, err := ini.Load("../config-test.ini")
+	suite.Require().NoError(err)
+	suite.config = cfg
+
+	// Получаем параметры БД из конфига или переменных окружения
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" {
-		dbHost = "localhost"
+		dbHost = cfg.Section("database").Key("host").String()
 	}
 
 	dbUser := os.Getenv("DB_USER")
 	if dbUser == "" {
-		dbUser = "testuser"
+		dbUser = cfg.Section("database").Key("user").String()
 	}
 
 	dbPassword := os.Getenv("DB_PASSWORD")
 	if dbPassword == "" {
-		dbPassword = "testpass"
+		dbPassword = cfg.Section("database").Key("password").String()
 	}
 
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
-		dbName = "testdb"
+		dbName = cfg.Section("database").Key("name").String()
 	}
 
 	// Подключение к тестовой базе данных
