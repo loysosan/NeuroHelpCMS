@@ -15,7 +15,7 @@ services:
       - DB_USER=testuser
       - DB_PASSWORD=testpass
       - JWT_SECRET=test_jwt_secret_key_for_testing
-    command: ["go", "test", "./tests/unit_tests/...", "-v", "-count=1"]
+    command: ["sh", "-c", "cd /app && go test ./tests/unit_tests/... -v -count=1"]
     depends_on:
       test_db:
         condition: service_healthy
@@ -28,7 +28,7 @@ services:
     image: *test_img
     container_name: my-little-go-cms_test_integration
     environment: *test_env
-    command: ["go", "test", "./tests/integration_tests/...", "-v", "-count=1"]
+    command: ["sh", "-c", "cd /app && go test ./tests/integration_tests/... -v -count=1"]
     depends_on:
       test_db:
         condition: service_healthy
