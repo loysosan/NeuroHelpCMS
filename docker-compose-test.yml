@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  unit_test:
+    image: &test_img my-little-go-cms:test
+    build:
+      context: .
+      dockerfile: tests/Dockerfile
+    container_name: my-little-go-cms_test_unit
+    environment: &test_env
+      - GO_ENV=test
+      - DB_HOST=test_db
+      - DB_PORT=3306
+      - DB_NAME=testdb
+      - DB_USER=testuser
+      - DB_PASSWORD=testpass
+      - JWT_SECRET=test_jwt_secret_key_for_testing
+    command: ["go", "test", "./tests/unit_tests/...", "-v", "-count=1"]
+    depends_on:
+      test_db:
+        condition: service_healthy
+    networks:
+      - test_network
+    volumes:
+      - test_coverage:/app/coverage
+
+  integration_test:
+    image: *test_img
+    container_name: my-little-go-cms_test_integration
+    environment: *test_env
+    command: ["go", "test", "./tests/integration_tests/...", "-v", "-count=1"]
+    depends_on:
+      test_db:
+        condition: service_healthy
+    networks:
+      - test_network
+    volumes:
+      - test_coverage:/app/coverage
+
+  test_db:
+    image: mysql:8.0
+    container_name: my-little-go-cms_test_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: testdb
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./tests/mlgc.sql:/docker-entrypoint-initdb.d/init.sql
+      - test_db_data:/var/lib/mysql
+    networks:
+      - test_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "testuser", "-ptestpass"]
+      timeout: 10s
+      retries: 5
+      interval: 5s
+      start_period: 30s
+
+networks:
+  test_network:
+    driver: bridge
+
+volumes:
+  test_db_data:
+  test_coverage:
