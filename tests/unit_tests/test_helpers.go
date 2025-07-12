@@ -3,6 +3,7 @@ package unit_tests
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"user-api/internal/models"
@@ -36,7 +37,7 @@ func (h *TestHelpers) CreateTestUser(email string, role string) *models.User {
 }
 
 // MakeJSONRequest создает HTTP запрос с JSON телом
-func (h *TestHelpers) MakeJSONRequest(method, url string, data interface{}) (*httptest.ResponseRecorder, *httptest.Request) {
+func (h *TestHelpers) MakeJSONRequest(method, url string, data interface{}) (*httptest.ResponseRecorder, *http.Request) {
 	body, _ := json.Marshal(data)
 	req := httptest.NewRequest(method, url, bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
