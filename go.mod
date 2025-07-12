@@ -6,6 +6,7 @@ toolchain go1.23.5
 
 require (
 	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-ini/ini v1.67.0
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.10.0
 	gorm.io/driver/mysql v1.5.1
