@@ -2,7 +2,7 @@
 
 # Переменные для тестов
 DOCKER := docker
-DOCKER_COMPOSE := docker-compose
+DOCKER_COMPOSE := docker compose
 TEST_IMAGE_NAME := my-little-go-cms:test
 
 # Сборка тестового образа
