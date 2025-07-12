@@ -15,8 +15,8 @@ RUN go mod download
 # Копируем весь проект
 COPY . .
 
-# Копируем конфигурационный файл
-COPY ./tests/config-test.ini ./tests/config.ini
+# Копируем тестовый конфигурационный файл в корень
+COPY tests/config-test.ini ./config.ini
 
 # Создаем директории для результатов
 RUN mkdir -p coverage
