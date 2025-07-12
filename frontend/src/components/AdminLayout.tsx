@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,14 +10,40 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { logout, token, isLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [hasCheckedInitialAuth, setHasCheckedInitialAuth] = useState(false);
+
+  // Логируем каждый рендер
+  console.log('AdminLayout render:', { 
+    isLoading, 
+    token: token ? `${token.substring(0, 20)}...` : 'null', 
+    pathname: location.pathname,
+    hasCheckedInitialAuth
+  });
 
   useEffect(() => {
-    if (!isLoading && !token) {
+    console.log('AdminLayout effect triggered:', { 
+      isLoading, 
+      token: token ? `${token.substring(0, 20)}...` : 'null', 
+      pathname: location.pathname,
+      hasCheckedInitialAuth
+    });
+    
+    // Отмечаем, что начальная проверка завершена
+    if (!isLoading && !hasCheckedInitialAuth) {
+      console.log('Initial auth check completed');
+      setHasCheckedInitialAuth(true);
+    }
+    
+    // Редирект только если начальная проверка завершена и токена нет
+    if (hasCheckedInitialAuth && !isLoading && !token && location.pathname !== '/admin/login') {
+      console.log('Redirecting to login...');
       navigate('/admin/login', { replace: true });
     }
-  }, [token, navigate, isLoading]);
+  }, [token, navigate, isLoading, location.pathname, hasCheckedInitialAuth]);
 
-  if (isLoading) {
+  // Показываем загрузку если идет проверка токена ИЛИ если начальная проверка еще не завершена
+  if (isLoading || !hasCheckedInitialAuth) {
+    console.log('Showing loading screen...');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -28,8 +54,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     );
   }
 
-  if (!token) {
-    return null; // Или показать страницу загрузки
+  // Если токена нет и мы не на странице логина, не рендерим контент
+  if (!token && location.pathname !== '/admin/login') {
+    console.log('No token, returning null');
+    return null;
+  }
+
+  // Если токен есть, рендерим админскую панель
+  if (token) {
+    console.log('Rendering admin panel with token');
   }
 
   const isActive = (path: string) => {
@@ -97,10 +130,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
         <div className="p-4 border-t border-indigo-700">
           <button
-            onClick={() => {
-              logout();
-              navigate('/admin/login');
-            }}
+            onClick={logout}
             className="flex items-center px-4 py-2 w-full text-left hover:bg-indigo-700 text-red-300 hover:text-red-200 rounded"
           >
             <span className="mr-2">🚪</span>
