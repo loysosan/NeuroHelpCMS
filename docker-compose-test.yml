@@ -15,7 +15,7 @@ services:
       - DB_USER=testuser
       - DB_PASSWORD=testpass
       - JWT_SECRET=test_jwt_secret_key_for_testing
-    command: ["sh", "-c", "cd /app && go test ./tests/unit_tests/... -v -count=1"]
+    command: ["sh", "-c", "echo 'Debug info:' && pwd && ls -la config.ini && echo 'Starting tests...' && go test ./tests/unit_tests/... -v -count=1"]
     depends_on:
       test_db:
         condition: service_healthy
