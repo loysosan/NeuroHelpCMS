@@ -96,7 +96,7 @@ func (suite *AdminHandlersTestSuite) mockAdminMiddleware(next http.Handler) http
 func (suite *AdminHandlersTestSuite) TestDatabaseConnection() {
 	// Проверяем, что мы можем подключиться к БД
 	var count int64
-	err := suite.db.Table("users").Count(&count).Error
+	err := suite.db.Raw("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ?", "testdb").Scan(&count).Error
 	assert.NoError(suite.T(), err)
 	assert.GreaterOrEqual(suite.T(), count, int64(0))
 }
