@@ -1,111 +1,45 @@
-.PHONY: test test-admin test-coverage test-verbose clean test-docker help build run
+.PHONY: test-unit test-integration build-test clean-test help
 
-# Збірка проєкту
-build:
-    go build -o bin/cms cmd/main.go
+# Переменные для тестов
+DOCKER := docker
+DOCKER_COMPOSE := docker-compose
+TEST_IMAGE_NAME := my-little-go-cms:test
 
-# Запуск сервера
-run:
-    go run cmd/main.go
+# Сборка тестового образа
+build-test:
+	$(DOCKER) build -f tests/Dockerfile -t $(TEST_IMAGE_NAME) .
 
-# Запуск всіх тестів
-test:
-    cd tests/admin_tests && go test . -v
+# Запуск unit тестов
+test-unit: build-test
+	$(DOCKER_COMPOSE) -f docker-compose-test.yml run --rm unit_test
 
-# Запуск тільки адмінських тестів
-test-admin:
-    cd tests/admin_tests && go test . -run TestAdminBackend -v
+# Запуск интеграционных тестов  
+test-integration: build-test
+	$(DOCKER_COMPOSE) -f docker-compose-test.yml run --rm integration_test
 
-# Запуск тестів новин
-test-news:
-    cd tests/admin_tests && go test . -run TestAdminNews -v
+# Запуск всех тестов
+test-all: build-test
+	$(DOCKER_COMPOSE) -f docker-compose-test.yml run --rm unit_test
+	$(DOCKER_COMPOSE) -f docker-compose-test.yml run --rm integration_test
 
-# Тести з покриттям коду
-test-coverage:
-    cd tests/admin_tests && go test . -coverprofile=coverage.out
-    cd tests/admin_tests && go tool cover -html=coverage.out -o coverage.html
-    @echo "Coverage report generated: tests/admin_tests/coverage.html"
+# Очистка тестовых ресурсов
+clean-test:
+	$(DOCKER) stop my-little-go-cms_test_unit my-little-go-cms_test_integration my-little-go-cms_test_db || true
+	$(DOCKER) rm my-little-go-cms_test_unit my-little-go-cms_test_integration my-little-go-cms_test_db || true
+	$(DOCKER) volume rm my-little-go-cms_test_db_data my-little-go-cms_test_coverage || true
+	$(DOCKER) rmi $(TEST_IMAGE_NAME) || true
 
-# Запуск тестів з деталями
-test-verbose:
-    cd tests/admin_tests && go test . -v -count=1
+# Тесты с покрытием
+test-coverage: build-test
+	$(DOCKER_COMPOSE) -f docker-compose-test.yml run --rm unit_test go test ./tests/unit_tests/... -coverprofile=coverage/coverage.out -v
+	$(DOCKER_COMPOSE) -f docker-compose-test.yml run --rm unit_test go tool cover -html=coverage/coverage.out -o coverage/coverage.html
 
-# Запуск тестів з race detection
-test-race:
-    cd tests/admin_tests && go test . -race -v
-
-# Запуск бенчмарків
-test-bench:
-    cd tests/admin_tests && go test . -bench=. -benchmem
-
-# Очищення тестових файлів
-clean:
-    rm -f tests/admin_tests/coverage.out tests/admin_tests/coverage.html
-    rm -f tests/admin_tests/*.prof
-    rm -f bin/*
-
-# Docker команди
-docker-test:
-    cd tests && ./run-tests.sh test
-
-docker-coverage:
-    cd tests && ./run-tests.sh coverage
-
-docker-all:
-    cd tests && ./run-tests.sh all
-
-docker-clean:
-    cd tests && ./run-tests.sh clean
-
-# Перевірка коду
-lint:
-    go vet ./...
-    go fmt ./...
-
-# Модулі
-mod-tidy:
-    go mod tidy
-    go mod download
-
-# Повна перевірка
-check: lint test
-
-# Розробка (запуск у режимі розробки)
-dev:
-    go run cmd/main.go
-
-# Показати доступні команди
+# Показать помощь
 help:
-    @echo "Available commands:"
-    @echo ""
-    @echo "Build & Run:"
-    @echo "  build               - Build the application"
-    @echo "  run                 - Run the application"
-    @echo "  dev                 - Run in development mode"
-    @echo ""
-    @echo "Testing:"
-    @echo "  test                - Run all tests"
-    @echo "  test-admin          - Run admin backend tests"
-    @echo "  test-news           - Run news tests"
-    @echo "  test-coverage       - Run tests with coverage"
-    @echo "  test-verbose        - Run tests with verbose output"
-    @echo "  test-race           - Run tests with race detection"
-    @echo "  test-bench          - Run benchmarks"
-    @echo ""
-    @echo "Docker Testing:"
-    @echo "  docker-test         - Run tests in Docker"
-    @echo "  docker-coverage     - Run coverage tests in Docker"
-    @echo "  docker-all          - Run all tests in Docker"
-    @echo "  docker-clean        - Clean Docker resources"
-    @echo ""
-    @echo "Code Quality:"
-    @echo "  lint                - Run linting"
-    @echo "  check               - Run linting and tests"
-    @echo "  mod-tidy            - Tidy Go modules"
-    @echo ""
-    @echo "Utilities:"
-    @echo "  clean               - Clean temporary files"
-    @echo "  help                - Show this help"
-
-# За замовчуванням показати допомогу
-.DEFAULT_GOAL := help
+	@echo "Available commands:"
+	@echo "  build-test        - Build test Docker image"
+	@echo "  test-unit         - Run unit tests"
+	@echo "  test-integration  - Run integration tests"
+	@echo "  test-all          - Run all tests"
+	@echo "  clean-test        - Clean test resources"
+	@echo "  help              - Show this help"
