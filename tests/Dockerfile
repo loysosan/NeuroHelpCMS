@@ -15,13 +15,14 @@ RUN go mod download
 # Копируем весь проект
 COPY . .
 
-# Создаем пустой config.ini чтобы избежать ошибки
+# Создаем полный config.ini для тестов
 RUN echo "[database]" > config.ini && \
-    echo "host = localhost" >> config.ini && \
+    echo "host = test_db" >> config.ini && \
     echo "port = 3306" >> config.ini && \
     echo "user = testuser" >> config.ini && \
     echo "password = testpass" >> config.ini && \
     echo "name = testdb" >> config.ini && \
+    echo "" >> config.ini && \
     echo "[auth]" >> config.ini && \
     echo "jwt_admin_secret = test_secret" >> config.ini && \
     echo "jwt_user_secret = test_secret" >> config.ini && \

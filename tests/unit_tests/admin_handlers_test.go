@@ -1,9 +1,18 @@
 package unit_tests
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
+	"user-api/internal/db"
+	"user-api/internal/handlers"
+	"user-api/internal/models"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/mysql"
@@ -12,7 +21,8 @@ import (
 
 type AdminHandlersTestSuite struct {
 	suite.Suite
-	db *gorm.DB
+	db     *gorm.DB
+	router *chi.Mux
 }
 
 func (suite *AdminHandlersTestSuite) SetupSuite() {
@@ -43,25 +53,69 @@ func (suite *AdminHandlersTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 
 	suite.db = testDB
+	db.DB = testDB // Устанавливаем глобальную переменную для handlers
+
+	// Миграция моделей
+	err = testDB.AutoMigrate(
+		&models.User{},
+		&models.Administrator{},
+		&models.Plan{},
+	)
+	suite.Require().NoError(err)
+
+	// Настройка роутера
+	suite.router = chi.NewRouter()
+	suite.setupRoutes()
 }
 
-func (suite *AdminHandlersTestSuite) TestDatabaseConnection() {
-	// Проверяем, что мы можем подключиться к БД
-	var count int64
-	err := suite.db.Raw("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ?", "testdb").Scan(&count).Error
-	assert.NoError(suite.T(), err)
-	assert.GreaterOrEqual(suite.T(), count, int64(0))
+func (suite *AdminHandlersTestSuite) setupRoutes() {
+	suite.router.Route("/api/admin", func(r chi.Router) {
+		r.Use(suite.mockAdminMiddleware)
+		r.Post("/users", handlers.CreateUser)
+		r.Get("/users", handlers.GetAllUsers)
+	})
+}
+
+func (suite *AdminHandlersTestSuite) mockAdminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		admin := &models.Administrator{
+			ID:       1,
+			Username: "test_admin",
+			Role:     "admin",
+		}
+		ctx := context.WithValue(r.Context(), "admin", admin)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (suite *AdminHandlersTestSuite) TestCreateUser_Success() {
+	userData := map[string]interface{}{
+		"firstName": "John",
+		"lastName":  "Doe",
+		"email":     "john.doe@example.com",
+		"role":      "client",
+		"password":  "password123",
+		"status":    "Active",
+		"verified":  true,
+	}
+
+	body, _ := json.Marshal(userData)
+	req := httptest.NewRequest("POST", "/api/admin/users", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusCreated, w.Code)
 }
 
 func (suite *AdminHandlersTestSuite) TearDownSuite() {
-	// Очистка после всех тестов
 	if suite.db != nil {
 		sqlDB, _ := suite.db.DB()
 		sqlDB.Close()
 	}
 }
 
-// Запуск тестов
 func TestAdminHandlersTestSuite(t *testing.T) {
 	suite.Run(t, new(AdminHandlersTestSuite))
 }
