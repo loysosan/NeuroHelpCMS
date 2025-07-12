@@ -5,9 +5,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
-	"user-api/internal/db"
-	"user-api/internal/handlers"
-	"user-api/internal/models"
+]
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
