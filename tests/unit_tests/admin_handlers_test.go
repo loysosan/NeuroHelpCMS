@@ -98,8 +98,14 @@ func (suite *AdminHandlersTestSuite) setupRoutes() {
 		r.Get("/users", handlers.GetAllUsers)
 		r.Get("/users/{id}", handlers.GetUser)
 		r.Put("/users/{id}", handlers.UpdateUser)
+		r.Delete("/users/{id}", handlers.DeleteUser)
 		r.Post("/skills", handlers.CreateSkill)
 		r.Get("/skills", handlers.GetSkills)
+		r.Delete("/skills/{id}", handlers.DeleteSkill)
+		r.Post("/skills/categories", handlers.CreateSkillCategory)
+		r.Get("/skills/categories", handlers.GetSkillCategories)
+		r.Get("/plans", handlers.GetPlans)
+		r.Delete("/plans/{id}", handlers.DeletePlan)
 	})
 }
 
@@ -519,4 +525,363 @@ func (suite *AdminHandlersTestSuite) TearDownSuite() {
 
 func TestAdminHandlersTestSuite(t *testing.T) {
 	suite.Run(t, new(AdminHandlersTestSuite))
+}
+
+// ============== ТЕСТЫ ДЛЯ CreateSkillCategory ==============
+
+func (suite *AdminHandlersTestSuite) TestCreateSkillCategory_Success() {
+	categoryData := map[string]interface{}{
+		"name": "Psychology",
+	}
+
+	body, _ := json.Marshal(categoryData)
+	req := httptest.NewRequest("POST", "/api/admin/skills/categories", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusCreated, w.Code)
+
+	// Проверяем, что category создана в БД
+	var category models.Category
+	err := suite.db.Where("name = ?", "Psychology").First(&category).Error
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Psychology", category.Name)
+}
+
+func (suite *AdminHandlersTestSuite) TestCreateSkillCategory_InvalidJSON() {
+	req := httptest.NewRequest("POST", "/api/admin/skills/categories", bytes.NewBuffer([]byte("invalid json")))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+}
+
+func (suite *AdminHandlersTestSuite) TestCreateSkillCategory_DuplicateName() {
+	// Создаем первую категорию
+	category1 := &models.Category{
+		Name: "Psychology",
+	}
+	err := suite.db.Create(category1).Error
+	suite.Require().NoError(err)
+
+	// Пытаемся создать вторую категорию с таким же именем
+	categoryData := map[string]interface{}{
+		"name": "Psychology",
+	}
+
+	body, _ := json.Marshal(categoryData)
+	req := httptest.NewRequest("POST", "/api/admin/skills/categories", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusConflict, w.Code)
+}
+
+// ============== ТЕСТЫ ДЛЯ GetSkillCategories ==============
+
+func (suite *AdminHandlersTestSuite) TestGetSkillCategories_Success() {
+	// Создаем несколько тестовых категорий
+	categories := []models.Category{
+		{Name: "Psychology"},
+		{Name: "Therapy"},
+		{Name: "Counseling"},
+	}
+
+	for _, category := range categories {
+		err := suite.db.Create(&category).Error
+		suite.Require().NoError(err)
+	}
+
+	req := httptest.NewRequest("GET", "/api/admin/skills/categories", nil)
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var responseCategories []models.Category
+	err := json.Unmarshal(w.Body.Bytes(), &responseCategories)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), responseCategories, 3)
+
+	// Проверяем, что категории возвращены правильно
+	categoryNames := make([]string, len(responseCategories))
+	for i, category := range responseCategories {
+		categoryNames[i] = category.Name
+	}
+	assert.Contains(suite.T(), categoryNames, "Psychology")
+	assert.Contains(suite.T(), categoryNames, "Therapy")
+	assert.Contains(suite.T(), categoryNames, "Counseling")
+}
+
+func (suite *AdminHandlersTestSuite) TestGetSkillCategories_EmptyDatabase() {
+	req := httptest.NewRequest("GET", "/api/admin/skills/categories", nil)
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var responseCategories []models.Category
+	err := json.Unmarshal(w.Body.Bytes(), &responseCategories)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), responseCategories, 0)
+}
+
+// ============== ТЕСТЫ ДЛЯ DeleteUser ==============
+
+func (suite *AdminHandlersTestSuite) TestDeleteUser_Success() {
+	// Создаем тестового пользователя
+	user := suite.createTestUser()
+
+	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/users/%d", user.ID), nil)
+	w := httptest.NewRecorder()
+
+	// Добавляем параметр в контекст
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", strconv.FormatUint(user.ID, 10))
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	// Проверяем, что пользователь удален из БД
+	var deletedUser models.User
+	err := suite.db.First(&deletedUser, user.ID).Error
+	assert.Error(suite.T(), err) // Должна быть ошибка "record not found"
+}
+
+func (suite *AdminHandlersTestSuite) TestDeleteUser_NotFound() {
+	req := httptest.NewRequest("DELETE", "/api/admin/users/999", nil)
+	w := httptest.NewRecorder()
+
+	// Добавляем параметр в контекст
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", "999")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
+}
+
+func (suite *AdminHandlersTestSuite) TestDeleteUser_InvalidID() {
+	req := httptest.NewRequest("DELETE", "/api/admin/users/invalid", nil)
+	w := httptest.NewRecorder()
+
+	// Добавляем параметр в контекст
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", "invalid")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+}
+
+// ============== ТЕСТЫ ДЛЯ GetPlans ==============
+
+func (suite *AdminHandlersTestSuite) TestGetPlans_Success() {
+	// Создаем несколько тестовых планов
+	plans := []models.Plan{
+		{Name: "Basic Plan", Price: 100},
+		{Name: "Premium Plan", Price: 200},
+		{Name: "Enterprise Plan", Price: 500},
+	}
+
+	for _, plan := range plans {
+		err := suite.db.Create(&plan).Error
+		suite.Require().NoError(err)
+	}
+
+	req := httptest.NewRequest("GET", "/api/admin/plans", nil)
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var responsePlans []models.Plan
+	err := json.Unmarshal(w.Body.Bytes(), &responsePlans)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), responsePlans, 3)
+
+	// Проверяем, что планы возвращены правильно
+	planNames := make([]string, len(responsePlans))
+	for i, plan := range responsePlans {
+		planNames[i] = plan.Name
+	}
+	assert.Contains(suite.T(), planNames, "Basic Plan")
+	assert.Contains(suite.T(), planNames, "Premium Plan")
+	assert.Contains(suite.T(), planNames, "Enterprise Plan")
+}
+
+func (suite *AdminHandlersTestSuite) TestGetPlans_EmptyDatabase() {
+	req := httptest.NewRequest("GET", "/api/admin/plans", nil)
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var responsePlans []models.Plan
+	err := json.Unmarshal(w.Body.Bytes(), &responsePlans)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), responsePlans, 0)
+}
+
+// ============== ТЕСТЫ ДЛЯ DeletePlan ==============
+
+func (suite *AdminHandlersTestSuite) TestDeletePlan_Success() {
+	// Создаем тестовый план
+	plan := &models.Plan{
+		Name:  "Test Plan",
+		Price: 100,
+	}
+	err := suite.db.Create(plan).Error
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/plans/%d", plan.ID), nil)
+	w := httptest.NewRecorder()
+
+	// Добавляем параметр в контекст
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", strconv.FormatUint(plan.ID, 10))
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	// Проверяем, что план удален из БД
+	var deletedPlan models.Plan
+	err = suite.db.First(&deletedPlan, plan.ID).Error
+	assert.Error(suite.T(), err) // Должна быть ошибка "record not found"
+}
+
+func (suite *AdminHandlersTestSuite) TestDeletePlan_NotFound() {
+	req := httptest.NewRequest("DELETE", "/api/admin/plans/999", nil)
+	w := httptest.NewRecorder()
+
+	// Добавляем параметр в контекст
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", "999")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
+}
+
+func (suite *AdminHandlersTestSuite) TestDeletePlan_InvalidID() {
+	req := httptest.NewRequest("DELETE", "/api/admin/plans/invalid", nil)
+	w := httptest.NewRecorder()
+
+	// Добавляем параметр в контекст
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", "invalid")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+}
+
+func (suite *AdminHandlersTestSuite) TestDeletePlan_PlanInUse() {
+	// Создаем тестовый план
+	plan := &models.Plan{
+		Name:  "Test Plan",
+		Price: 100,
+	}
+	err := suite.db.Create(plan).Error
+	suite.Require().NoError(err)
+
+	// Создаем пользователя с этим планом
+	user := &models.User{
+		FirstName: "John",
+		LastName:  "Doe",
+		Email:     fmt.Sprintf("john.doe.%d@example.com", time.Now().UnixNano()),
+		Role:      "client",
+		Status:    "Active",
+		Verified:  true,
+		PlanID:    &plan.ID,
+	}
+	err = suite.db.Create(user).Error
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/plans/%d", plan.ID), nil)
+	w := httptest.NewRecorder()
+
+	// Добавляем параметр в контекст
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", strconv.FormatUint(plan.ID, 10))
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusConflict, w.Code)
+
+	// Проверяем, что план не удален из БД
+	var existingPlan models.Plan
+	err = suite.db.First(&existingPlan, plan.ID).Error
+	assert.NoError(suite.T(), err) // План должен остаться
+}
+
+// ============== ТЕСТЫ ДЛЯ DeleteSkill ==============
+
+func (suite *AdminHandlersTestSuite) TestDeleteSkill_Success() {
+	// Создаем тестовый skill
+	skill := suite.createTestSkill()
+
+	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/skills/%d", skill.ID), nil)
+	w := httptest.NewRecorder()
+
+	// Добавляем параметр в контекст
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", strconv.FormatUint(skill.ID, 10))
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	// Проверяем, что skill удален из БД
+	var deletedSkill models.Skill
+	err := suite.db.First(&deletedSkill, skill.ID).Error
+	assert.Error(suite.T(), err) // Должна быть ошибка "record not found"
+}
+
+func (suite *AdminHandlersTestSuite) TestDeleteSkill_NotFound() {
+	req := httptest.NewRequest("DELETE", "/api/admin/skills/999", nil)
+	w := httptest.NewRecorder()
+
+	// Добавляем параметр в контекст
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", "999")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
+}
+
+func (suite *AdminHandlersTestSuite) TestDeleteSkill_InvalidID() {
+	req := httptest.NewRequest("DELETE", "/api/admin/skills/invalid", nil)
+	w := httptest.NewRecorder()
+
+	// Добавляем параметр в контекст
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", "invalid")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 }
