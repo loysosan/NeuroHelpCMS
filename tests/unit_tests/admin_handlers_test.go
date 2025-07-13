@@ -392,6 +392,8 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_AcceptsCorrectFields() {
 		// Проверяем что handler принимает запрос (не 400)
 		assert.Equal(suite.T(), http.StatusOK, w.Code, "Handler should accept field format #%d", i+1)
 	}
+}
+
 func (suite *AdminHandlersTestSuite) TestCreateSkill_MissingFields() {
 	// Test missing "name" field
 	skillData := map[string]interface{}{
@@ -454,7 +456,6 @@ func (suite *AdminHandlersTestSuite) TestCreateSkill_CategoryNotFound() {
 	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
-}
 }
 
 func (suite *AdminHandlersTestSuite) TestCreateSkill_DuplicateName() {
