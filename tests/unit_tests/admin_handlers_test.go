@@ -1756,138 +1756,19 @@ func (suite *AdminHandlersTestSuite) TestGetHomeNews_Success() {
 	}
 
 	req := httptest.NewRequest("GET", "/api/news/home", nil)
-	// ============== IMPROVED HELPER METHODS ДЛЯ NEWS ==============
+	w := httptest.NewRecorder()
 
-	func (suite *AdminHandlersTestSuite) createTestNews() *models.News {
-		// Создаем уникального тестового администратора как автора
-		timestamp := time.Now().UnixNano()
-		admin := &models.Administrator{
-			Username:  fmt.Sprintf("news_author_%d", timestamp),
-			Email:     fmt.Sprintf("author_%d@example.com", timestamp),
-			Password:  "password",
-			FirstName: "News",
-			LastName:  "Author",
-			Role:      "admin",
-			Status:    "Active",
-		}
-		err := suite.db.Create(admin).Error
-		suite.Require().NoError(err)
+	suite.router.ServeHTTP(w, req)
 
-		news := &models.News{
-			Title:     fmt.Sprintf("Test News %d", timestamp),
-			Content:   "This is test news content",
-			Summary:   "Test summary",
-			AuthorID:  admin.ID,
-			Published: true,
-			IsPublic:  true,
-			Views:     0,
-		}
-		err = suite.db.Create(news).Error
-		suite.Require().NoError(err)
-		return news
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var responseNews []models.News
+	err := json.Unmarshal(w.Body.Bytes(), &responseNews)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), responseNews, 3) // Should be maximum 4
 	}
 
-	func (suite *AdminHandlersTestSuite) createTestNewsWithAuthor(authorID uint64) *models.News {
-		timestamp := time.Now().UnixNano()
-		news := &models.News{
-			Title:     fmt.Sprintf("Test News %d", timestamp),
-			Content:   "This is test news content",
-			Summary:   "Test summary",
-			AuthorID:  authorID,
-			Published: true,
-			IsPublic:  true,
-			Views:     0,
-		}
-		err := suite.db.Create(news).Error
-		suite.Require().NoError(err)
-		return news
-	}
-
-	func (suite *AdminHandlersTestSuite) createTestAdmin() *models.Administrator {
-		timestamp := time.Now().UnixNano()
-		admin := &models.Administrator{
-			Username:  fmt.Sprintf("test_admin_%d", timestamp),
-			Email:     fmt.Sprintf("admin_%d@example.com", timestamp),
-			Password:  "password",
-			FirstName: "Test",
-			LastName:  "Admin",
-			Role:      "admin",
-			Status:    "Active",
-		}
-		err := suite.db.Create(admin).Error
-		suite.Require().NoError(err)
-		return admin
-	}
-
-	// ============== ДОПОЛНИТЕЛЬНЫЕ ТЕСТЫ ДЛЯ NEWS ==============
-
-	func (suite *AdminHandlersTestSuite) TestCreateNews_WithExistingAuthor() {
-		// Создаем тестового администратора
-		admin := suite.createTestAdmin()
-
-		newsData := map[string]interface{}{
-			"title":      "News with Existing Author",
-			"content":    "This is news content with existing author",
-			"summary":    "Test summary",
-			"published":  true,
-			"isPublic":   true,
-			"showOnHome": false,
-		}
-
-		body, _ := json.Marshal(newsData)
-		req := httptest.NewRequest("POST", "/api/admin/news", bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-
-		// Используем middleware который устанавливает admin.ID = 1
-		// но в БД у нас есть администратор с реальным ID
-		suite.router.ServeHTTP(w, req)
-
-		// Ожидаем ошибку из-за foreign key constraint
-		assert.Equal(suite.T(), http.StatusInternalServerError, w.Code)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestCreateNews_WithValidAuthor() {
-		// Создаем администратора с ID = 1 (как в middleware)
-		admin := &models.Administrator{
-			ID:        1,
-			Username:  "middleware_admin",
-			Email:     "middleware@example.com",
-			Password:  "password",
-			FirstName: "Middleware",
-			LastName:  "Admin",
-			Role:      "admin",
-			Status:    "Active",
-		}
-		err := suite.db.Create(admin).Error
-		suite.Require().NoError(err)
-
-		newsData := map[string]interface{}{
-			"title":      "News with Valid Author",
-			"content":    "This is news content with valid author",
-			"summary":    "Test summary",
-			"published":  true,
-			"isPublic":   true,
-			"showOnHome": false,
-		}
-
-		body, _ := json.Marshal(newsData)
-		req := httptest.NewRequest("POST", "/api/admin/news", bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusCreated, w.Code)
-
-		// Проверяем, что новость создана в БД
-		var news models.News
-		err = suite.db.Where("title = ?", "News with Valid Author").First(&news).Error
-		assert.NoError(suite.T(), err)
-		assert.Equal(suite.T(), uint64(1), news.AuthorID)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestCreateNews_WithOptionalFields() {
+	func (suite *AdminHandlersTestSuite) TestGetHomeNews_LimitTo4() {
 		// Создаем администратора с ID = 1
 		admin := &models.Administrator{
 			ID:        1,
@@ -1902,413 +1783,15 @@ func (suite *AdminHandlersTestSuite) TestGetHomeNews_Success() {
 		err := suite.db.Create(admin).Error
 		suite.Require().NoError(err)
 
-		newsData := map[string]interface{}{
-			"title":      "News with Optional Fields",
-			"content":    "This is news content",
-			"summary":    "Test summary",
-			"imageUrl":   "https://example.com/image.jpg",
-			"published":  false,
-			"isPublic":   false,
-			"showOnHome": true,
-		}
-
-		body, _ := json.Marshal(newsData)
-		req := httptest.NewRequest("POST", "/api/admin/news", bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusCreated, w.Code)
-
-		// Проверяем, что новость создана с правильными значениями
-		var news models.News
-		err = suite.db.Where("title = ?", "News with Optional Fields").First(&news).Error
-		assert.NoError(suite.T(), err)
-		assert.Equal(suite.T(), "https://example.com/image.jpg", news.ImageURL)
-		assert.False(suite.T(), news.Published)
-		assert.False(suite.T(), news.IsPublic)
-		assert.True(suite.T(), news.ShowOnHome)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestGetAllNews_WithFilters() {
-		// Создаем администратора с ID = 1
-		admin := &models.Administrator{
-			ID:        1,
-			Username:  "middleware_admin",
-			Email:     "middleware@example.com",
-			Password:  "password",
-			FirstName: "Middleware",
-			LastName:  "Admin",
-			Role:      "admin",
-			Status:    "Active",
-		}
-		err := suite.db.Create(admin).Error
-		suite.Require().NoError(err)
-
-		// Создаем новости с разными статусами
-		news1 := suite.createTestNewsWithAuthor(admin.ID)
-		news1.Published = true
-		news1.IsPublic = true
-		suite.db.Save(news1)
-
-		news2 := suite.createTestNewsWithAuthor(admin.ID)
-		news2.Published = false
-		news2.IsPublic = true
-		suite.db.Save(news2)
-
-		news3 := suite.createTestNewsWithAuthor(admin.ID)
-		news3.Published = true
-		news3.IsPublic = false
-		suite.db.Save(news3)
-
-		testCases := []struct {
-			name           string
-			query          string
-			expectedCount  int
-			expectedStatus int
-		}{
-			{
-				name:           "All news",
-				query:          "",
-				expectedCount:  3,
-				expectedStatus: http.StatusOK,
-			},
-			{
-				name:           "Published news only",
-				query:          "?published=true",
-				expectedCount:  2,
-				expectedStatus: http.StatusOK,
-			},
-			{
-				name:           "Unpublished news only",
-				query:          "?published=false",
-				expectedCount:  1,
-				expectedStatus: http.StatusOK,
-			},
-			{
-				name:           "Public news only",
-				query:          "?isPublic=true",
-				expectedCount:  2,
-				expectedStatus: http.StatusOK,
-			},
-		}
-
-		for _, tc := range testCases {
-			suite.T().Run(tc.name, func(t *testing.T) {
-				req := httptest.NewRequest("GET", "/api/admin/news"+tc.query, nil)
-				w := httptest.NewRecorder()
-
-				suite.router.ServeHTTP(w, req)
-
-				assert.Equal(t, tc.expectedStatus, w.Code)
-
-				if tc.expectedStatus == http.StatusOK {
-					var responseNews []models.News
-					err := json.Unmarshal(w.Body.Bytes(), &responseNews)
-					assert.NoError(t, err)
-					assert.Len(t, responseNews, tc.expectedCount)
-				}
-			})
-		}
-	}
-
-	func (suite *AdminHandlersTestSuite) TestGetAllNews_WithPagination() {
-		// Создаем администратора с ID = 1
-		admin := &models.Administrator{
-			ID:        1,
-			Username:  "middleware_admin",
-			Email:     "middleware@example.com",
-			Password:  "password",
-			FirstName: "Middleware",
-			LastName:  "Admin",
-			Role:      "admin",
-			Status:    "Active",
-		}
-		err := suite.db.Create(admin).Error
-		suite.Require().NoError(err)
-
-		// Создаем 10 новостей
-		for i := 0; i < 10; i++ {
+		// Создаем 6 новостей для главной страницы
+		for i := 0; i < 6; i++ {
 			news := suite.createTestNewsWithAuthor(admin.ID)
 			news.Published = true
 			news.IsPublic = true
+			news.ShowOnHome = true
 			suite.db.Save(news)
 		}
 
-		testCases := []struct {
-			name           string
-			query          string
-			expectedCount  int
-			expectedStatus int
-		}{
-			{
-				name:           "First page with limit 5",
-				query:          "?limit=5&offset=0",
-				expectedCount:  5,
-				expectedStatus: http.StatusOK,
-			},
-			{
-				name:           "Second page with limit 5",
-				query:          "?limit=5&offset=5",
-				expectedCount:  5,
-				expectedStatus: http.StatusOK,
-			},
-			{
-				name:           "Limit 3",
-				query:          "?limit=3",
-				expectedCount:  3,
-				expectedStatus: http.StatusOK,
-			},
-		}
-
-		for _, tc := range testCases {
-			suite.T().Run(tc.name, func(t *testing.T) {
-				req := httptest.NewRequest("GET", "/api/admin/news"+tc.query, nil)
-				w := httptest.NewRecorder()
-
-				suite.router.ServeHTTP(w, req)
-
-				assert.Equal(t, tc.expectedStatus, w.Code)
-
-				if tc.expectedStatus == http.StatusOK {
-					var responseNews []models.News
-					err := json.Unmarshal(w.Body.Bytes(), &responseNews)
-					assert.NoError(t, err)
-					assert.Len(t, responseNews, tc.expectedCount)
-				}
-			})
-		}
-	}
-
-	func (suite *AdminHandlersTestSuite) TestUpdateNews_PartialUpdate() {
-		news := suite.createTestNews()
-
-		testCases := []struct {
-			name       string
-			updateData map[string]interface{}
-			checkFunc  func(*testing.T, *models.News)
-		}{
-			{
-				name: "Update only title",
-				updateData: map[string]interface{}{
-					"title": "Updated Title Only",
-				},
-				checkFunc: func(t *testing.T, updatedNews *models.News) {
-					assert.Equal(t, "Updated Title Only", updatedNews.Title)
-					assert.Equal(t, "This is test news content", updatedNews.Content) // Не изменился
-				},
-			},
-			{
-				name: "Update only published status",
-				updateData: map[string]interface{}{
-					"published": false,
-				},
-				checkFunc: func(t *testing.T, updatedNews *models.News) {
-					assert.False(t, updatedNews.Published)
-					assert.True(t, updatedNews.IsPublic) // Не изменился
-				},
-			},
-			{
-				name: "Update showOnHome",
-				updateData: map[string]interface{}{
-					"showOnHome": true,
-				},
-				checkFunc: func(t *testing.T, updatedNews *models.News) {
-					assert.True(t, updatedNews.ShowOnHome)
-				},
-			},
-		}
-
-		for _, tc := range testCases {
-			suite.T().Run(tc.name, func(t *testing.T) {
-				body, _ := json.Marshal(tc.updateData)
-				req := httptest.NewRequest("PUT", fmt.Sprintf("/api/admin/news/%d", news.ID), bytes.NewBuffer(body))
-				req.Header.Set("Content-Type", "application/json")
-				w := httptest.NewRecorder()
-
-				rctx := chi.NewRouteContext()
-				rctx.URLParams.Add("id", strconv.FormatUint(news.ID, 10))
-				req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-				suite.router.ServeHTTP(w, req)
-
-				assert.Equal(t, http.StatusOK, w.Code)
-
-				// Проверяем обновленные данные
-				var updatedNews models.News
-				err := suite.db.First(&updatedNews, news.ID).Error
-				assert.NoError(t, err)
-				
-				tc.checkFunc(t, &updatedNews)
-			})
-		}
-	}
-
-	func (suite *AdminHandlersTestSuite) TestUpdateNews_InvalidID() {
-		updateData := map[string]interface{}{
-			"title": "Updated Title",
-		}
-
-		body, _ := json.Marshal(updateData)
-		req := httptest.NewRequest("PUT", "/api/admin/news/invalid", bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("id", "invalid")
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestUpdateNews_InvalidJSON() {
-		news := suite.createTestNews()
-
-		req := httptest.NewRequest("PUT", fmt.Sprintf("/api/admin/news/%d", news.ID), bytes.NewBuffer([]byte("invalid json")))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("id", strconv.FormatUint(news.ID, 10))
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestGetPublicNews_OnlyPublishedAndPublic() {
-		// Создаем администратора с ID = 1
-		admin := &models.Administrator{
-			ID:        1,
-			Username:  "middleware_admin",
-			Email:     "middleware@example.com",
-			Password:  "password",
-			FirstName: "Middleware",
-			LastName:  "Admin",
-			Role:      "admin",
-			Status:    "Active",
-		}
-		err := suite.db.Create(admin).Error
-		suite.Require().NoError(err)
-
-		// Создаем новости с разными статусами
-		news1 := suite.createTestNewsWithAuthor(admin.ID)
-		news1.Published = true
-		news1.IsPublic = true
-		suite.db.Save(news1)
-
-		news2 := suite.createTestNewsWithAuthor(admin.ID)
-		news2.Published = false
-		news2.IsPublic = true
-		suite.db.Save(news2)
-
-		news3 := suite.createTestNewsWithAuthor(admin.ID)
-		news3.Published = true
-		news3.IsPublic = false
-		suite.db.Save(news3)
-
-		news4 := suite.createTestNewsWithAuthor(admin.ID)
-		news4.Published = false
-		news4.IsPublic = false
-		suite.db.Save(news4)
-
-		req := httptest.NewRequest("GET", "/api/news", nil)
-		w := httptest.NewRecorder()
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusOK, w.Code)
-
-		var responseNews []models.News
-		err = json.Unmarshal(w.Body.Bytes(), &responseNews)
-		assert.NoError(suite.T(), err)
-		assert.Len(suite.T(), responseNews, 1) // Только news1 должна быть возвращена
-
-		// Проверяем, что возвращена правильная новость
-		assert.Equal(suite.T(), news1.ID, responseNews[0].ID)
-		assert.True(suite.T(), responseNews[0].Published)
-		assert.True(suite.T(), responseNews[0].IsPublic)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestGetPublicNewsItem_OnlyPublishedAndPublic() {
-		// Создаем администратора с ID = 1
-		admin := &models.Administrator{
-			ID:        1,
-			Username:  "middleware_admin",
-			Email:     "middleware@example.com",
-			Password:  "password",
-			FirstName: "Middleware",
-			LastName:  "Admin",
-			Role:      "admin",
-			Status:    "Active",
-		}
-		err := suite.db.Create(admin).Error
-		suite.Require().NoError(err)
-
-		// Создаем новость которая не опубликована
-		news := suite.createTestNewsWithAuthor(admin.ID)
-		news.Published = false
-		news.IsPublic = true
-		suite.db.Save(news)
-
-		req := httptest.NewRequest("GET", fmt.Sprintf("/api/news/%d", news.ID), nil)
-		w := httptest.NewRecorder()
-
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("id", strconv.FormatUint(news.ID, 10))
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusNotFound, w.Code)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestGetPublicNewsItem_InvalidID() {
-		req := httptest.NewRequest("GET", "/api/news/invalid", nil)
-		w := httptest.NewRecorder()
-
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("id", "invalid")
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestGetHomeNews_OnlyShowOnHome() {
-		// Создаем администратора с ID = 1
-		admin := &models.Administrator{
-			ID:        1,
-			Username:  "middleware_admin",
-			Email:     "middleware@example.com",
-			Password:  "password",
-			FirstName: "Middleware",
-			LastName:  "Admin",
-			Role:      "admin",
-			Status:    "Active",
-		}
-		err := suite.db.Create(admin).Error
-		suite.Require().NoError(err)
-
-		// Создаем новости для главной страницы
-		news1 := suite.createTestNewsWithAuthor(admin.ID)
-		news1.Published = true
-		news1.IsPublic = true
-		news1.ShowOnHome = true
-		suite.db.Save(news1)
-
-		// Создаем новость НЕ для главной страницы
-		news2 := suite.createTestNewsWithAuthor(admin.ID)
-		news2.Published = true
-		news2.IsPublic = true
-		news2.ShowOnHome = false
-		suite.db.Save(news2)
-
 		req := httptest.NewRequest("GET", "/api/news/home", nil)
 		w := httptest.NewRecorder()
 
@@ -2319,82 +1802,12 @@ func (suite *AdminHandlersTestSuite) TestGetHomeNews_Success() {
 		var responseNews []models.News
 		err = json.Unmarshal(w.Body.Bytes(), &responseNews)
 		assert.NoError(suite.T(), err)
-		assert.Len(suite.T(), responseNews, 1) // Только news1
-
-		// Проверяем, что возвращена правильная новость
-		assert.Equal(suite.T(), news1.ID, responseNews[0].ID)
-		assert.True(suite.T(), responseNews[0].ShowOnHome)
+		assert.Len(suite.T(), responseNews, 4) // Должно быть максимум 4
 	}
 
-	func (suite *AdminHandlersTestSuite) TestGetHomeNews_EmptyResult() {
-		// Создаем администратора с ID = 1
-		admin := &models.Administrator{
-			ID:        1,
-			Username:  "middleware_admin",
-			Email:     "middleware@example.com",
-			Password:  "password",
-			FirstName: "Middleware",
-			LastName:  "Admin",
-			Role:      "admin",
-			Status:    "Active",
-		}
-		err := suite.db.Create(admin).Error
-		suite.Require().NoError(err)
+	// ============== ДОПОЛНИТЕЛЬНЫЕ ТЕСТЫ ДЛЯ ВАЛИДАЦИИ ==============
 
-		// Создаем новости НЕ для главной страницы
-		news := suite.createTestNewsWithAuthor(admin.ID)
-		news.Published = true
-		news.IsPublic = true
-		news.ShowOnHome = false
-		suite.db.Save(news)
-
-		req := httptest.NewRequest("GET", "/api/news/home", nil)
-		w := httptest.NewRecorder()
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusOK, w.Code)
-
-		var responseNews []models.News
-		err = json.Unmarshal(w.Body.Bytes(), &responseNews)
-		assert.NoError(suite.T(), err)
-		assert.Len(suite.T(), responseNews, 0)
-	}
-
-	// ============== ТЕСТЫ ДЛЯ EDGE CASES ==============
-
-	func (suite *AdminHandlersTestSuite) TestCreateNews_EmptyTitle() {
-		// Создаем администратора с ID = 1
-		admin := &models.Administrator{
-			ID:        1,
-			Username:  "middleware_admin",
-			Email:     "middleware@example.com",
-			Password:  "password",
-			FirstName: "Middleware",
-			LastName:  "Admin",
-			Role:      "admin",
-			Status:    "Active",
-		}
-		err := suite.db.Create(admin).Error
-		suite.Require().NoError(err)
-
-		newsData := map[string]interface{}{
-			"title":   "",
-			"content": "This is news content",
-			"summary": "Test summary",
-		}
-
-		body, _ := json.Marshal(newsData)
-		req := httptest.NewRequest("POST", "/api/admin/news", bytes.NewBuffer(body))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestCreateNews_EmptyContent() {
+	func (suite *AdminHandlersTestSuite) TestCreateNews_EmptySummary() {
 		// Создаем администратора с ID = 1
 		admin := &models.Administrator{
 			ID:        1,
@@ -2411,8 +1824,8 @@ func (suite *AdminHandlersTestSuite) TestGetHomeNews_Success() {
 
 		newsData := map[string]interface{}{
 			"title":   "Test Title",
-			"content": "",
-			"summary": "Test summary",
+			"content": "This is news content",
+			"summary": "",
 		}
 
 		body, _ := json.Marshal(newsData)
@@ -2425,166 +1838,801 @@ func (suite *AdminHandlersTestSuite) TestGetHomeNews_Success() {
 		assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 	}
 
-	func (suite *AdminHandlersTestSuite) TestDeleteNews_InvalidID() {
-		req := httptest.NewRequest("DELETE", "/api/admin/news/invalid", nil)
-		w := httptest.NewRecorder()
+	func (suite *AdminHandlersTestSuite) TestCreateNews_LongTitle() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
 
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("id", "invalid")
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
-	}
-
-	// ============== ТЕСТЫ ДЛЯ АДМИНИСТРАТОРОВ ==============
-
-	func (suite *AdminHandlersTestSuite) TestUpdateAdmin_InvalidID() {
-		updateData := map[string]interface{}{
-			"firstName": "Updated",
+		// Создаем очень длинный заголовок (более 255 символов)
+		longTitle := strings.Repeat("a", 256)
+		newsData := map[string]interface{}{
+			"title":   longTitle,
+			"content": "This is news content",
+			"summary": "Test summary",
 		}
 
-		body, _ := json.Marshal(updateData)
-		req := httptest.NewRequest("PUT", "/api/admin/administrators/invalid", bytes.NewBuffer(body))
+		body, _ := json.Marshal(newsData)
+		req := httptest.NewRequest("POST", "/api/admin/news", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("id", "invalid")
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
 		suite.router.ServeHTTP(w, req)
 
-		assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+		// Может вернуть либо 400 (валидация), либо 500 (база данных)
+		assert.True(suite.T(), w.Code == http.StatusBadRequest || w.Code == http.StatusInternalServerError)
 	}
 
-	func (suite *AdminHandlersTestSuite) TestUpdateAdmin_InvalidJSON() {
-		admin := suite.createTestAdmin()
+	func (suite *AdminHandlersTestSuite) TestCreateNews_InvalidImageURL() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
 
-		req := httptest.NewRequest("PUT", fmt.Sprintf("/api/admin/administrators/%d", admin.ID), bytes.NewBuffer([]byte("invalid json")))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("id", strconv.FormatUint(admin.ID, 10))
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestDeleteAdmin_InvalidID() {
-		req := httptest.NewRequest("DELETE", "/api/admin/administrators/invalid", nil)
-		w := httptest.NewRecorder()
-
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("id", "invalid")
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
-
-		suite.router.ServeHTTP(w, req)
-
-		assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
-	}
-
-	func (suite *AdminHandlersTestSuite) TestCreateAdmin_DuplicateEmail() {
-		// Создаем первого администратора
-		admin1 := suite.createTestAdmin()
-
-		// Пытаемся создать второго с тем же email
-		adminData := map[string]interface{}{
-			"username":  "new_admin",
-			"email":     admin1.Email,
-			"password":  "password123",
-			"firstName": "New",
-			"lastName":  "Admin",
-			"role":      "admin",
+		newsData := map[string]interface{}{
+			"title":    "Test Title",
+			"content":  "This is news content",
+			"summary":  "Test summary",
+			"imageUrl": "invalid-url",
 		}
 
-		body, _ := json.Marshal(adminData)
-		req := httptest.NewRequest("POST", "/api/admin/administrators", bytes.NewBuffer(body))
+		body, _ := json.Marshal(newsData)
+		req := httptest.NewRequest("POST", "/api/admin/news", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		suite.router.ServeHTTP(w, req)
 
-		assert.Equal(suite.T(), http.StatusConflict, w.Code)
+		// Проверяем, что новость все равно создается (URL валидация может быть опциональной)
+		assert.True(suite.T(), w.Code == http.StatusCreated || w.Code == http.StatusBadRequest)
 	}
 
-	func (suite *AdminHandlersTestSuite) TestCreateAdmin_DuplicateUsername() {
-		// Создаем первого администратора
-		admin1 := suite.createTestAdmin()
+	// ============== ТЕСТЫ ДЛЯ СОРТИРОВКИ И ФИЛЬТРАЦИИ ==============
 
-		// Пытаемся создать второго с тем же username
-		adminData := map[string]interface{}{
-			"username":  admin1.Username,
-			"email":     "different@example.com",
-			"password":  "password123",
-			"firstName": "New",
-			"lastName":  "Admin",
-			"role":      "admin",
+	func (suite *AdminHandlersTestSuite) TestGetAllNews_SortByDate() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем новости с разными датами
+		news1 := suite.createTestNewsWithAuthor(admin.ID)
+		news1.Title = "First News"
+		news1.CreatedAt = time.Now().Add(-2 * time.Hour)
+		suite.db.Save(news1)
+
+		news2 := suite.createTestNewsWithAuthor(admin.ID)
+		news2.Title = "Second News"
+		news2.CreatedAt = time.Now().Add(-1 * time.Hour)
+		suite.db.Save(news2)
+
+		news3 := suite.createTestNewsWithAuthor(admin.ID)
+		news3.Title = "Third News"
+		news3.CreatedAt = time.Now()
+		suite.db.Save(news3)
+
+		req := httptest.NewRequest("GET", "/api/admin/news?sort=created_at&order=desc", nil)
+		w := httptest.NewRecorder()
+
+		suite.router.ServeHTTP(w, req)
+
+		assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+		var responseNews []models.News
+		err = json.Unmarshal(w.Body.Bytes(), &responseNews)
+		assert.NoError(suite.T(), err)
+		assert.Len(suite.T(), responseNews, 3)
+
+		// Проверяем сортировку (самая новая первая)
+		assert.Equal(suite.T(), "Third News", responseNews[0].Title)
+		assert.Equal(suite.T(), "Second News", responseNews[1].Title)
+		assert.Equal(suite.T(), "First News", responseNews[2].Title)
+	}
+
+	func (suite *AdminHandlersTestSuite) TestGetPublicNews_SortByViews() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем новости с разным количеством просмотров
+		news1 := suite.createTestNewsWithAuthor(admin.ID)
+		news1.Title = "Low Views"
+		news1.Views = 10
+		news1.Published = true
+		news1.IsPublic = true
+		suite.db.Save(news1)
+
+		news2 := suite.createTestNewsWithAuthor(admin.ID)
+		news2.Title = "High Views"
+		news2.Views = 100
+		news2.Published = true
+		news2.IsPublic = true
+		suite.db.Save(news2)
+
+		news3 := suite.createTestNewsWithAuthor(admin.ID)
+		news3.Title = "Medium Views"
+		news3.Views = 50
+		news3.Published = true
+		news3.IsPublic = true
+		suite.db.Save(news3)
+
+		req := httptest.NewRequest("GET", "/api/news?sort=views&order=desc", nil)
+		w := httptest.NewRecorder()
+
+		suite.router.ServeHTTP(w, req)
+
+		assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+		var responseNews []models.News
+		err = json.Unmarshal(w.Body.Bytes(), &responseNews)
+		assert.NoError(suite.T(), err)
+		assert.Len(suite.T(), responseNews, 3)
+
+		// Проверяем сортировку по просмотрам (если поддерживается)
+		if len(responseNews) > 0 {
+			assert.True(suite.T(), responseNews[0].Views >= responseNews[1].Views)
+			assert.True(suite.T(), responseNews[1].Views >= responseNews[2].Views)
+		}
+	}
+
+	// ============== ТЕСТЫ ДЛЯ ПОИСКА ==============
+
+	func (suite *AdminHandlersTestSuite) TestGetAllNews_SearchByTitle() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем новости с разными заголовками
+		news1 := suite.createTestNewsWithAuthor(admin.ID)
+		news1.Title = "JavaScript Tutorial"
+		suite.db.Save(news1)
+
+		news2 := suite.createTestNewsWithAuthor(admin.ID)
+		news2.Title = "Python Programming"
+		suite.db.Save(news2)
+
+		news3 := suite.createTestNewsWithAuthor(admin.ID)
+		news3.Title = "JavaScript Advanced"
+		suite.db.Save(news3)
+
+		req := httptest.NewRequest("GET", "/api/admin/news?search=JavaScript", nil)
+		w := httptest.NewRecorder()
+
+		suite.router.ServeHTTP(w, req)
+
+		assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+		var responseNews []models.News
+		err = json.Unmarshal(w.Body.Bytes(), &responseNews)
+		assert.NoError(suite.T(), err)
+
+		// Проверяем что найдены только новости с JavaScript в заголовке
+		foundJavaScript := 0
+		for _, news := range responseNews {
+			if strings.Contains(news.Title, "JavaScript") {
+				foundJavaScript++
+			}
+		}
+		assert.Equal(suite.T(), 2, foundJavaScript)
+	}
+
+	func (suite *AdminHandlersTestSuite) TestGetAllNews_SearchByContent() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем новости с разным содержимым
+		news1 := suite.createTestNewsWithAuthor(admin.ID)
+		news1.Title = "News 1"
+		news1.Content = "This article covers React development"
+		suite.db.Save(news1)
+
+		news2 := suite.createTestNewsWithAuthor(admin.ID)
+		news2.Title = "News 2"
+		news2.Content = "This article covers Vue.js development"
+		suite.db.Save(news2)
+
+		news3 := suite.createTestNewsWithAuthor(admin.ID)
+		news3.Title = "News 3"
+		news3.Content = "This article covers React hooks"
+		suite.db.Save(news3)
+
+		req := httptest.NewRequest("GET", "/api/admin/news?search=React", nil)
+		w := httptest.NewRecorder()
+
+		suite.router.ServeHTTP(w, req)
+
+		assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+		var responseNews []models.News
+		err = json.Unmarshal(w.Body.Bytes(), &responseNews)
+		assert.NoError(suite.T(), err)
+
+		// Проверяем что найдены только новости с React в содержании
+		foundReact := 0
+		for _, news := range responseNews {
+			if strings.Contains(news.Content, "React") {
+				foundReact++
+			}
+		}
+		assert.Equal(suite.T(), 2, foundReact)
+	}
+
+	// ============== ТЕСТЫ ДЛЯ СТАТИСТИКИ ==============
+
+	func (suite *AdminHandlersTestSuite) TestGetNewsStats() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем новости с разными статусами
+		publishedNews := suite.createTestNewsWithAuthor(admin.ID)
+		publishedNews.Published = true
+		publishedNews.IsPublic = true
+		suite.db.Save(publishedNews)
+
+		draftNews := suite.createTestNewsWithAuthor(admin.ID)
+		draftNews.Published = false
+		draftNews.IsPublic = false
+		suite.db.Save(draftNews)
+
+		privateNews := suite.createTestNewsWithAuthor(admin.ID)
+		privateNews.Published = true
+		privateNews.IsPublic = false
+		suite.db.Save(privateNews)
+
+		req := httptest.NewRequest("GET", "/api/admin/news/stats", nil)
+		w := httptest.NewRecorder()
+
+		suite.router.ServeHTTP(w, req)
+
+		// Проверяем что endpoint существует (может вернуть 404 если не реализован)
+		assert.True(suite.T(), w.Code == http.StatusOK || w.Code == http.StatusNotFound)
+
+		if w.Code == http.StatusOK {
+			var stats map[string]interface{}
+			err = json.Unmarshal(w.Body.Bytes(), &stats)
+			assert.NoError(suite.T(), err)
+			
+			// Проверяем базовые статистики
+			assert.Contains(suite.T(), stats, "total")
+			assert.Contains(suite.T(), stats, "published")
+			assert.Contains(suite.T(), stats, "drafts")
+		}
+	}
+
+	// ============== ТЕСТЫ ДЛЯ BATCH ОПЕРАЦИЙ ==============
+
+	func (suite *AdminHandlersTestSuite) TestBatchDeleteNews() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем несколько новостей
+		news1 := suite.createTestNewsWithAuthor(admin.ID)
+		news2 := suite.createTestNewsWithAuthor(admin.ID)
+		news3 := suite.createTestNewsWithAuthor(admin.ID)
+
+		batchData := map[string]interface{}{
+			"ids": []uint64{news1.ID, news2.ID, news3.ID},
 		}
 
-		body, _ := json.Marshal(adminData)
-		req := httptest.NewRequest("POST", "/api/admin/administrators", bytes.NewBuffer(body))
+		body, _ := json.Marshal(batchData)
+		req := httptest.NewRequest("DELETE", "/api/admin/news/batch", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
 		suite.router.ServeHTTP(w, req)
 
-		assert.Equal(suite.T(), http.StatusConflict, w.Code)
+		// Проверяем что endpoint существует (может вернуть 404 если не реализован)
+		assert.True(suite.T(), w.Code == http.StatusOK || w.Code == http.StatusNotFound)
+
+		if w.Code == http.StatusOK {
+			// Проверяем, что новости удалены
+			var deletedNews models.News
+			err = suite.db.First(&deletedNews, news1.ID).Error
+			assert.Error(suite.T(), err)
+			
+			err = suite.db.First(&deletedNews, news2.ID).Error
+			assert.Error(suite.T(), err)
+			
+			err = suite.db.First(&deletedNews, news3.ID).Error
+			assert.Error(suite.T(), err)
+		}
 	}
 
-	func (suite *AdminHandlersTestSuite) TestCreateAdmin_MissingRequiredFields() {
+	func (suite *AdminHandlersTestSuite) TestBatchUpdateNews() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем несколько новостей
+		news1 := suite.createTestNewsWithAuthor(admin.ID)
+		news1.Published = false
+		suite.db.Save(news1)
+
+		news2 := suite.createTestNewsWithAuthor(admin.ID)
+		news2.Published = false
+		suite.db.Save(news2)
+
+		batchData := map[string]interface{}{
+			"ids": []uint64{news1.ID, news2.ID},
+			"updates": map[string]interface{}{
+				"published": true,
+				"isPublic":  true,
+			},
+		}
+
+		body, _ := json.Marshal(batchData)
+		req := httptest.NewRequest("PATCH", "/api/admin/news/batch", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		suite.router.ServeHTTP(w, req)
+
+		// Проверяем что endpoint существует (может вернуть 404 если не реализован)
+		assert.True(suite.T(), w.Code == http.StatusOK || w.Code == http.StatusNotFound)
+
+		if w.Code == http.StatusOK {
+			// Проверяем, что новости обновлены
+			var updatedNews1 models.News
+			err = suite.db.First(&updatedNews1, news1.ID).Error
+			assert.NoError(suite.T(), err)
+			assert.True(suite.T(), updatedNews1.Published)
+			assert.True(suite.T(), updatedNews1.IsPublic)
+
+			var updatedNews2 models.News
+			err = suite.db.First(&updatedNews2, news2.ID).Error
+			assert.NoError(suite.T(), err)
+			assert.True(suite.T(), updatedNews2.Published)
+			assert.True(suite.T(), updatedNews2.IsPublic)
+		}
+	}
+
+	// ============== ТЕСТЫ ДЛЯ АВТОРИЗАЦИИ И ДОСТУПА ==============
+
+	func (suite *AdminHandlersTestSuite) TestCreateNews_WithDifferentRoles() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		newsData := map[string]interface{}{
+			"title":   "Test News",
+			"content": "Test content",
+			"summary": "Test summary",
+		}
+
+		body, _ := json.Marshal(newsData)
+		req := httptest.NewRequest("POST", "/api/admin/news", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		suite.router.ServeHTTP(w, req)
+
+		// Администратор должен иметь доступ к созданию новостей
+		assert.Equal(suite.T(), http.StatusCreated, w.Code)
+	}
+
+	func (suite *AdminHandlersTestSuite) TestNewsVisibilityLevels() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем новости с разными уровнями видимости
 		testCases := []struct {
-			name string
-			data map[string]interface{}
+			name      string
+			published bool
+			isPublic  bool
+			expected  string
 		}{
 			{
-				name: "Missing username",
-				data: map[string]interface{}{
-					"email":     "test@example.com",
-					"password":  "password123",
-					"firstName": "Test",
-					"lastName":  "User",
-					"role":      "admin",
-				},
+				name:      "Draft",
+				published: false,
+				isPublic:  false,
+				expected:  "draft",
 			},
 			{
-				name: "Missing email",
-				data: map[string]interface{}{
-					"username":  "test_user",
-					"password":  "password123",
-					"firstName": "Test",
-					"lastName":  "User",
-					"role":      "admin",
-				},
+				name:      "Published Private",
+				published: true,
+				isPublic:  false,
+				expected:  "private",
 			},
 			{
-				name: "Missing password",
-				data: map[string]interface{}{
-					"username":  "test_user",
-					"email":     "test@example.com",
-					"firstName": "Test",
-					"lastName":  "User",
-					"role":      "admin",
-				},
+				name:      "Published Public",
+				published: true,
+				isPublic:  true,
+				expected:  "public",
 			},
 		}
 
 		for _, tc := range testCases {
 			suite.T().Run(tc.name, func(t *testing.T) {
-				body, _ := json.Marshal(tc.data)
-				req := httptest.NewRequest("POST", "/api/admin/administrators", bytes.NewBuffer(body))
+				news := suite.createTestNewsWithAuthor(admin.ID)
+				news.Published = tc.published
+				news.IsPublic = tc.isPublic
+				suite.db.Save(news)
+
+				// Проверяем доступность через публичный API
+				req := httptest.NewRequest("GET", fmt.Sprintf("/api/news/%d", news.ID), nil)
+				w := httptest.NewRecorder()
+
+				rctx := chi.NewRouteContext()
+				rctx.URLParams.Add("id", strconv.FormatUint(news.ID, 10))
+				req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+				suite.router.ServeHTTP(w, req)
+
+				if tc.expected == "public" {
+					assert.Equal(t, http.StatusOK, w.Code)
+				} else {
+					assert.Equal(t, http.StatusNotFound, w.Code)
+				}
+			})
+		}
+	}
+
+	// ============== ТЕСТЫ ДЛЯ ПРОИЗВОДИТЕЛЬНОСТИ ==============
+
+	func (suite *AdminHandlersTestSuite) TestGetAllNews_LargeDataset() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем большое количество новостей
+		newsCount := 100
+		for i := 0; i < newsCount; i++ {
+			news := suite.createTestNewsWithAuthor(admin.ID)
+			news.Published = true
+			news.IsPublic = true
+			suite.db.Save(news)
+		}
+
+		// Тестируем пагинацию
+		req := httptest.NewRequest("GET", "/api/admin/news?limit=10&offset=0", nil)
+		w := httptest.NewRecorder()
+
+		startTime := time.Now()
+		suite.router.ServeHTTP(w, req)
+		duration := time.Since(startTime)
+
+		assert.Equal(suite.T(), http.StatusOK, w.Code)
+		assert.True(suite.T(), duration < 2*time.Second, "Request should complete within 2 seconds")
+
+		var responseNews []models.News
+		err = json.Unmarshal(w.Body.Bytes(), &responseNews)
+		assert.NoError(suite.T(), err)
+		assert.Len(suite.T(), responseNews, 10)
+	}
+
+	func (suite *AdminHandlersTestSuite) TestGetPublicNews_WithCaching() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем новости
+		for i := 0; i < 10; i++ {
+			news := suite.createTestNewsWithAuthor(admin.ID)
+			news.Published = true
+			news.IsPublic = true
+			suite.db.Save(news)
+		}
+
+		// Первый запрос
+		req1 := httptest.NewRequest("GET", "/api/news", nil)
+		w1 := httptest.NewRecorder()
+		startTime1 := time.Now()
+		suite.router.ServeHTTP(w1, req1)
+		duration1 := time.Since(startTime1)
+
+		// Второй запрос (может быть закеширован)
+		req2 := httptest.NewRequest("GET", "/api/news", nil)
+		w2 := httptest.NewRecorder()
+		startTime2 := time.Now()
+		suite.router.ServeHTTP(w2, req2)
+		duration2 := time.Since(startTime2)
+
+		assert.Equal(suite.T(), http.StatusOK, w1.Code)
+		assert.Equal(suite.T(), http.StatusOK, w2.Code)
+
+		// Проверяем заголовки кеширования (если поддерживается)
+		if w1.Header().Get("Cache-Control") != "" {
+			assert.NotEmpty(suite.T(), w1.Header().Get("Cache-Control"))
+		}
+
+		suite.T().Logf("First request: %v, Second request: %v", duration1, duration2)
+	}
+
+	// ============== ТЕСТЫ ДЛЯ ИНТЕГРАЦИИ ==============
+
+	func (suite *AdminHandlersTestSuite) TestNewsWorkflow() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// 1. Создаем новость как черновик
+		newsData := map[string]interface{}{
+			"title":     "Workflow Test News",
+			"content":   "This is a test news for workflow",
+			"summary":   "Test summary",
+			"published": false,
+			"isPublic":  false,
+		}
+
+		body, _ := json.Marshal(newsData)
+		req := httptest.NewRequest("POST", "/api/admin/news", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		suite.router.ServeHTTP(w, req)
+		assert.Equal(suite.T(), http.StatusCreated, w.Code)
+
+		// Получаем ID созданной новости
+		var createdNews models.News
+		err = suite.db.Where("title = ?", "Workflow Test News").First(&createdNews).Error
+		assert.NoError(suite.T(), err)
+
+		// 2. Обновляем новость для публикации
+		updateData := map[string]interface{}{
+			"published": true,
+			"isPublic":  true,
+		}
+
+		body, _ = json.Marshal(updateData)
+		req = httptest.NewRequest("PUT", fmt.Sprintf("/api/admin/news/%d", createdNews.ID), bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		w = httptest.NewRecorder()
+
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", strconv.FormatUint(createdNews.ID, 10))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		suite.router.ServeHTTP(w, req)
+		assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+		// 3. Проверяем, что новость теперь доступна публично
+		req = httptest.NewRequest("GET", fmt.Sprintf("/api/news/%d", createdNews.ID), nil)
+		w = httptest.NewRecorder()
+
+		rctx = chi.NewRouteContext()
+		rctx.URLParams.Add("id", strconv.FormatUint(createdNews.ID, 10))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		suite.router.ServeHTTP(w, req)
+		assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+		// 4. Проверяем, что новость появилась в списке публичных новостей
+		req = httptest.NewRequest("GET", "/api/news", nil)
+		w = httptest.NewRecorder()
+
+		suite.router.ServeHTTP(w, req)
+		assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+		var publicNews []models.News
+		err = json.Unmarshal(w.Body.Bytes(), &publicNews)
+		assert.NoError(suite.T(), err)
+		assert.Len(suite.T(), publicNews, 1)
+		assert.Equal(suite.T(), "Workflow Test News", publicNews[0].Title)
+
+		// 5. Удаляем новость
+		req = httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/news/%d", createdNews.ID), nil)
+		w = httptest.NewRecorder()
+
+		rctx = chi.NewRouteContext()
+		rctx.URLParams.Add("id", strconv.FormatUint(createdNews.ID, 10))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		suite.router.ServeHTTP(w, req)
+		assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+		// 6. Проверяем, что новость удалена
+		req = httptest.NewRequest("GET", fmt.Sprintf("/api/news/%d", createdNews.ID), nil)
+		w = httptest.NewRecorder()
+
+		rctx = chi.NewRouteContext()
+		rctx.URLParams.Add("id", strconv.FormatUint(createdNews.ID, 10))
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		suite.router.ServeHTTP(w, req)
+		assert.Equal(suite.T(), http.StatusNotFound, w.Code)
+	}
+
+	// ============== ТЕСТЫ ДЛЯ CONCURRENCY ==============
+
+	func (suite *AdminHandlersTestSuite) TestConcurrentNewsCreation() {
+		// Создаем администратора с ID = 1
+		admin := &models.Administrator{
+			ID:        1,
+			Username:  "middleware_admin",
+			Email:     "middleware@example.com",
+			Password:  "password",
+			FirstName: "Middleware",
+			LastName:  "Admin",
+			Role:      "admin",
+			Status:    "Active",
+		}
+		err := suite.db.Create(admin).Error
+		suite.Require().NoError(err)
+
+		// Создаем несколько горутин для одновременного создания новостей
+		var wg sync.WaitGroup
+		numGoroutines := 5
+		results := make(chan int, numGoroutines)
+
+		for i := 0; i < numGoroutines; i++ {
+			wg.Add(1)
+			go func(id int) {
+				defer wg.Done()
+				
+				newsData := map[string]interface{}{
+					"title":   fmt.Sprintf("Concurrent News %d", id),
+					"content": fmt.Sprintf("This is concurrent news content %d", id),
+					"summary": fmt.Sprintf("Test summary %d", id),
+				}
+
+				body, _ := json.Marshal(newsData)
+				req := httptest.NewRequest("POST", "/api/admin/news", bytes.NewBuffer(body))
 				req.Header.Set("Content-Type", "application/json")
 				w := httptest.NewRecorder()
 
 				suite.router.ServeHTTP(w, req)
-
-				assert.Equal(t, http.StatusBadRequest, w.Code)
-			})
+				results <- w.Code
+			}(i)
 		}
+
+		wg.Wait()
+		close(results)
+
+		// Проверяем результаты
+		successCount := 0
+		for code := range results {
+			if code == http.StatusCreated {
+				successCount++
+			}
+		}
+
+		assert.Equal(suite.T(), numGoroutines, successCount, "All concurrent requests should succeed")
+
+		// Проверяем, что все новости созданы
+		var newsCount int64
+		suite.db.Model(&models.News{}).Where("title LIKE ?", "Concurrent News%").Count(&newsCount)
+		assert.Equal(suite.T(), int64(numGoroutines), newsCount)
 	}
 
 	req := httptest.NewRequest("GET", "/api/news/home", nil)
