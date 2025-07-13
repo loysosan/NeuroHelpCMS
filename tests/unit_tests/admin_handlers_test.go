@@ -1283,6 +1283,9 @@ func (suite *AdminHandlersTestSuite) TestDeleteAdmin_NotFound() {
 // ============== ТЕСТЫ ДЛЯ GetAdministrators ==============
 
 func (suite *AdminHandlersTestSuite) TestGetAdministrators_Success() {
+	// Удаляем всех администраторов
+	suite.db.Exec("DELETE FROM administrators")
+
 	// Создаем несколько администраторов
 	admins := []models.Administrator{
 		{Username: "admin1", Email: "admin1@example.com", Password: "pass", FirstName: "Admin", LastName: "One", Role: "admin"},
@@ -1313,6 +1316,9 @@ func (suite *AdminHandlersTestSuite) TestGetAdministrators_Success() {
 }
 
 func (suite *AdminHandlersTestSuite) TestGetAdministrators_EmptyDatabase() {
+	// Удаляем всех администраторов
+	suite.db.Exec("DELETE FROM administrators")
+
 	req := httptest.NewRequest("GET", "/api/admin/administrators", nil)
 	w := httptest.NewRecorder()
 
