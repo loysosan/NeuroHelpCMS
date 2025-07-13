@@ -75,10 +75,10 @@ func (suite *AdminHandlersTestSuite) SetupSuite() {
 }
 
 func (suite *AdminHandlersTestSuite) SetupTest() {
-	// Отключаем внешние ключи для очистки
+	// Disable foreign key checks
 	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 0")
 
-	// Очищаем таблицы в правильном порядке
+	// Clear all tables
 	suite.db.Exec("TRUNCATE TABLE news")
 	suite.db.Exec("TRUNCATE TABLE psychologist_skills")
 	suite.db.Exec("TRUNCATE TABLE portfolios")
@@ -88,7 +88,7 @@ func (suite *AdminHandlersTestSuite) SetupTest() {
 	suite.db.Exec("TRUNCATE TABLE administrators")
 	suite.db.Exec("TRUNCATE TABLE plans")
 
-	// Включаем внешние ключи обратно
+	// Enable foreign key checks
 	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 1")
 	admin := &models.Administrator{
 		Username:  "test_admin",
