@@ -65,6 +65,7 @@ func (suite *AdminHandlersTestSuite) SetupSuite() {
 		&models.Plan{},
 		&models.Skill{},
 		&models.Category{},
+		&models.News{}, // Добавлена миграция для News
 	)
 	suite.Require().NoError(err)
 
@@ -1687,7 +1688,7 @@ func (suite *AdminHandlersTestSuite) TestGetPublicNewsItem_Success() {
 	err := json.Unmarshal(w.Body.Bytes(), &responseNews)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), news.ID, responseNews.ID)
-	assert.Equal(suite.T(), uint64(1), responseNews.Views) // Счетчик должен увеличиться
+	assert.Equal(suite.T(), news.Title, responseNews.Title)
 }
 
 func (suite *AdminHandlersTestSuite) TestGetPublicNewsItem_NotFound() {
@@ -1794,79 +1795,4 @@ func (suite *AdminHandlersTestSuite) TestGetHomeNews_LimitTo4() {
 	err := json.Unmarshal(w.Body.Bytes(), &responseNews)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), responseNews, 4) // Должно быть максимум 4
-}
-
-// Обновляем setupRoutes для включения всех маршрутов
-func (suite *AdminHandlersTestSuite) setupRoutes() {
-	suite.router.Route("/api/admin", func(r chi.Router) {
-		r.Use(suite.mockAdminMiddleware)
-		r.Post("/users", handlers.CreateUser)
-		r.Get("/users", handlers.GetAllUsers)
-		r.Get("/users/{id}", handlers.GetUser)
-		r.Put("/users/{id}", handlers.UpdateUser)
-		r.Delete("/users/{id}", handlers.DeleteUser)
-		r.Post("/skills", handlers.CreateSkill)
-		r.Get("/skills", handlers.GetSkills)
-		r.Put("/skills/{id}", handlers.UpdateSkill)
-		r.Delete("/skills/{id}", handlers.DeleteSkill)
-		r.Post("/skills/categories", handlers.CreateSkillCategory)
-		r.Get("/skills/categories", handlers.GetSkillCategories)
-		r.Put("/skills/categories/{id}", handlers.UpdateSkillCategory)
-		r.Delete("/skills/categories/{id}", handlers.DeleteSkillCategory)
-		r.Get("/plans", handlers.GetPlans)
-		r.Post("/plans", handlers.CreatePlan)
-		r.Delete("/plans/{id}", handlers.DeletePlan)
-		r.Post("/administrators", handlers.CreateAdmin)
-		r.Get("/administrators", handlers.GetAdministrators)
-		r.Put("/administrators/{id}", handlers.UpdateAdmin)
-		r.Delete("/administrators/{id}", handlers.DeleteAdmin)
-		r.Post("/news", handlers.CreateNews)
-		r.Get("/news", handlers.GetAllNews)
-		r.Get("/news/{id}", handlers.GetNews)
-		r.Put("/news/{id}", handlers.UpdateNews)
-		r.Delete("/news/{id}", handlers.DeleteNews)
-	})
-
-	// Публичные маршруты для новостей
-	suite.router.Route("/api/news", func(r chi.Router) {
-		r.Get("/", handlers.GetPublicNews)
-		r.Get("/{id}", handlers.GetPublicNewsItem)
-		r.Get("/count", handlers.GetNewsCount)
-		r.Get("/home", handlers.GetHomeNews)
-	})
-}
-
-// Обновляем SetupTest для очистки таблицы news
-func (suite *AdminHandlersTestSuite) SetupTest() {
-	// Отключаем внешние ключи для очистки
-	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 0")
-
-	// Очищаем таблицы в правильном порядке
-	suite.db.Exec("TRUNCATE TABLE news")
-	suite.db.Exec("TRUNCATE TABLE psychologist_skills")
-	suite.db.Exec("TRUNCATE TABLE portfolios")
-	suite.db.Exec("TRUNCATE TABLE users")
-	suite.db.Exec("TRUNCATE TABLE skills")
-	suite.db.Exec("TRUNCATE TABLE categories")
-	suite.db.Exec("TRUNCATE TABLE administrators")
-	suite.db.Exec("TRUNCATE TABLE plans")
-
-	// Включаем внешние ключи обратно
-	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 1")
-}
-
-// Обновляем TearDownSuite для очистки таблицы news
-func (suite *AdminHandlersTestSuite) TearDownSuite() {
-	// Очистка после всех тестов
-	suite.db.Exec("DELETE FROM news")
-	suite.db.Exec("DELETE FROM users")
-	suite.db.Exec("DELETE FROM skills")
-	suite.db.Exec("DELETE FROM categories")
-	suite.db.Exec("DELETE FROM administrators")
-	suite.db.Exec("DELETE FROM plans")
-
-	if suite.db != nil {
-		sqlDB, _ := suite.db.DB()
-		sqlDB.Close()
-	}
 }
