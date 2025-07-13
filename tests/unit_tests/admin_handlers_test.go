@@ -261,7 +261,6 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_Success() {
 	assert.Equal(suite.T(), "client", data["Role"], "BUG: Handler should update Role but doesn't")
 
 	// Проверяем что email тоже не изменился
-	originalEmail := fmt.Sprintf("john.doe.%d@example.com", user.ID)
 	assert.Contains(suite.T(), data["Email"].(string), "john.doe.", "BUG: Handler should update Email but doesn't")
 
 	suite.T().Log("✅ Test passed: Handler responds with correct format")
