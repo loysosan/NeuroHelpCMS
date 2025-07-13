@@ -90,6 +90,16 @@ func (suite *AdminHandlersTestSuite) SetupTest() {
 
 	// Включаем внешние ключи обратно
 	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 1")
+	admin := &models.Administrator{
+		Username:  "test_admin",
+		Email:     fmt.Sprintf("admin_%d@example.com", time.Now().UnixNano()),
+		Password:  "password",
+		FirstName: "Admin",
+		LastName:  "Test",
+		Role:      "admin",
+	}
+	err := suite.db.Create(admin).Error
+	suite.Require().NoError(err)
 }
 
 func (suite *AdminHandlersTestSuite) setupRoutes() {
@@ -1208,8 +1218,8 @@ func (suite *AdminHandlersTestSuite) TestUpdateAdmin_Success() {
 		"lastName":  "Admin",
 		"email":     "updated@example.com",
 		"role":      "moderator",
+		"status":    "Active",
 	}
-
 	body, _ := json.Marshal(updateData)
 	req := httptest.NewRequest("PUT", fmt.Sprintf("/api/admin/administrators/%d", admin.ID), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -1350,8 +1360,8 @@ func (suite *AdminHandlersTestSuite) TestGetAdministrators_EmptyDatabase() {
 func (suite *AdminHandlersTestSuite) createTestNews() *models.News {
 	// Создаем тестового администратора как автора
 	admin := &models.Administrator{
-		Username:  "news_author",
-		Email:     "author@example.com",
+		Username:  fmt.Sprintf("news_author_%d", time.Now().UnixNano()),
+		Email:     fmt.Sprintf("author_%d@example.com", time.Now().UnixNano()),
 		Password:  "password",
 		FirstName: "News",
 		LastName:  "Author",
