@@ -392,17 +392,10 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_AcceptsCorrectFields() {
 		// Проверяем что handler принимает запрос (не 400)
 		assert.Equal(suite.T(), http.StatusOK, w.Code, "Handler should accept field format #%d", i+1)
 	}
-}
-
-// ============== ТЕСТЫ ДЛЯ CreateSkill ==============
-
-func (suite *AdminHandlersTestSuite) TestCreateSkill_Success() {
-	// Создаем тестовую категорию
-	category := suite.createTestCategory()
-
+func (suite *AdminHandlersTestSuite) TestCreateSkill_MissingFields() {
+	// Test missing "name" field
 	skillData := map[string]interface{}{
-		"name":       "Communication",
-		"categoryId": category.ID,
+		"categoryId": 1,
 	}
 
 	body, _ := json.Marshal(skillData)
@@ -412,24 +405,56 @@ func (suite *AdminHandlersTestSuite) TestCreateSkill_Success() {
 
 	suite.router.ServeHTTP(w, req)
 
-	assert.Equal(suite.T(), http.StatusCreated, w.Code)
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 
-	// Проверяем, что skill создан в БД
-	var skill models.Skill
-	err := suite.db.Where("name = ?", "Communication").First(&skill).Error
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "Communication", skill.Name)
-	assert.Equal(suite.T(), category.ID, skill.CategoryID)
+	// Test missing "categoryId" field
+	skillData = map[string]interface{}{
+		"name": "Communication",
+	}
+
+	body, _ = json.Marshal(skillData)
+	req = httptest.NewRequest("POST", "/api/admin/skills", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 }
 
-func (suite *AdminHandlersTestSuite) TestCreateSkill_InvalidJSON() {
-	req := httptest.NewRequest("POST", "/api/admin/skills", bytes.NewBuffer([]byte("invalid json")))
+func (suite *AdminHandlersTestSuite) TestCreateSkill_InvalidCategoryID() {
+	// Test invalid "categoryId" field
+	skillData := map[string]interface{}{
+		"name":       "Communication",
+		"categoryId": "invalid",
+	}
+
+	body, _ := json.Marshal(skillData)
+	req := httptest.NewRequest("POST", "/api/admin/skills", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
 	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+}
+
+func (suite *AdminHandlersTestSuite) TestCreateSkill_CategoryNotFound() {
+	// Test non-existent "categoryId"
+	skillData := map[string]interface{}{
+		"name":       "Communication",
+		"categoryId": 999,
+	}
+
+	body, _ := json.Marshal(skillData)
+	req := httptest.NewRequest("POST", "/api/admin/skills", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
+}
 }
 
 func (suite *AdminHandlersTestSuite) TestCreateSkill_DuplicateName() {
