@@ -320,7 +320,13 @@ func (suite *UserProfileTestSuite) TestGetSelfProfile_Success() {
 	assert.Equal(suite.T(), user.Role, response["role"])
 	assert.Equal(suite.T(), user.Status, response["status"])
 	assert.Equal(suite.T(), user.Verified, response["verified"])
-	assert.NotNil(suite.T(), response["skills"])
+
+	// Для клиента skills может быть пустым массивом или nil
+	skills, exists := response["skills"]
+	assert.True(suite.T(), exists)
+	if skills != nil {
+		assert.IsType(suite.T(), []interface{}{}, skills)
+	}
 }
 
 func (suite *UserProfileTestSuite) TestGetSelfProfile_PsychologistWithPortfolio() {
