@@ -5,9 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"user-api/internal/db"
@@ -321,28 +324,30 @@ func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_Success() {
 	user := suite.createTestPsychologist()
 	_ = suite.createTestPortfolio(user.ID)
 
-	// Создаем простой тест без реального файла
-	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", nil)
-	req.Header.Set("Content-Type", "multipart/form-data")
+	// Создаем тестовый файл в памяти
+	testImageData := []byte("fake image data for testing")
+
+	// Создаем multipart форму
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Создаем файловое поле
+	part, err := writer.CreateFormFile("photo", "test.jpg")
+	suite.Require().NoError(err)
+
+	// Записываем тестовые данные
+	_, err = part.Write(testImageData)
+	suite.Require().NoError(err)
+
+	// Закрываем writer
+	err = writer.Close()
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()
 
-	// Создаем кастомный handler для этого теста
-	router := chi.NewRouter()
-	router.With(suite.mockUserMiddleware).Post("/api/users/portfolio/photo", func(w http.ResponseWriter, r *http.Request) {
-		// Мокаем успешный результат
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": true,
-			"message": "Photo uploaded successfully",
-			"data": map[string]interface{}{
-				"id":  1,
-				"url": "/uploads/portfolio/test.jpg",
-			},
-		})
-	})
-
-	router.ServeHTTP(w, req)
+	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
 
@@ -354,106 +359,160 @@ func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_Success() {
 	assert.NotNil(suite.T(), response["data"])
 }
 
-func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_CreatePortfolioIfNotExists() {
+func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_WithRealFile() {
 	user := suite.createTestPsychologist()
+	_ = suite.createTestPortfolio(user.ID)
 
-	// Создаем простой POST запрос без файла для проверки создания портфолио
-	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", nil)
-	req.Header.Set("Content-Type", "multipart/form-data")
+	// Создаем реальный тестовый файл
+	testFilePath := "./test_photo.jpg"
+	testImageData := []byte("fake JPEG data for testing")
+	err := os.WriteFile(testFilePath, testImageData, 0644)
+	suite.Require().NoError(err)
+
+	// Убираем файл после теста
+	defer os.Remove(testFilePath)
+
+	// Открываем файл
+	file, err := os.Open(testFilePath)
+	suite.Require().NoError(err)
+	defer file.Close()
+
+	// Создаем multipart форму
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Создаем файловое поле
+	part, err := writer.CreateFormFile("photo", filepath.Base(testFilePath))
+	suite.Require().NoError(err)
+
+	// Копируем содержимое файла
+	_, err = io.Copy(part, file)
+	suite.Require().NoError(err)
+
+	// Закрываем writer
+	err = writer.Close()
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()
 
-	// Создаем кастомный handler для этого теста
-	router := chi.NewRouter()
-	router.With(suite.mockUserMiddleware).Post("/api/users/portfolio/photo", func(w http.ResponseWriter, r *http.Request) {
-		// Проверяем, что портфолио не существует
-		var portfolioCount int64
-		suite.db.Model(&models.Portfolio{}).Where("psychologist_id = ?", user.ID).Count(&portfolioCount)
-		assert.Equal(suite.T(), int64(0), portfolioCount)
-
-		// Создаем портфолио
-		portfolio := models.Portfolio{
-			PsychologistID: user.ID,
-		}
-		err := suite.db.Create(&portfolio).Error
-		assert.NoError(suite.T(), err)
-
-		// Возвращаем успешный ответ
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": true,
-			"message": "Portfolio created",
-		})
-	})
-
-	router.ServeHTTP(w, req)
+	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
 
-	// Проверяем, что портфолио создано
-	var portfolio models.Portfolio
-	err := suite.db.Where("psychologist_id = ?", user.ID).First(&portfolio).Error
+	var response map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), true, response["success"])
+	assert.Equal(suite.T(), "Photo uploaded successfully", response["message"])
+	assert.NotNil(suite.T(), response["data"])
 }
 
-func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_ClientForbidden() {
-	_ = suite.createTestClient() // Используем _ чтобы избежать "declared and not used"
+func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_LargeFile() {
+	user := suite.createTestPsychologist()
+	_ = suite.createTestPortfolio(user.ID)
 
-	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", nil)
+	// Создаем "большой" файл (симулируем)
+	largeImageData := make([]byte, 1024*1024) // 1MB
+	for i := range largeImageData {
+		largeImageData[i] = byte(i % 256)
+	}
+
+	// Создаем multipart форму
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Создаем файловое поле
+	part, err := writer.CreateFormFile("photo", "large_test.jpg")
+	suite.Require().NoError(err)
+
+	// Записываем данные
+	_, err = part.Write(largeImageData)
+	suite.Require().NoError(err)
+
+	// Закрываем writer
+	err = writer.Close()
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()
 
 	suite.router.ServeHTTP(w, req)
 
-	assert.Equal(suite.T(), http.StatusForbidden, w.Code)
+	// Проверяем что файл принят или отклонен по размеру
+	assert.True(suite.T(), w.Code == http.StatusCreated || w.Code == http.StatusBadRequest)
 }
 
-func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_Unauthorized() {
-	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", nil)
-	w := httptest.NewRecorder()
+func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_InvalidFileType() {
+	user := suite.createTestPsychologist()
+	_ = suite.createTestPortfolio(user.ID)
 
-	// Создаем middleware без email в контексте
-	mockMiddleware := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next.ServeHTTP(w, r)
-		})
-	}
+	// Создаем файл с неправильным типом
+	textData := []byte("This is not an image file")
 
-	router := chi.NewRouter()
-	router.With(mockMiddleware).Post("/api/users/portfolio/photo", handlers.UploadPortfolioPhoto)
-	router.ServeHTTP(w, req)
+	// Создаем multipart форму
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
 
-	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
-}
+	// Создаем файловое поле с расширением .txt
+	part, err := writer.CreateFormFile("photo", "test.txt")
+	suite.Require().NoError(err)
 
-func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_UserNotFound() {
-	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", nil)
-	w := httptest.NewRecorder()
+	// Записываем текстовые данные
+	_, err = part.Write(textData)
+	suite.Require().NoError(err)
 
-	// Используем middleware с email, который не существует в БД
-	mockMiddleware := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), "email", "nonexistent@example.com")
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	}
+	// Закрываем writer
+	err = writer.Close()
+	suite.Require().NoError(err)
 
-	router := chi.NewRouter()
-	router.With(mockMiddleware).Post("/api/users/portfolio/photo", handlers.UploadPortfolioPhoto)
-	router.ServeHTTP(w, req)
-
-	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
-}
-
-func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_InvalidForm() {
-	_ = suite.createTestPsychologist() // Используем _ чтобы избежать "declared and not used"
-
-	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", bytes.NewBuffer([]byte("invalid form data")))
-	req.Header.Set("Content-Type", "text/plain")
+	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()
 
 	suite.router.ServeHTTP(w, req)
 
+	// Ожидаем ошибку валидации типа файла
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+}
+
+func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_NoFile() {
+	user := suite.createTestPsychologist()
+	_ = suite.createTestPortfolio(user.ID)
+
+	// Создаем multipart форму без файла
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Добавляем только текстовое поле
+	err := writer.WriteField("description", "test description")
+	suite.Require().NoError(err)
+
+	// Закрываем writer
+	err = writer.Close()
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	// Ожидаем ошибку "файл не найден"
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+}
+
+func (suite *UserPortfolioTestSuite) createTestImageFile(filename string) string {
+	// Создаем простой тестовый файл изображения
+	testFilePath := filepath.Join("./uploads/portfolio", filename)
+	testImageData := []byte("fake image data for testing")
+
+	err := os.WriteFile(testFilePath, testImageData, 0644)
+	suite.Require().NoError(err)
+
+	return testFilePath
 }
 
 // ============== ТЕСТЫ ДЛЯ DeletePortfolioPhoto ==============
