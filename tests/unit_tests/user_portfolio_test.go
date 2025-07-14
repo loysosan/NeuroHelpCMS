@@ -31,7 +31,7 @@ type UserPortfolioTestSuite struct {
 }
 
 func (suite *UserPortfolioTestSuite) SetupSuite() {
-	// Получаем параметры БД из переменных окружения
+	////// Получаем параметры БД из переменных окружения
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" {
 		dbHost = "localhost"
