@@ -324,8 +324,9 @@ func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_Success() {
 	user := suite.createTestPsychologist()
 	_ = suite.createTestPortfolio(user.ID)
 
-	// Создаем тестовый файл в памяти
-	testImageData := []byte("fake image data for testing")
+	// Создаем минимальные данные JPEG файла
+	jpegHeader := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46}
+	testImageData := append(jpegHeader, []byte("fake jpeg data for testing")...)
 
 	// Создаем multipart форму
 	body := &bytes.Buffer{}
@@ -363,9 +364,10 @@ func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_WithRealFile() {
 	user := suite.createTestPsychologist()
 	_ = suite.createTestPortfolio(user.ID)
 
-	// Создаем реальный тестовый файл
+	// Создаем реальный тестовый файл с JPEG заголовком
 	testFilePath := "./test_photo.jpg"
-	testImageData := []byte("fake JPEG data for testing")
+	jpegHeader := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46}
+	testImageData := append(jpegHeader, []byte("fake JPEG data for testing")...)
 	err := os.WriteFile(testFilePath, testImageData, 0644)
 	suite.Require().NoError(err)
 
@@ -409,13 +411,95 @@ func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_WithRealFile() {
 	assert.NotNil(suite.T(), response["data"])
 }
 
+func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_PNG() {
+	user := suite.createTestPsychologist()
+	_ = suite.createTestPortfolio(user.ID)
+
+	// Создаем минимальные данные PNG файла
+	pngHeader := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+	testImageData := append(pngHeader, []byte("fake png data for testing")...)
+
+	// Создаем multipart форму
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Создаем файловое поле
+	part, err := writer.CreateFormFile("photo", "test.png")
+	suite.Require().NoError(err)
+
+	// Записываем тестовые данные
+	_, err = part.Write(testImageData)
+	suite.Require().NoError(err)
+
+	// Закрываем writer
+	err = writer.Close()
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusCreated, w.Code)
+
+	var response map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), true, response["success"])
+	assert.Equal(suite.T(), "Photo uploaded successfully", response["message"])
+	assert.NotNil(suite.T(), response["data"])
+}
+
+func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_WebP() {
+	user := suite.createTestPsychologist()
+	_ = suite.createTestPortfolio(user.ID)
+
+	// Создаем минимальные данные WebP файла
+	webpHeader := []byte("RIFF____WEBP")
+	testImageData := append(webpHeader, []byte("fake webp data for testing")...)
+
+	// Создаем multipart форму
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Создаем файловое поле
+	part, err := writer.CreateFormFile("photo", "test.webp")
+	suite.Require().NoError(err)
+
+	// Записываем тестовые данные
+	_, err = part.Write(testImageData)
+	suite.Require().NoError(err)
+
+	// Закрываем writer
+	err = writer.Close()
+	suite.Require().NoError(err)
+
+	req := httptest.NewRequest("POST", "/api/users/portfolio/photo", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusCreated, w.Code)
+
+	var response map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), true, response["success"])
+	assert.Equal(suite.T(), "Photo uploaded successfully", response["message"])
+	assert.NotNil(suite.T(), response["data"])
+}
+
 func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_LargeFile() {
 	user := suite.createTestPsychologist()
 	_ = suite.createTestPortfolio(user.ID)
 
-	// Создаем "большой" файл (симулируем)
+	// Создаем "большой" файл (симулируем) с правильным JPEG заголовком
+	jpegHeader := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46}
 	largeImageData := make([]byte, 1024*1024) // 1MB
-	for i := range largeImageData {
+	copy(largeImageData, jpegHeader)
+	for i := len(jpegHeader); i < len(largeImageData); i++ {
 		largeImageData[i] = byte(i % 256)
 	}
 
@@ -505,9 +589,22 @@ func (suite *UserPortfolioTestSuite) TestUploadPortfolioPhoto_NoFile() {
 }
 
 func (suite *UserPortfolioTestSuite) createTestImageFile(filename string) string {
-	// Создаем простой тестовый файл изображения
+	// Создаем простой тестовый файл изображения с правильным заголовком
 	testFilePath := filepath.Join("./uploads/portfolio", filename)
-	testImageData := []byte("fake image data for testing")
+
+	var testImageData []byte
+	if filepath.Ext(filename) == ".jpg" || filepath.Ext(filename) == ".jpeg" {
+		jpegHeader := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46}
+		testImageData = append(jpegHeader, []byte("fake jpeg data for testing")...)
+	} else if filepath.Ext(filename) == ".png" {
+		pngHeader := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+		testImageData = append(pngHeader, []byte("fake png data for testing")...)
+	} else if filepath.Ext(filename) == ".webp" {
+		webpHeader := []byte("RIFF____WEBP")
+		testImageData = append(webpHeader, []byte("fake webp data for testing")...)
+	} else {
+		testImageData = []byte("fake image data for testing")
+	}
 
 	err := os.WriteFile(testFilePath, testImageData, 0644)
 	suite.Require().NoError(err)
