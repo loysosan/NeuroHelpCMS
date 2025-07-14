@@ -147,10 +147,10 @@ func (suite *UserProfileTestSuite) createTestPsychologist() *models.User {
 	portfolio := &models.Portfolio{
 		PsychologistID: user.ID,
 		Description:    "Test psychologist",
-		Experience:     "5 years",
+		Experience:     5, // Если это int
 		Education:      "Master's degree",
-		ContactEmail:   "contact@example.com",
-		ContactPhone:   "+1234567890",
+		ContactEmail:   stringPtr("contact@example.com"), // Если это *string
+		ContactPhone:   stringPtr("+1234567890"),         // Если это *string
 	}
 	err = suite.db.Create(portfolio).Error
 	suite.Require().NoError(err)
@@ -341,10 +341,10 @@ func (suite *UserProfileTestSuite) TestGetSelfProfile_PsychologistWithPortfolio(
 	portfolio := &models.Portfolio{
 		PsychologistID: user.ID,
 		Description:    "Test psychologist",
-		Experience:     "5 years",
+		Experience:     5, // Если это int
 		Education:      "Master's degree",
-		ContactEmail:   "contact@example.com",
-		ContactPhone:   "+1234567890",
+		ContactEmail:   stringPtr("contact@example.com"), // Если это *string
+		ContactPhone:   stringPtr("+1234567890"),         // Если это *string
 	}
 	err = suite.db.Create(portfolio).Error
 	suite.Require().NoError(err)
@@ -375,7 +375,7 @@ func (suite *UserProfileTestSuite) TestGetSelfProfile_PsychologistWithPortfolio(
 	// Проверяем данные портфолио
 	portfolioData := response["portfolio"].(map[string]interface{})
 	assert.Equal(suite.T(), "Test psychologist", portfolioData["description"])
-	assert.Equal(suite.T(), "5 years", portfolioData["experience"])
+	assert.Equal(suite.T(), float64(5), portfolioData["experience"]) // Если это int
 
 	// Проверяем данные рейтинга
 	ratingData := response["rating"].(map[string]interface{})
