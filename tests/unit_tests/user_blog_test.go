@@ -132,18 +132,18 @@ func (suite *UserBlogTestSuite) TestCreateBlogPost_Success() {
 
 func (suite *UserBlogTestSuite) TestCreateBlogPost_Forbidden() {
 	// Create a client user
-	client := &models.User{Email: "client@example.com", Role: "client"}
+	client := &models.User{Email: "client@example.com", Role: "client", Status: "Active", Verified: true}
 	suite.db.Create(client)
 
-	// Switch context to client
-	suite.router.Route("/api/users/blog", func(r chi.Router) {
-		r.With(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				ctx := context.WithValue(r.Context(), "email", "client@example.com")
-				next.ServeHTTP(w, r.WithContext(ctx))
-			})
-		}).Post("/", handlers.CreateBlogPost)
-	})
+	// Create a new router and middleware for this specific test
+	router := chi.NewRouter()
+	mockClientMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), "email", "client@example.com")
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+	router.With(mockClientMiddleware).Post("/api/users/blog/", handlers.CreateBlogPost)
 
 	postData := map[string]string{"title": "Test", "content": "Test"}
 	body, _ := json.Marshal(postData)
@@ -151,7 +151,7 @@ func (suite *UserBlogTestSuite) TestCreateBlogPost_Forbidden() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	suite.router.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
 	assert.Equal(suite.T(), http.StatusForbidden, w.Code)
 }
 
