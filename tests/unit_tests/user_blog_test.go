@@ -27,7 +27,7 @@ type UserBlogTestSuite struct {
 }
 
 func (suite *UserBlogTestSuite) SetupSuite() {
-	dbHost := os.Getenv("DB_HOST_TEST")
+	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" {
 		dbHost = "localhost"
 	}
