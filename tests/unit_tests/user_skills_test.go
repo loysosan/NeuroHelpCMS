@@ -194,7 +194,11 @@ func (suite *UserSkillsTestSuite) TestGetAllSkillsByCategory_Empty() {
 	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
-	assert.JSONEq(suite.T(), `[]`, w.Body.String())
+
+	var response []map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	suite.Require().NoError(err)
+	assert.Len(suite.T(), response, 0)
 }
 
 // ============== ТЕСТЫ ДЛЯ GetUserSkills ==============
