@@ -6,6 +6,9 @@ A content management system built with Go backend and React frontend, containeri
 
 ```
 my-little-go-cms/
+├── cmd/                  # Main application entrypoint
+│   └── main.go
+│
 ├── frontend/               # React frontend application
 │   ├── src/
 │   │   ├── components/    # Reusable UI components
@@ -25,8 +28,8 @@ my-little-go-cms/
 │
 ├── templates/             # Email templates
 ├── tests/                # Test files
-│   ├── admin_tests/      # Admin functionality tests
-│   └── run-tests.sh      # Test runner script
+│   ├── unit_tests/       # Unit tests for handlers
+│   └── ...
 │
 ├── Dockerfile           # Backend Docker configuration
 ├── docker-compose.yml   # Docker compose configuration
@@ -84,11 +87,11 @@ cd my-little-go-cms
 
 For backend (`.env`):
 ```env
-DB_HOST=postgres
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_NAME=cms_db
+DB_HOST=mysql
+DB_PORT=3306
+DB_USER=testuser
+DB_PASSWORD=testpass
+DB_NAME=testdb
 JWT_SECRET=your_secret_key
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=admin_password
@@ -137,22 +140,20 @@ docker-compose restart go-api     # Restart backend
 
 ## Testing
 
-The project includes comprehensive test suite:
+The project includes a comprehensive test suite using Go's native testing package and `testify/suite`.
 
 ```bash
 # Run all tests
 make test
 
-# Run specific test types
-make test-admin        # Admin functionality tests
-make test-news         # News management tests
-make test-coverage     # Tests with coverage report
-make test-race         # Race condition tests
+# Or run tests for a specific package
+go test ./tests/unit_tests/...
 
-# Using test script
-./tests/run-tests.sh all      # Run all tests
-./tests/run-tests.sh news     # Run news tests only
-./tests/run-tests.sh coverage # Run with coverage
+# Run tests with coverage report
+make test-coverage
+
+# Run tests with race condition detection
+make test-race
 ```
 
 ## API Documentation
@@ -169,37 +170,51 @@ The API documentation is available through Swagger UI at http://localhost:8080/s
 
 #### Admin Operations
 - `GET /api/admin/users` - List all users
-- `PUT /api/admin/users/{id}` - Update user
 - `POST /api/admin/users` - Create user
+- `PUT /api/admin/users/{id}` - Update user
 - `DELETE /api/admin/users/{id}` - Delete user
 
-#### News Management
-- `GET /api/admin/news` - List all news (admin)
+#### News Management (Admin)
+- `GET /api/admin/news` - List all news
 - `POST /api/admin/news` - Create news
 - `PUT /api/admin/news/{id}` - Update news
 - `DELETE /api/admin/news/{id}` - Delete news
+
+#### Public News
 - `GET /api/news` - Public news list
 - `GET /api/news/{id}` - Get specific news
 - `GET /api/news/home` - News for home page
 
-#### Skills Management
+#### Skills Management (Admin)
 - `GET /api/admin/skills` - List skills
 - `POST /api/admin/skills` - Create skill
 - `PUT /api/admin/skills/{id}` - Update skill
 - `DELETE /api/admin/skills/{id}` - Delete skill
-- `GET /api/users/skills` - Get all skills by category
+- `GET /api/admin/skills/categories` - List skill categories
+- `POST /api/admin/skills/categories` - Create skill category
+- `PUT /api/admin/skills/categories/{id}` - Update skill category
+- `DELETE /api/admin/skills/categories/{id}` - Delete skill category
 
-#### User Profile & Portfolio
+#### User Profile, Portfolio & Skills
 - `GET /api/users/self` - Get own profile
-- `PUT /api/users/self/updateuser` - Update profile
-- `PUT /api/users/self/portfolio` - Update portfolio
-- `PUT /api/users/self/skills` - Update skills
+- `PUT /api/users/self/updateuser` - Update own profile
+- `GET /api/users/{id}` - Get any user's public profile
+- `PUT /api/users/self/portfolio` - Create/Update portfolio
 - `POST /api/users/portfolio/photo` - Upload portfolio photo
-- `DELETE /api/users/portfolio/photo/{id}` - Delete photo
+- `DELETE /api/users/portfolio/photo/{photo_id}` - Delete portfolio photo
+- `PUT /api/users/self/skills` - Set own skills
+- `GET /api/users/skills` - Get all skills grouped by category
+- `GET /api/users/{user_id}/skills` - Get a specific user's skills
+
+#### Blog System
+- `POST /api/users/blog` - Create a blog post
+- `GET /api/users/blog/{psychologist_id}` - Get all posts by a psychologist
+- `GET /api/users/blog/post/{blog_id}` - Get a single blog post
+- `PUT /api/users/blog/post/{blog_id}` - Update a blog post
+- `DELETE /api/users/blog/post/{blog_id}` - Delete a blog post
 
 #### Reviews & Ratings
-- `POST /api/reviews/{psychologist_id}` - Create review
-- `GET /api/users/{id}` - Get user profile with rating
+- `POST /api/reviews/{psychologist_id}` - Create a review for a psychologist
 
 ## Development Workflow
 
@@ -234,7 +249,7 @@ The backend is built with:
 - **Go 1.21+** with Chi router
 - **GORM** for database ORM
 - **JWT** for authentication
-- **PostgreSQL** as database
+- **MySQL** as database
 - **Swagger** for API documentation
 - **Docker** for containerization
 
@@ -248,7 +263,7 @@ Key backend features:
 
 ## Database Schema
 
-The system uses PostgreSQL with the following main tables:
+The system uses MySQL with the following main tables:
 - `users` - User accounts and profiles
 - `administrators` - Admin accounts
 - `news` - News articles
@@ -260,6 +275,7 @@ The system uses PostgreSQL with the following main tables:
 - `ratings` - Psychologist ratings
 - `blog_posts` - Blog articles
 - `plans` - Subscription plans
+- `psychologist_skills` - Join table for users and skills
 
 ## Security Features
 
@@ -302,10 +318,7 @@ docker-compose down
 docker-compose up --build
 ```
 
-4. Check database connection:
-```bash
-docker-compose exec go-api go run cmd/main.go
-```
+4. Check database connection from within the container.
 
 5. Reset database (development only):
 ```bash
@@ -330,4 +343,4 @@ MIT License - see LICENSE file for details
 For support and questions:
 - Create an issue in the GitHub repository
 - Check the API documentation at `/swagger/index.html`
-- Review the test files for usage examples
+- Review the test files in `tests/unit_tests/` for usage examples
