@@ -28,7 +28,7 @@ interface Portfolio {
   city?: string;
   address?: string;
   dateOfBirth?: string | null;
-  gender?: 'male' | 'femail' | '';
+  gender?: 'male' | 'female' | 'notselected' | '';
   telegram?: string;
   facebookURL?: string;
   instagramURL?: string;
@@ -826,9 +826,9 @@ const UserProfile: React.FC = () => {
                         onChange={handlePortfolioInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Не вказано</option>
-                        <option value="чоловічий">Чоловічий</option>
-                        <option value="жіночий">Жіночий</option>
+                        <option value="">Не обрано</option>
+                        <option value="male">Чоловічий</option>
+                        <option value="female">Жіночий</option>
                       </select>
                     </div>
                   </div>
