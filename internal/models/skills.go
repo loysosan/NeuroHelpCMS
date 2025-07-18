@@ -37,7 +37,7 @@ type Portfolio struct {
 	City           *string    `gorm:"type:varchar(100)"`
 	Address        *string    `gorm:"type:varchar(255)"`
 	DateOfBirth    *time.Time `gorm:"type:date"`
-	Gender         *string    `gorm:"type:enum('male', 'female')"`
+	Gender         *string    `gorm:"type:enum('male', 'female', 'notselected');default:'notspecified'"`
 	Telegram       *string    `gorm:"type:varchar(100)"`
 	FacebookURL    *string    `gorm:"type:varchar(255)"`
 	InstagramURL   *string    `gorm:"type:varchar(255)"`
