@@ -25,6 +25,13 @@ interface Portfolio {
   education: string;
   contactEmail?: string;
   contactPhone?: string;
+  city?: string;
+  address?: string;
+  dateOfBirth?: string | null;
+  gender?: 'male' | 'femail' | '';
+  telegram?: string;
+  facebookURL?: string;
+  instagramURL?: string;
   photos: Photo[];
 }
 
@@ -74,6 +81,13 @@ const UserProfile: React.FC = () => {
     education: '',
     contactEmail: '',
     contactPhone: '',
+    city: '',
+    address: '',
+    dateOfBirth: '',
+    gender: '',
+    telegram: '',
+    facebookURL: '',
+    instagramURL: '',
   });
 
   // Стани для скілів
@@ -145,13 +159,20 @@ const UserProfile: React.FC = () => {
       });
 
       // Заповнення портфоліо існуючими даними
-      if (data.role === 'psychologist') {
+      if (data.role === 'psychologist' && data.portfolio) {
         setPortfolioFormData({
-          description: data.portfolio?.description || '',
-          experience: data.portfolio?.experience || 0,
-          education: data.portfolio?.education || '',
-          contactEmail: data.portfolio?.contactEmail || '',
-          contactPhone: data.portfolio?.contactPhone || '',
+          description: data.portfolio.description || '',
+          experience: data.portfolio.experience || 0,
+          education: data.portfolio.education || '',
+          contactEmail: data.portfolio.contactEmail || '',
+          contactPhone: data.portfolio.contactPhone || '',
+          city: data.portfolio.city || '',
+          address: data.portfolio.address || '',
+          dateOfBirth: data.portfolio.dateOfBirth ? data.portfolio.dateOfBirth.split('T')[0] : '',
+          gender: data.portfolio.gender || '',
+          telegram: data.portfolio.telegram || '',
+          facebookURL: data.portfolio.facebookURL || '',
+          instagramURL: data.portfolio.instagramURL || '',
         });
       }
 
@@ -235,7 +256,7 @@ const UserProfile: React.FC = () => {
   };
 
   // Обробка зміни портфоліо
-  const handlePortfolioInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handlePortfolioInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setPortfolioFormData(prev => ({ ...prev, [name]: name === 'experience' ? Number(value) : value }));
   };
@@ -750,6 +771,108 @@ const UserProfile: React.FC = () => {
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Перелічіть вашу освіту, сертифікати та кваліфікації..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Місто
+                      </label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={portfolioFormData.city}
+                        onChange={handlePortfolioInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ваше місто"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Адреса
+                      </label>
+                      <input
+                        type="text"
+                        name="address"
+                        value={portfolioFormData.address}
+                        onChange={handlePortfolioInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ваша адреса"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Дата народження
+                      </label>
+                      <input
+                        type="date"
+                        name="dateOfBirth"
+                        value={portfolioFormData.dateOfBirth}
+                        onChange={handlePortfolioInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Стать
+                      </label>
+                      <select
+                        name="gender"
+                        value={portfolioFormData.gender}
+                        onChange={handlePortfolioInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Не вказано</option>
+                        <option value="чоловічий">Чоловічий</option>
+                        <option value="жіночий">Жіночий</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Telegram
+                      </label>
+                      <input
+                        type="text"
+                        name="telegram"
+                        value={portfolioFormData.telegram}
+                        onChange={handlePortfolioInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="@username"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Instagram URL
+                      </label>
+                      <input
+                        type="url"
+                        name="instagramURL"
+                        value={portfolioFormData.instagramURL}
+                        onChange={handlePortfolioInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://instagram.com/..."
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Facebook URL
+                    </label>
+                    <input
+                      type="url"
+                      name="facebookURL"
+                      value={portfolioFormData.facebookURL}
+                      onChange={handlePortfolioInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="https://facebook.com/..."
                     />
                   </div>
 
