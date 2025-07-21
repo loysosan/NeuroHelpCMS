@@ -122,6 +122,10 @@ func main() {
 
 		r.Get("/api/users/self", handlers.GetSelfProfile)
 		r.Put("/api/users/self/portfolio", handlers.UpdateSelfPortfolio)
+
+		// Search endpoints (only for registered users)
+		r.Post("/api/users/search/specialists", handlers.SearchSpecialists)
+		r.Get("/api/users/search/specialists", handlers.SearchSpecialistsGET)
 	})
 
 	// Public user endpoints
