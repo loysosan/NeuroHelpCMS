@@ -95,7 +95,7 @@ const UserHome: React.FC = () => {
           </div>
         </section>
 
-        {/* News Section - Построчное отображение */}
+        {/* News Section */}
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -120,7 +120,7 @@ const UserHome: React.FC = () => {
                       className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden"
                     >
                       <div className="flex flex-col md:flex-row">
-                        {/* Изображение */}
+                        {/* Image */}
                         <div className="md:w-1/3 lg:w-1/4">
                           {article.imageUrl ? (
                             <img
@@ -137,7 +137,7 @@ const UserHome: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Контент */}
+                        {/* Content */}
                         <div className="md:w-2/3 lg:w-3/4 p-6">
                           <div className="flex flex-col justify-between h-full">
                             <div>

@@ -67,14 +67,14 @@ const UserProfile: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('basic');
 
-  // Стани для основної інформації
+  // States for basic information
   const [basicFormData, setBasicFormData] = useState({
     firstName: '',
     lastName: '',
     phone: '',
   });
 
-  // Стани для портфоліо (тільки для психологів)
+  // States for portfolio (only for psychologists)
   const [portfolioFormData, setPortfolioFormData] = useState({
     description: '',
     experience: 0,
@@ -90,23 +90,23 @@ const UserProfile: React.FC = () => {
     instagramURL: '',
   });
 
-  // Стани для скілів
+  // States for skills
   const [allSkills, setAllSkills] = useState<Skill[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<number[]>([]);
 
-  // Стани для фото
+  // States for photos
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
-  // Додайте ці стани після існуючих
+  // Add these states after existing ones
   const [skillCategories, setSkillCategories] = useState<SkillCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
-  // Завантаження профілю
+  // Load profile
   const fetchProfile = async () => {
-    console.log('fetchProfile called with token:', token); // Дебаг
+    console.log('fetchProfile called with token:', token); // Debug
     
     if (!token) {
       setError('Токен недоступний');
@@ -115,7 +115,7 @@ const UserProfile: React.FC = () => {
     }
 
     try {
-      console.log('Making request with Authorization:', `Bearer ${token}`); // Дебаг
+      console.log('Making request with Authorization:', `Bearer ${token}`); // Debug
       
       const response = await fetch('/api/users/self', {
         headers: {
@@ -124,7 +124,7 @@ const UserProfile: React.FC = () => {
         },
       });
 
-      console.log('Response status:', response.status); // Дебаг
+      console.log('Response status:', response.status); // Debug
 
       if (!response.ok) {
         throw new Error('Не вдалося завантажити профіль');
@@ -132,15 +132,15 @@ const UserProfile: React.FC = () => {
 
       const data = await response.json();
       console.log('Profile data received:', data);
-      console.log('Portfolio photos:', data.portfolio?.photos); // Додайте цей рядок
+      console.log('Portfolio photos:', data.portfolio?.photos); // Add this line
       
-      // Додайте цю перевірку:
+      // Add this check:
       if (data.portfolio?.photos) {
         console.log('Photos found:', data.portfolio.photos.length);
         data.portfolio.photos.forEach((photo: any, index: number) => {
           console.log(`Photo ${index}:`, {
-            ID: photo.ID,           // Изменено на заглавные
-            URL: photo.URL,         // Изменено на заглавные
+            ID: photo.ID,           // Changed to capital letters
+            URL: photo.URL,         // Changed to capital letters
             finalUrl: getImageUrl(photo.URL),
             IDtype: typeof photo.ID
           });
@@ -151,14 +151,14 @@ const UserProfile: React.FC = () => {
       
       setProfile(data);
       
-      // Заповнення форм існуючими даними
+      // Fill forms with existing data
       setBasicFormData({
         firstName: data.firstName || '',
         lastName: data.lastName || '',
         phone: data.phone || '',
       });
 
-      // Заповнення портфоліо існуючими даними
+      // Fill portfolio with existing data
       if (data.role === 'psychologist' && data.portfolio) {
         setPortfolioFormData({
           description: data.portfolio.description || '',
@@ -180,14 +180,14 @@ const UserProfile: React.FC = () => {
         setSelectedSkills(data.skills.map((skill: Skill) => skill.id));
       }
     } catch (err: any) {
-      console.error('fetchProfile error:', err); // Дебаг
+      console.error('fetchProfile error:', err); // Debug
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Завантаження всіх скілів (для психологів)
+  // Load all skills (for psychologists)
   const fetchAllSkills = async () => {
     if (profile?.role !== 'psychologist') return;
 
@@ -204,7 +204,7 @@ const UserProfile: React.FC = () => {
         
         setAllSkills(data);
         
-        // Групуємо навички по категоріях
+        // Group skills by categories
         const grouped = data.reduce((acc: { [key: string]: Skill[] }, skill: Skill) => {
           if (!acc[skill.category]) {
             acc[skill.category] = [];
@@ -213,7 +213,7 @@ const UserProfile: React.FC = () => {
           return acc;
         }, {});
         
-        // Конвертуємо в масив категорій
+        // Convert to array of categories
         const categories: SkillCategory[] = Object.keys(grouped).map(category => ({
           category,
           skills: grouped[category]
@@ -231,11 +231,11 @@ const UserProfile: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log('Token in useEffect:', token); // Дебаг
+    console.log('Token in useEffect:', token); // Debug
     if (token) {
       fetchProfile();
     } else {
-      // Якщо токена немає, перенаправляємо на головну
+      // If no token, redirect to home
       window.location.href = '/';
     }
   }, [token]);
@@ -246,7 +246,7 @@ const UserProfile: React.FC = () => {
     }
   }, [profile]);
 
-  // Обробка зміни основних полів
+  // Handle basic field changes
   const handleBasicInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setBasicFormData(prev => ({ 
@@ -255,13 +255,13 @@ const UserProfile: React.FC = () => {
     }));
   };
 
-  // Обробка зміни портфоліо
+  // Handle portfolio changes
   const handlePortfolioInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setPortfolioFormData(prev => ({ ...prev, [name]: name === 'experience' ? Number(value) : value }));
   };
 
-  // Збереження основної інформації
+  // Save basic information
   const handleSaveBasicInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -289,7 +289,7 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  // Збереження портфоліо
+  // Save portfolio
   const handleSavePortfolio = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -317,7 +317,7 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  // Збереження скілів
+  // Save skills
   const handleSaveSkills = async () => {
     setError('');
     setSuccess('');
@@ -344,7 +344,7 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  // Обробка вибору скілів
+  // Handle skill selection
   const handleSkillToggle = (skillId: number) => {
     setSelectedSkills(prev => 
       prev.includes(skillId) 
@@ -353,29 +353,29 @@ const UserProfile: React.FC = () => {
     );
   };
 
-  // Додайте цю функцію після handleSkillToggle
+  // Add this function after handleSkillToggle
   const handleClearCategory = () => {
     setSelectedCategory('');
   };
 
-  // Функція для швидкого вибору всіх навичок категорії
+  // Function for quick selection of all skills in a category
   const handleSelectAllInCategory = (category: string) => {
     const categorySkills = skillCategories.find(cat => cat.category === category)?.skills || [];
     const categorySkillIds = categorySkills.map(skill => skill.id);
     
-    // Перевіряємо чи всі навички категорії вже обрані
+    // Check if all skills in category are already selected
     const allSelected = categorySkillIds.every(id => selectedSkills.includes(id));
     
     if (allSelected) {
-      // Якщо всі обрані, то видаляємо їх
+      // If all selected, remove them
       setSelectedSkills(prev => prev.filter(id => !categorySkillIds.includes(id)));
     } else {
-      // Якщо не всі обрані, то додаємо всі
+      // If not all selected, add all
       setSelectedSkills(prev => [...new Set([...prev, ...categorySkillIds])]);
     }
   };
 
-  // Завантаження фото
+  // Photo upload
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -420,14 +420,14 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  // Видалення фото
+  // Delete photo
   const handleDeletePhoto = async (photoId: number) => {
     console.log('handleDeletePhoto called with:', photoId, typeof photoId);
     
     setError('');
     setSuccess('');
 
-    // Додаткова валідація
+    // Additional validation
     if (!photoId || photoId === undefined || isNaN(photoId)) {
       setError('Помилка: невірний ID фото');
       console.error('Invalid photo ID:', photoId);
@@ -461,42 +461,42 @@ const UserProfile: React.FC = () => {
       console.log('Delete success response:', responseData);
 
       setSuccess('Фото успішно видалено!');
-      fetchProfile(); // Оновлюємо профіль
+      fetchProfile(); // Update profile
     } catch (err: any) {
       console.error('Delete photo error:', err);
       setError(err.message);
     }
   };
 
-  // Додайте цю функцію валідації фото
+  // Add this photo validation function
   const isValidPhoto = (photo: any): photo is Photo => {
     return photo && 
            typeof photo === 'object' && 
-           photo.ID &&           // Изменено с photo.id на photo.ID
-           photo.URL &&          // Изменено с photo.url на photo.URL
+           photo.ID &&           // Changed from photo.id to photo.ID
+           photo.URL &&          // Changed from photo.url to photo.URL
            typeof photo.ID === 'number' && 
            typeof photo.URL === 'string';
   };
 
-  // Создайте функцию для формирования относительных URL
+  // Create function for forming relative URLs
   const getImageUrl = (photoUrl: string): string => {
     if (!photoUrl) return '';
     
-    // Если URL уже полный, возвращаем как есть
+    // If URL is already full, return as is
     if (photoUrl.startsWith('http')) {
       return photoUrl;
     }
     
-    // Используем относительные пути
+    // Use relative paths
     if (photoUrl.startsWith('/api/uploads/')) {
-      return photoUrl; // Уже правильный путь
+      return photoUrl; // Already correct path
     }
     
     if (photoUrl.startsWith('/uploads/')) {
-      return `/api${photoUrl}`; // Добавляем /api
+      return `/api${photoUrl}`; // Add /api
     }
     
-    // В остальных случаях формируем полный путь
+    // In other cases form full path
     return `/api/uploads/${photoUrl}`;
   };
 
@@ -541,13 +541,13 @@ const UserProfile: React.FC = () => {
           <div className="bg-white shadow rounded-lg mb-6 p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                {/* Profile Photo - исправление аватарки */}
+                {/* Profile Photo - avatar fix */}
                 <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
                   {profile.portfolio?.photos && 
                    profile.portfolio.photos.length > 0 && 
                    isValidPhoto(profile.portfolio.photos[0]) ? (
                     <img 
-                      src={getImageUrl(profile.portfolio.photos[0].URL)} // Изменено на .URL
+                      src={getImageUrl(profile.portfolio.photos[0].URL)} // Changed to .URL
                       alt="Профіль" 
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -729,7 +729,7 @@ const UserProfile: React.FC = () => {
                 </form>
               )}
 
-              {/* Portfolio Tab (только для психологів) */}
+              {/* Portfolio Tab (only for psychologists) */}
               {activeTab === 'portfolio' && isPsychologist && (
                 <form onSubmit={handleSavePortfolio} className="space-y-4">
                   <div>
@@ -915,7 +915,7 @@ const UserProfile: React.FC = () => {
                 </form>
               )}
 
-              {/* Skills Tab - нова версія з категоріями */}
+              {/* Skills Tab - new version with categories */}
               {activeTab === 'skills' && isPsychologist && (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
@@ -928,7 +928,7 @@ const UserProfile: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Поточні обрані навички */}
+                  {/* Current selected skills */}
                   {selectedSkills.length > 0 && (
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <h4 className="text-sm font-medium text-blue-900 mb-2">
@@ -956,7 +956,7 @@ const UserProfile: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Селектор категорій */}
+                  {/* Category selector */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Оберіть категорію навичок:
@@ -975,7 +975,7 @@ const UserProfile: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Навички обраної категорії */}
+                  {/* Skills of selected category */}
                   {selectedCategory && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-700 mb-3">
@@ -1014,7 +1014,7 @@ const UserProfile: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Додайте цей блок перед навичками обраної категорії, після селектора */}
+                  {/* Add this block before skills of selected category, after selector */}
                   {selectedCategory && (
                     <div className="flex space-x-2 mb-4">
                       <button
@@ -1037,7 +1037,7 @@ const UserProfile: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Всі категорії одним списком (альтернативний вигляд) */}
+                  {/* All categories in one list (alternative view) */}
                   {!selectedCategory && availableCategories.length > 0 && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-700 mb-3">
@@ -1086,7 +1086,7 @@ const UserProfile: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Кнопка очистити всі навички */}
+                  {/* Clear all skills button */}
                   {selectedSkills.length > 0 && (
                     <div className="text-center">
                       <button
@@ -1100,10 +1100,10 @@ const UserProfile: React.FC = () => {
                 </div>
               )}
 
-              {/* Photos Tab - исправление полей */}
+              {/* Photos Tab - field fixes */}
               {activeTab === 'photos' && isPsychologist && (
                 <div className="space-y-6">
-                  {/* Upload new photo остается без изменений */}
+                  {/* Upload new photo remains unchanged */}
                   <div>
                     <h3 className="text-lg font-medium mb-4">Завантажити нове фото</h3>
                     <div className="flex items-center space-x-4">

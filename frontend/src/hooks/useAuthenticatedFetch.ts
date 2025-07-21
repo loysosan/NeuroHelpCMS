@@ -16,7 +16,7 @@ export const useAuthenticatedFetch = () => {
       headers,
     });
 
-    // Автоматичний вихід при 401/403
+    // Automatic logout on 401/403
     if (response.status === 401 || response.status === 403) {
       logout();
       throw new Error('Сесія закінчилась. Будь ласка, увійдіть знову.');
@@ -28,7 +28,6 @@ export const useAuthenticatedFetch = () => {
   return authenticatedFetch;
 };
 
-// В UserProfile.tsx замініть всі fetch запити на:
 const fetchProfile = async () => {
   console.log('fetchProfile called');
   
@@ -46,7 +45,7 @@ const fetchProfile = async () => {
     }
 
     const data = await response.json();
-    // ... решта коду
+
   } catch (err: any) {
     console.error('fetchProfile error:', err);
     setError(err.message);
