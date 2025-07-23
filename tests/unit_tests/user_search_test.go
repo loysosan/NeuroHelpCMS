@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
 	"user-api/internal/db"
@@ -27,9 +28,17 @@ type UserSearchTestSuite struct {
 }
 
 func (suite *UserSearchTestSuite) SetupSuite() {
-	// Create in-memory SQLite database for testing
-	testDB, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	suite.Require().NoError(err)
+	// Use test database from environment variables
+	dbHost := getEnv("DB_HOST", "localhost")
+	dbPort := getEnv("DB_PORT", "3307")
+	dbName := getEnv("DB_NAME", "testdb")
+	dbUser := getEnv("DB_USER", "testuser")
+	dbPassword := getEnv("DB_PASSWORD", "testpass")
+
+	dsn := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?charset=utf8mb4&parseTime=True&loc=Local"
+
+	testDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	suite.Require().NoError(err, "Failed to connect to test database")
 
 	// Auto-migrate the schema
 	err = testDB.AutoMigrate(
@@ -45,25 +54,26 @@ func (suite *UserSearchTestSuite) SetupSuite() {
 	// Set the test database
 	db.DB = testDB
 	suite.testDB = testDB
-
-	// Seed test data
-	suite.seedTestData()
 }
 
 func (suite *UserSearchTestSuite) TearDownSuite() {
 	// Clean up database
-	sqlDB, _ := suite.testDB.DB()
-	sqlDB.Close()
+	if suite.testDB != nil {
+		sqlDB, _ := suite.testDB.DB()
+		sqlDB.Close()
+	}
 }
 
 func (suite *UserSearchTestSuite) SetupTest() {
 	// Clean up data before each test
-	suite.testDB.Exec("DELETE FROM psychologist_skills")
-	suite.testDB.Exec("DELETE FROM ratings")
-	suite.testDB.Exec("DELETE FROM portfolios")
-	suite.testDB.Exec("DELETE FROM skills")
-	suite.testDB.Exec("DELETE FROM categories")
-	suite.testDB.Exec("DELETE FROM users")
+	suite.testDB.Exec("SET FOREIGN_KEY_CHECKS = 0")
+	suite.testDB.Exec("TRUNCATE TABLE psychologist_skills")
+	suite.testDB.Exec("TRUNCATE TABLE ratings")
+	suite.testDB.Exec("TRUNCATE TABLE portfolios")
+	suite.testDB.Exec("TRUNCATE TABLE skills")
+	suite.testDB.Exec("TRUNCATE TABLE categories")
+	suite.testDB.Exec("TRUNCATE TABLE users")
+	suite.testDB.Exec("SET FOREIGN_KEY_CHECKS = 1")
 
 	// Re-seed data
 	suite.seedTestData()
@@ -97,15 +107,6 @@ func (suite *UserSearchTestSuite) seedTestData() {
 			Phone:     stringPtr("+1234567890"),
 			Role:      "psychologist",
 			Status:    "Active",
-			Portfolio: models.Portfolio{
-				Description:  "Experienced therapist",
-				Experience:   5,
-				Education:    "PhD in Psychology",
-				ContactEmail: stringPtr("john.contact@example.com"),
-				City:         stringPtr("New York"),
-				DateOfBirth:  &birthDate1,
-				Gender:       stringPtr("male"),
-			},
 		},
 		{
 			FirstName: "Jane",
@@ -114,15 +115,6 @@ func (suite *UserSearchTestSuite) seedTestData() {
 			Phone:     stringPtr("+1234567891"),
 			Role:      "psychologist",
 			Status:    "Active",
-			Portfolio: models.Portfolio{
-				Description:  "Family specialist",
-				Experience:   8,
-				Education:    "MA in Family Therapy",
-				ContactEmail: stringPtr("jane.contact@example.com"),
-				City:         stringPtr("Los Angeles"),
-				DateOfBirth:  &birthDate2,
-				Gender:       stringPtr("female"),
-			},
 		},
 		{
 			FirstName: "Bob",
@@ -130,14 +122,6 @@ func (suite *UserSearchTestSuite) seedTestData() {
 			Email:     "bob@example.com",
 			Role:      "psychologist",
 			Status:    "Active",
-			Portfolio: models.Portfolio{
-				Description: "Cognitive behavioral therapist",
-				Experience:  10,
-				Education:   "PhD in Clinical Psychology",
-				City:        stringPtr("Chicago"),
-				DateOfBirth: &birthDate3,
-				Gender:      stringPtr("male"),
-			},
 		},
 		{
 			FirstName: "Alice",
@@ -150,6 +134,43 @@ func (suite *UserSearchTestSuite) seedTestData() {
 
 	for i := range users {
 		suite.testDB.Create(&users[i])
+	}
+
+	// Create portfolios
+	portfolios := []models.Portfolio{
+		{
+			PsychologistID: users[0].ID,
+			Description:    "Experienced therapist",
+			Experience:     5,
+			Education:      "PhD in Psychology",
+			ContactEmail:   stringPtr("john.contact@example.com"),
+			City:           stringPtr("New York"),
+			DateOfBirth:    &birthDate1,
+			Gender:         stringPtr("male"),
+		},
+		{
+			PsychologistID: users[1].ID,
+			Description:    "Family specialist",
+			Experience:     8,
+			Education:      "MA in Family Therapy",
+			ContactEmail:   stringPtr("jane.contact@example.com"),
+			City:           stringPtr("Los Angeles"),
+			DateOfBirth:    &birthDate2,
+			Gender:         stringPtr("female"),
+		},
+		{
+			PsychologistID: users[2].ID,
+			Description:    "Cognitive behavioral therapist",
+			Experience:     10,
+			Education:      "PhD in Clinical Psychology",
+			City:           stringPtr("Chicago"),
+			DateOfBirth:    &birthDate3,
+			Gender:         stringPtr("male"),
+		},
+	}
+
+	for _, portfolio := range portfolios {
+		suite.testDB.Create(&portfolio)
 	}
 
 	// Create psychologist skills associations
@@ -523,9 +544,71 @@ func (suite *UserSearchTestSuite) TestSearchSpecialists_RatingIncluded() {
 	assert.True(suite.T(), ratingFound, "At least one specialist should have a rating")
 }
 
-// Helper function
+func (suite *UserSearchTestSuite) TestSearchSpecialists_LimitValidation() {
+	searchReq := handlers.SearchRequest{
+		Page:  1,
+		Limit: 150, // Exceeds max limit of 100
+	}
+
+	body, _ := json.Marshal(searchReq)
+	req := httptest.NewRequest("POST", "/api/users/search/specialists", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handlers.SearchSpecialists(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response handlers.SearchSpecialistsResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+
+	// Should use default limit of 20
+	assert.Equal(suite.T(), 20, response.Limit)
+}
+
+func (suite *UserSearchTestSuite) TestSearchSpecialists_AgeCalculation() {
+	searchReq := handlers.SearchRequest{
+		Page:  1,
+		Limit: 10,
+	}
+
+	body, _ := json.Marshal(searchReq)
+	req := httptest.NewRequest("POST", "/api/users/search/specialists", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handlers.SearchSpecialists(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response handlers.SearchSpecialistsResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+
+	// Check that age is calculated correctly for specialists with birth dates
+	for _, specialist := range response.Specialists {
+		if specialist.Portfolio.DateOfBirth != nil && specialist.Portfolio.Age != nil {
+			expectedAge := time.Now().Year() - specialist.Portfolio.DateOfBirth.Year()
+			if time.Now().YearDay() < specialist.Portfolio.DateOfBirth.YearDay() {
+				expectedAge--
+			}
+			assert.Equal(suite.T(), expectedAge, *specialist.Portfolio.Age)
+		}
+	}
+}
+
+// Helper functions
 func stringPtr(s string) *string {
 	return &s
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
 
 func TestUserSearchTestSuite(t *testing.T) {
