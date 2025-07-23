@@ -599,10 +599,6 @@ func (suite *UserSearchTestSuite) TestSearchSpecialists_AgeCalculation() {
 }
 
 // Helper functions
-func stringPtr(s string) *string {
-	return &s
-}
-
 func getEnv(key, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {
