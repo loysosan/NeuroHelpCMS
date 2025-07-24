@@ -12,19 +12,19 @@ import (
 	"gorm.io/gorm"
 )
 
-// RegisterRequest визначає структуру для запиту на реєстрацію,
-// що включає дані користувача та його портфоліо.
+// RegisterRequest defines the structure for the registration request,
+// including user and portfolio data.
 type RegisterRequest struct {
-	// Вбудована структура User для полів користувача
+	// Embedded User struct for user fields
 	models.User
 
-	// Поля для портфоліо психолога
+	// Fields for the psychologist's portfolio
 	Telegram         *string `json:"telegram"`
 	InstagramURL     *string `json:"instagram"`
 	City             *string `json:"city"`
-	Address          *string `json:"street"` // Фронтенд надсилає 'street'
+	Address          *string `json:"street"` // Frontend sends 'street'
 	FullDescription  *string `json:"fullDescription"`
-	ShortDescription *string `json:"shortDescription"` // Можна мапити в Description
+	ShortDescription *string `json:"shortDescription"` // Can be mapped to Description
 	VideoURL         *string `json:"videoUrl"`
 }
 
@@ -46,25 +46,25 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := req.User // Отримуємо дані користувача з запиту
+	user := req.User // Get user data from the request
 
-	// Валідація та створення користувача
+	// Validate and create the user
 	if !processUserCreation(w, &user) {
-		return // Помилка вже записана в processUserCreation
+		return // Error has already been written in processUserCreation
 	}
 
-	// Якщо користувач - психолог, знаходимо та оновлюємо його портфоліо
+	// If the user is a psychologist, find and update their portfolio
 	if user.Role == "psychologist" {
 		err := db.DB.Transaction(func(tx *gorm.DB) error {
 			var portfolio models.Portfolio
-			// Знаходимо портфоліо, яке, ймовірно, було створено автоматично.
-			// Якщо його немає, створюємо нове.
+			// Find the portfolio, which was likely created automatically.
+			// If it doesn't exist, create a new one.
 			if err := tx.Where(models.Portfolio{PsychologistID: user.ID}).FirstOrCreate(&portfolio).Error; err != nil {
 				log.Error().Err(err).Msg("RegisterUser: failed to find or create portfolio")
 				return err
 			}
 
-			// Оновлюємо поля портфоліо даними з запиту
+			// Update portfolio fields with data from the request
 			portfolio.Telegram = req.Telegram
 			portfolio.InstagramURL = req.InstagramURL
 			portfolio.City = req.City
@@ -77,17 +77,17 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 				portfolio.Description = *req.FullDescription
 			}
 
-			// Зберігаємо оновлене портфоліо
+			// Save the updated portfolio
 			if err := tx.Save(&portfolio).Error; err != nil {
 				log.Error().Err(err).Msg("RegisterUser: failed to update portfolio")
 				return err
 			}
 
-			return nil // Комміт транзакції
+			return nil // Commit the transaction
 		})
 
 		if err != nil {
-			// Якщо транзакція не вдалася, видаляємо користувача для консистентності
+			// If the transaction failed, delete the user for consistency
 			db.DB.Delete(&user)
 			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to process psychologist portfolio")
 			return

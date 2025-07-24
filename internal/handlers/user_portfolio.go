@@ -20,7 +20,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// UpdateSelfPortfolioRequest визначає структуру для оновлення портфоліо
+// UpdateSelfPortfolioRequest defines the structure for updating a psychologist's portfolio.
 type UpdateSelfPortfolioRequest struct {
 	Description  *string `json:"description"`
 	Experience   *int    `json:"experience"`
@@ -300,19 +300,19 @@ func DeletePortfolioPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Видалити файл з файлової системи
+	// Delete the photo file from the filesystem
 	if photo.URL != "" {
-		// Отримуємо шлях до файлу (видаляємо /uploads/ з початку)
+		// Remove the "/uploads/" prefix to get the relative path
 		filePath := strings.TrimPrefix(photo.URL, "/uploads/")
 		fullPath := filepath.Join("./uploads", filePath)
 
 		if err := os.Remove(fullPath); err != nil {
 			log.Error().Err(err).Str("path", fullPath).Msg("Failed to delete photo file")
-			// Не повертаємо помилку, продовжуємо видаляти запис з БД
+			// Do not return an error here, just log it
 		}
 	}
 
-	// Видалити запис з бази даних
+	// Delete the photo record from the database
 	if err := db.DB.Delete(&photo).Error; err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to delete photo record")
 		return
