@@ -41,6 +41,7 @@ type Portfolio struct {
 	Telegram       *string    `gorm:"type:varchar(100)"`
 	FacebookURL    *string    `gorm:"type:varchar(255)"`
 	InstagramURL   *string    `gorm:"type:varchar(255)"`
+	VideoURL       *string    `gorm:"type:varchar(255)"`
 	CreatedAt      time.Time  `gorm:"autoCreateTime"`
 	UpdatedAt      time.Time  `gorm:"autoUpdateTime"`
 	Diplomas       []Diploma  `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`
