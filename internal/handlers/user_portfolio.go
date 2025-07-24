@@ -34,6 +34,7 @@ type UpdateSelfPortfolioRequest struct {
 	Telegram     *string `json:"telegram"`
 	FacebookURL  *string `json:"facebookURL"`
 	InstagramURL *string `json:"instagramURL"`
+	VideoURL     *string `json:"videoUrl"`
 }
 
 // UpdateSelfPortfolio godoc
@@ -95,6 +96,7 @@ func UpdateSelfPortfolio(w http.ResponseWriter, r *http.Request) {
 	portfolio.Telegram = req.Telegram
 	portfolio.FacebookURL = req.FacebookURL
 	portfolio.InstagramURL = req.InstagramURL
+	portfolio.VideoURL = req.VideoURL
 
 	// Обработка даты рождения
 	if req.DateOfBirth != nil {
