@@ -5,6 +5,7 @@ import { UserAuthProvider } from './context/UserAuthContext';
 import AppRoutes from './routes/AppRoutes';
 import NewsPage from './pages/NewsPage';
 import NewsDetailPage from './pages/NewsDetailPage';
+import QuizRegistrationForm from './pages/QuizRegister';
 
 const App: React.FC = () => {
   return (
@@ -14,6 +15,7 @@ const App: React.FC = () => {
           <Route path="/*" element={<AppRoutes />} />
           <Route path="/news" element={<NewsPage />} />
           <Route path="/news/:id" element={<NewsDetailPage />} />
+          <Route path="/quiz-register" element={<QuizRegistrationForm />} />
         </Routes>
       </UserAuthProvider>
     </AuthProvider>
