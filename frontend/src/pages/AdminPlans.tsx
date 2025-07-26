@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CreatePlanModal from '../components/CreatePlanModal';
 import AdminLayout from '../components/AdminLayout';
+import EditPlanModal from '../components/EditPlanModal'; // Імпортуємо новий компонент
 
 // Оновлюємо тип Plan відповідно до структури з бекенду
 type Plan = {
@@ -24,6 +25,8 @@ const AdminPlans: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<number | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [planToEdit, setPlanToEdit] = useState<Plan | null>(null);
 
   const fetchPlans = async () => {
     try {
@@ -90,6 +93,34 @@ const AdminPlans: React.FC = () => {
     }
   };
 
+  const handleEditClick = (plan: Plan) => {
+    setPlanToEdit(plan);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdatePlan = async (planData: any) => {
+    if (!planToEdit) return;
+
+    try {
+      const res = await fetch(`/api/admin/plans/${planToEdit.ID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(planData)
+      });
+
+      if (!res.ok) throw new Error('Не вдалося оновити план');
+
+      await fetchPlans(); // Оновлюємо список планів
+      setIsEditModalOpen(false);
+      setPlanToEdit(null);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   useEffect(() => {
     fetchPlans();
   }, [token]);
@@ -129,14 +160,26 @@ const AdminPlans: React.FC = () => {
                   <h3 className="text-xl font-semibold">{plan.Name}</h3>
                   <p className="text-gray-600">{plan.Description}</p>
                 </div>
-                <button
-                  onClick={() => handleDeleteClick(plan.ID)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleEditClick(plan)}
+                    className="text-gray-500 hover:text-indigo-600"
+                    aria-label="Edit plan"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(plan.ID)}
+                    className="text-red-600 hover:text-red-800"
+                    aria-label="Delete plan"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               
               <div className="mb-4">
@@ -162,6 +205,15 @@ const AdminPlans: React.FC = () => {
           onClose={() => setIsCreateModalOpen(false)}
           onSubmit={handleCreatePlan}
         />
+
+        {planToEdit && (
+          <EditPlanModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onSubmit={handleUpdatePlan}
+            planData={planToEdit}
+          />
+        )}
 
         <ConfirmationModal
           isOpen={isDeleteModalOpen}
