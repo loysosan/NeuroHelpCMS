@@ -71,6 +71,7 @@ func main() {
 
 		r.Get("/api/admin/plans", handlers.GetPlans)
 		r.Post("/api/admin/plans", handlers.CreatePlan)
+		r.Put("/api/admin/plans/{id}", handlers.UpdatePlan)
 		r.Delete("/api/admin/plans/{id}", handlers.DeletePlan)
 
 		r.Post("/api/admin/administrators", handlers.CreateAdmin)

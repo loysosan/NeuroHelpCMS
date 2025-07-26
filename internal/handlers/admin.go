@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"user-api/internal/db"
 	"user-api/internal/models"
-    "user-api/internal/utils"
+	"user-api/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
@@ -97,72 +97,72 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/users/{id} [put]
 // @Security BearerAuth
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-    id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-    var user models.User
-    if err := db.DB.First(&user, id).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
-        return
-    }
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	var user models.User
+	if err := db.DB.First(&user, id).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+		return
+	}
 
-    var updatedUser map[string]interface{}
-    if err := json.NewDecoder(r.Body).Decode(&updatedUser); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
-        return
-    }
+	var updatedUser map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updatedUser); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+		return
+	}
 
-    for key, value := range updatedUser {
-        switch key {
-        case "FirstName":
-            if str, ok := value.(string); ok {
-                user.FirstName = str
-            }
-        case "LastName":
-            if str, ok := value.(string); ok {
-                user.LastName = str
-            }
-        case "Email":
-            if str, ok := value.(string); ok {
-                user.Email = str
-            }
-        case "Role":
-            if str, ok := value.(string); ok {
-                user.Role = str
-            }
-        case "Phone":
-            if value == nil {
-                user.Phone = nil
-            } else if str, ok := value.(string); ok {
-                user.Phone = &str
-            }
-        case "PlanID":
-            if value == nil {
-                user.PlanID = nil
-            } else if num, ok := value.(float64); ok {
-                planID := uint64(num)
-                user.PlanID = &planID
-            }
-        case "Status":
-            if str, ok := value.(string); ok {
-                user.Status = str
-            }
-        case "Verified":
-            if b, ok := value.(bool); ok {
-                user.Verified = b
-            }
-        }
-    }
+	for key, value := range updatedUser {
+		switch key {
+		case "FirstName":
+			if str, ok := value.(string); ok {
+				user.FirstName = str
+			}
+		case "LastName":
+			if str, ok := value.(string); ok {
+				user.LastName = str
+			}
+		case "Email":
+			if str, ok := value.(string); ok {
+				user.Email = str
+			}
+		case "Role":
+			if str, ok := value.(string); ok {
+				user.Role = str
+			}
+		case "Phone":
+			if value == nil {
+				user.Phone = nil
+			} else if str, ok := value.(string); ok {
+				user.Phone = &str
+			}
+		case "PlanID":
+			if value == nil {
+				user.PlanID = nil
+			} else if num, ok := value.(float64); ok {
+				planID := uint64(num)
+				user.PlanID = &planID
+			}
+		case "Status":
+			if str, ok := value.(string); ok {
+				user.Status = str
+			}
+		case "Verified":
+			if b, ok := value.(bool); ok {
+				user.Verified = b
+			}
+		}
+	}
 
-    if err := db.DB.Model(&user).Updates(user).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update user data")
-        return
-    }
+	if err := db.DB.Model(&user).Updates(user).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update user data")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "message": "User data updated successfully",
-        "data": user,
-    })
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "User data updated successfully",
+		"data":    user,
+	})
 }
 
 // CreateSkill godoc
@@ -177,30 +177,30 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/skills [post]
 // @Security     BearerAuth
 func CreateSkill(w http.ResponseWriter, r *http.Request) {
-    var skill models.Skill
-    if err := json.NewDecoder(r.Body).Decode(&skill); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
-        return
-    }
+	var skill models.Skill
+	if err := json.NewDecoder(r.Body).Decode(&skill); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+		return
+	}
 
-    // Check if skill with the same name already exists
-    var existing models.Skill
-    if err := db.DB.Where("name = ?", skill.Name).First(&existing).Error; err == nil {
-        utils.WriteError(w, http.StatusConflict, "SKILL_EXISTS", "Skill with this name already exists")
-        return
-    }
+	// Check if skill with the same name already exists
+	var existing models.Skill
+	if err := db.DB.Where("name = ?", skill.Name).First(&existing).Error; err == nil {
+		utils.WriteError(w, http.StatusConflict, "SKILL_EXISTS", "Skill with this name already exists")
+		return
+	}
 
-    if err := db.DB.Create(&skill).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create skill")
-        return
-    }
+	if err := db.DB.Create(&skill).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create skill")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "data":    skill,
-    })
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    skill,
+	})
 }
 
 // GetSkills godoc
@@ -213,14 +213,14 @@ func CreateSkill(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/skills [get]
 // @Security     BearerAuth
 func GetSkills(w http.ResponseWriter, r *http.Request) {
-    var skills []models.Skill
-    if err := db.DB.Find(&skills).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve skills")
-        return
-    }
+	var skills []models.Skill
+	if err := db.DB.Find(&skills).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve skills")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(skills)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(skills)
 }
 
 // CreateSkillCategory godoc
@@ -235,30 +235,30 @@ func GetSkills(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/skills/categories [post]
 // @Security     BearerAuth
 func CreateSkillCategory(w http.ResponseWriter, r *http.Request) {
-    var category models.Category
-    if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
-        return
-    }
+	var category models.Category
+	if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+		return
+	}
 
-    // Check if category with the same name already exists
-    var existing models.Category
-    if err := db.DB.Where("name = ?", category.Name).First(&existing).Error; err == nil {
-        utils.WriteError(w, http.StatusConflict, "CATEGORY_EXISTS", "Category with this name already exists")
-        return
-    }
+	// Check if category with the same name already exists
+	var existing models.Category
+	if err := db.DB.Where("name = ?", category.Name).First(&existing).Error; err == nil {
+		utils.WriteError(w, http.StatusConflict, "CATEGORY_EXISTS", "Category with this name already exists")
+		return
+	}
 
-    if err := db.DB.Create(&category).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create category")
-        return
-    }
+	if err := db.DB.Create(&category).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create category")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "data":    category,
-    })
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    category,
+	})
 }
 
 // GetSkillCategories godoc
@@ -271,14 +271,14 @@ func CreateSkillCategory(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/skills/categories [get]
 // @Security     BearerAuth
 func GetSkillCategories(w http.ResponseWriter, r *http.Request) {
-    var categories []models.Category
-    if err := db.DB.Find(&categories).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve categories")
-        return
-    }
+	var categories []models.Category
+	if err := db.DB.Find(&categories).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve categories")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(categories)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(categories)
 }
 
 // DeleteUser godoc
@@ -293,83 +293,83 @@ func GetSkillCategories(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/users/{id} [delete]
 // @Security     BearerAuth
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-    // Get user ID from URL parameters
-    id, err := strconv.Atoi(chi.URLParam(r, "id"))
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID format")
-        return
-    }
+	// Get user ID from URL parameters
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID format")
+		return
+	}
 
-    // Check if user exists
-    var user models.User
-    if err := db.DB.First(&user, id).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
-        return
-    }
+	// Check if user exists
+	var user models.User
+	if err := db.DB.First(&user, id).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+		return
+	}
 
-    // Start transaction
-    tx := db.DB.Begin()
-    if tx.Error != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to start transaction")
-        return
-    }
+	// Start transaction
+	tx := db.DB.Begin()
+	if tx.Error != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to start transaction")
+		return
+	}
 
-    // Delete related data in correct order
-    
-    // 1. Delete photos from portfolio if exists
-    if err := tx.Exec("DELETE photos FROM photos INNER JOIN portfolios ON photos.portfolio_id = portfolios.id WHERE portfolios.psychologist_id = ?", id).Error; err != nil {
-        tx.Rollback()
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete photos")
-        return
-    }
+	// Delete related data in correct order
 
-    // 2. Delete portfolio
-    if err := tx.Where("psychologist_id = ?", id).Delete(&models.Portfolio{}).Error; err != nil {
-        tx.Rollback()
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete portfolio")
-        return
-    }
+	// 1. Delete photos from portfolio if exists
+	if err := tx.Exec("DELETE photos FROM photos INNER JOIN portfolios ON photos.portfolio_id = portfolios.id WHERE portfolios.psychologist_id = ?", id).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete photos")
+		return
+	}
 
-    // 3. Delete blog posts
-    if err := tx.Where("psychologist_id = ?", id).Delete(&models.BlogPost{}).Error; err != nil {
-        tx.Rollback()
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete blog posts")
-        return
-    }
+	// 2. Delete portfolio
+	if err := tx.Where("psychologist_id = ?", id).Delete(&models.Portfolio{}).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete portfolio")
+		return
+	}
 
-    // 4. Delete reviews (both given and received)
-    if err := tx.Where("client_id = ? OR psychologist_id = ?", id, id).Delete(&models.Review{}).Error; err != nil {
-        tx.Rollback()
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete reviews")
-        return
-    }
+	// 3. Delete blog posts
+	if err := tx.Where("psychologist_id = ?", id).Delete(&models.BlogPost{}).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete blog posts")
+		return
+	}
 
-    // 5. Delete psychologist skills (many-to-many relationship)
-    if err := tx.Where("psychologist_id = ?", id).Delete(&models.PsychologistSkills{}).Error; err != nil {
-        tx.Rollback()
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete skills")
-        return
-    }
+	// 4. Delete reviews (both given and received)
+	if err := tx.Where("client_id = ? OR psychologist_id = ?", id, id).Delete(&models.Review{}).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete reviews")
+		return
+	}
 
-    // 6. Finally delete user
-    if err := tx.Delete(&user).Error; err != nil {
-        tx.Rollback()
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete user")
-        return
-    }
+	// 5. Delete psychologist skills (many-to-many relationship)
+	if err := tx.Where("psychologist_id = ?", id).Delete(&models.PsychologistSkills{}).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete skills")
+		return
+	}
 
-    // Commit transaction
-    if err := tx.Commit().Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to commit transaction")
-        return
-    }
+	// 6. Finally delete user
+	if err := tx.Delete(&user).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete user")
+		return
+	}
 
-    // Return success response
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "message": "User and all related data successfully deleted",
-    })
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to commit transaction")
+		return
+	}
+
+	// Return success response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "User and all related data successfully deleted",
+	})
 }
 
 // GetPlans godoc
@@ -382,14 +382,14 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/plans [get]
 // @Security     BearerAuth
 func GetPlans(w http.ResponseWriter, r *http.Request) {
-    var plans []models.Plan
-    if err := db.DB.Find(&plans).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve plans")
-        return
-    }
+	var plans []models.Plan
+	if err := db.DB.Find(&plans).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve plans")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(plans)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(plans)
 }
 
 // CreatePlan godoc
@@ -404,30 +404,84 @@ func GetPlans(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/plans [post]
 // @Security     BearerAuth
 func CreatePlan(w http.ResponseWriter, r *http.Request) {
-    var plan models.Plan
-    if err := json.NewDecoder(r.Body).Decode(&plan); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
-        return
-    }
+	var plan models.Plan
+	if err := json.NewDecoder(r.Body).Decode(&plan); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Incorrect request format")
+		return
+	}
 
-    // Check if plan with the same name already exists
-    var existing models.Plan
-    if err := db.DB.Where("name = ?", plan.Name).First(&existing).Error; err == nil {
-        utils.WriteError(w, http.StatusConflict, "PLAN_EXISTS", "Plan with this name already exists")
-        return
-    }
+	// Check if plan with the same name already exists
+	var existing models.Plan
+	if err := db.DB.Where("name = ?", plan.Name).First(&existing).Error; err == nil {
+		utils.WriteError(w, http.StatusConflict, "PLAN_EXISTS", "Plan with this name already exists")
+		return
+	}
 
-    if err := db.DB.Create(&plan).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create plan")
-        return
-    }
+	if err := db.DB.Create(&plan).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to create plan")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "data":    plan,
-    })
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    plan,
+	})
+}
+
+// UpdatePlan godoc
+// @Summary      Update plan
+// @Description  Update plan by ID (admin only)
+// @Tags         Actions for administrators
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "Plan ID"
+// @Param        plan body models.Plan true "Updated plan data"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,404,500 {object} map[string]interface{}
+// @Router       /api/admin/plans/{id} [put]
+// @Security     BearerAuth
+func UpdatePlan(w http.ResponseWriter, r *http.Request) {
+	// Get plan ID from URL parameters
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid plan ID format")
+		return
+	}
+
+	// Check if plan exists
+	var plan models.Plan
+	if err := db.DB.First(&plan, id).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "PLAN_NOT_FOUND", "Plan not found")
+		return
+	}
+
+	// Decode the new data
+	var updatedPlan models.Plan
+	if err := json.NewDecoder(r.Body).Decode(&updatedPlan); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_DATA", "Invalid request data")
+		return
+	}
+
+	// Update the fields
+	plan.Name = updatedPlan.Name
+	plan.Description = updatedPlan.Description
+	plan.Price = updatedPlan.Price
+	plan.DurationDays = updatedPlan.DurationDays
+
+	// Save the updated plan
+	if err := db.DB.Save(&plan).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update plan")
+		return
+	}
+
+	// Return success response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    plan,
+	})
 }
 
 // DeletePlan godoc
@@ -442,43 +496,43 @@ func CreatePlan(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/plans/{id} [delete]
 // @Security     BearerAuth
 func DeletePlan(w http.ResponseWriter, r *http.Request) {
-    // Get plan ID from URL parameters
-    id, err := strconv.Atoi(chi.URLParam(r, "id"))
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid plan ID format")
-        return
-    }
+	// Get plan ID from URL parameters
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid plan ID format")
+		return
+	}
 
-    // Check if plan exists
-    var plan models.Plan
-    if err := db.DB.First(&plan, id).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "PLAN_NOT_FOUND", "Plan not found")
-        return
-    }
+	// Check if plan exists
+	var plan models.Plan
+	if err := db.DB.First(&plan, id).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "PLAN_NOT_FOUND", "Plan not found")
+		return
+	}
 
-    // Check if any users are using this plan
-    var count int64
-    if err := db.DB.Model(&models.User{}).Where("plan_id = ?", id).Count(&count).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to check plan usage")
-        return
-    }
+	// Check if any users are using this plan
+	var count int64
+	if err := db.DB.Model(&models.User{}).Where("plan_id = ?", id).Count(&count).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to check plan usage")
+		return
+	}
 
-    if count > 0 {
-        utils.WriteError(w, http.StatusConflict, "PLAN_IN_USE", "Cannot delete plan that is being used by users")
-        return
-    }
+	if count > 0 {
+		utils.WriteError(w, http.StatusConflict, "PLAN_IN_USE", "Cannot delete plan that is being used by users")
+		return
+	}
 
-    // Delete plan
-    if err := db.DB.Delete(&plan).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete plan")
-        return
-    }
+	// Delete plan
+	if err := db.DB.Delete(&plan).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete plan")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "message": "Plan successfully deleted",
-    })
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Plan successfully deleted",
+	})
 }
 
 // DeleteSkill godoc
@@ -493,31 +547,31 @@ func DeletePlan(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/skills/{id} [delete]
 // @Security     BearerAuth
 func DeleteSkill(w http.ResponseWriter, r *http.Request) {
-    id := chi.URLParam(r, "id")
-    skillID, err := strconv.Atoi(id)
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid skill ID format")
-        return
-    }
+	id := chi.URLParam(r, "id")
+	skillID, err := strconv.Atoi(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid skill ID format")
+		return
+	}
 
-    // Перевіряємо чи існує навичка
-    var skill models.Skill
-    if err := db.DB.First(&skill, skillID).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "SKILL_NOT_FOUND", "Skill not found")
-        return
-    }
+	// Перевіряємо чи існує навичка
+	var skill models.Skill
+	if err := db.DB.First(&skill, skillID).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "SKILL_NOT_FOUND", "Skill not found")
+		return
+	}
 
-    // Видаляємо навичку
-    if err := db.DB.Delete(&skill).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete skill")
-        return
-    }
+	// Видаляємо навичку
+	if err := db.DB.Delete(&skill).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete skill")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "message": "Skill successfully deleted",
-    })
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Skill successfully deleted",
+	})
 }
 
 // DeleteSkillCategory godoc
@@ -532,37 +586,37 @@ func DeleteSkill(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/skills/categories/{id} [delete]
 // @Security     BearerAuth
 func DeleteSkillCategory(w http.ResponseWriter, r *http.Request) {
-    id := chi.URLParam(r, "id")
-    categoryID, err := strconv.Atoi(id)
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid category ID format")
-        return
-    }
+	id := chi.URLParam(r, "id")
+	categoryID, err := strconv.Atoi(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid category ID format")
+		return
+	}
 
-    // Перевіряємо чи існує категорія
-    var category models.Category
-    if err := db.DB.First(&category, categoryID).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "CATEGORY_NOT_FOUND", "Category not found")
-        return
-    }
+	// Перевіряємо чи існує категорія
+	var category models.Category
+	if err := db.DB.First(&category, categoryID).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "CATEGORY_NOT_FOUND", "Category not found")
+		return
+	}
 
-    // Оновлюємо всі навички цієї категорії на null
-    if err := db.DB.Model(&models.Skill{}).Where("category_id = ?", categoryID).Update("category_id", nil).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update skills")
-        return
-    }
+	// Оновлюємо всі навички цієї категорії на null
+	if err := db.DB.Model(&models.Skill{}).Where("category_id = ?", categoryID).Update("category_id", nil).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update skills")
+		return
+	}
 
-    // Видаляємо категорію
-    if err := db.DB.Delete(&category).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete category")
-        return
-    }
+	// Видаляємо категорію
+	if err := db.DB.Delete(&category).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete category")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "message": "Category successfully deleted",
-    })
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Category successfully deleted",
+	})
 }
 
 // UpdateSkill godoc
@@ -578,41 +632,41 @@ func DeleteSkillCategory(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/skills/{id} [put]
 // @Security     BearerAuth
 func UpdateSkill(w http.ResponseWriter, r *http.Request) {
-    id := chi.URLParam(r, "id")
-    skillID, err := strconv.Atoi(id)
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid skill ID format")
-        return
-    }
+	id := chi.URLParam(r, "id")
+	skillID, err := strconv.Atoi(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid skill ID format")
+		return
+	}
 
-    // Перевіряємо чи існує навичка
-    var skill models.Skill
-    if err := db.DB.First(&skill, skillID).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "SKILL_NOT_FOUND", "Skill not found")
-        return
-    }
+	// Перевіряємо чи існує навичка
+	var skill models.Skill
+	if err := db.DB.First(&skill, skillID).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "SKILL_NOT_FOUND", "Skill not found")
+		return
+	}
 
-    // Декодуємо нові дані
-    var updatedSkill models.Skill
-    if err := json.NewDecoder(r.Body).Decode(&updatedSkill); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_DATA", "Invalid request data")
-        return
-    }
+	// Декодуємо нові дані
+	var updatedSkill models.Skill
+	if err := json.NewDecoder(r.Body).Decode(&updatedSkill); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_DATA", "Invalid request data")
+		return
+	}
 
-    // Оновлюємо дані
-    skill.Name = updatedSkill.Name
-    skill.CategoryID = updatedSkill.CategoryID
+	// Оновлюємо дані
+	skill.Name = updatedSkill.Name
+	skill.CategoryID = updatedSkill.CategoryID
 
-    if err := db.DB.Save(&skill).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update skill")
-        return
-    }
+	if err := db.DB.Save(&skill).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update skill")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "data": skill,
-    })
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    skill,
+	})
 }
 
 // UpdateSkillCategory godoc
@@ -628,40 +682,40 @@ func UpdateSkill(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/skills/categories/{id} [put]
 // @Security     BearerAuth
 func UpdateSkillCategory(w http.ResponseWriter, r *http.Request) {
-    id := chi.URLParam(r, "id")
-    categoryID, err := strconv.Atoi(id)
-    if err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid category ID format")
-        return
-    }
+	id := chi.URLParam(r, "id")
+	categoryID, err := strconv.Atoi(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid category ID format")
+		return
+	}
 
-    // Перевіряємо чи існує категорія
-    var category models.Category
-    if err := db.DB.First(&category, categoryID).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "CATEGORY_NOT_FOUND", "Category not found")
-        return
-    }
+	// Перевіряємо чи існує категорія
+	var category models.Category
+	if err := db.DB.First(&category, categoryID).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "CATEGORY_NOT_FOUND", "Category not found")
+		return
+	}
 
-    // Декодуємо нові дані
-    var updatedCategory models.Category
-    if err := json.NewDecoder(r.Body).Decode(&updatedCategory); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_DATA", "Invalid request data")
-        return
-    }
+	// Декодуємо нові дані
+	var updatedCategory models.Category
+	if err := json.NewDecoder(r.Body).Decode(&updatedCategory); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_DATA", "Invalid request data")
+		return
+	}
 
-    // Оновлюємо назву
-    category.Name = updatedCategory.Name
+	// Оновлюємо назву
+	category.Name = updatedCategory.Name
 
-    if err := db.DB.Save(&category).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update category")
-        return
-    }
+	if err := db.DB.Save(&category).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to update category")
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "data": category,
-    })
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    category,
+	})
 }
 
 // CreateAdmin creates a new administrator (requires admin or master role)
@@ -676,46 +730,46 @@ func UpdateSkillCategory(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/administrators [post]
 // @Security     BearerAuth
 func CreateAdmin(w http.ResponseWriter, r *http.Request) {
-    adminVal := r.Context().Value("admin")
-    currentAdmin, ok := adminVal.(*models.Administrator)
-    if !ok || currentAdmin == nil {
-        utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required")
-        return
-    }
+	adminVal := r.Context().Value("admin")
+	currentAdmin, ok := adminVal.(*models.Administrator)
+	if !ok || currentAdmin == nil {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required")
+		return
+	}
 
-    // Check permissions
-    if currentAdmin.Role == "moderator" {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Moderators cannot create administrators")
-        return
-    }
+	// Check permissions
+	if currentAdmin.Role == "moderator" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Moderators cannot create administrators")
+		return
+	}
 
-    var newAdmin models.Administrator
-    if err := json.NewDecoder(r.Body).Decode(&newAdmin); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_INPUT", "Invalid request body")
-        return
-    }
+	var newAdmin models.Administrator
+	if err := json.NewDecoder(r.Body).Decode(&newAdmin); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_INPUT", "Invalid request body")
+		return
+	}
 
-    // Prevent creation of master role
-    if newAdmin.Role == "master" {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Cannot create master role")
-        return
-    }
+	// Prevent creation of master role
+	if newAdmin.Role == "master" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Cannot create master role")
+		return
+	}
 
-    // Hash password
-    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newAdmin.Password), bcrypt.DefaultCost)
-    if err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "PASSWORD_HASH_ERROR", "Failed to hash password")
-        return
-    }
-    newAdmin.Password = string(hashedPassword)
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newAdmin.Password), bcrypt.DefaultCost)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "PASSWORD_HASH_ERROR", "Failed to hash password")
+		return
+	}
+	newAdmin.Password = string(hashedPassword)
 
-    if err := db.DB.Create(&newAdmin).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to create administrator")
-        return
-    }
+	if err := db.DB.Create(&newAdmin).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to create administrator")
+		return
+	}
 
-    newAdmin.Password = "" // Don't return password in response
-    json.NewEncoder(w).Encode(newAdmin)
+	newAdmin.Password = "" // Don't return password in response
+	json.NewEncoder(w).Encode(newAdmin)
 }
 
 // UpdateAdmin updates administrator details
@@ -731,62 +785,62 @@ func CreateAdmin(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/administrators/{id} [put]
 // @Security     BearerAuth
 func UpdateAdmin(w http.ResponseWriter, r *http.Request) {
-    currentAdmin := r.Context().Value("admin").(*models.Administrator)
-    adminID := chi.URLParam(r, "id")
+	currentAdmin := r.Context().Value("admin").(*models.Administrator)
+	adminID := chi.URLParam(r, "id")
 
-    // Get admin to update
-    var admin models.Administrator
-    if err := db.DB.First(&admin, adminID).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Administrator not found")
-        return
-    }
+	// Get admin to update
+	var admin models.Administrator
+	if err := db.DB.First(&admin, adminID).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Administrator not found")
+		return
+	}
 
-    // Check permissions
-    if currentAdmin.Role == "moderator" || 
-       (currentAdmin.Role == "admin" && admin.Role == "master") {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Insufficient permissions")
-        return
-    }
+	// Check permissions
+	if currentAdmin.Role == "moderator" ||
+		(currentAdmin.Role == "admin" && admin.Role == "master") {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Insufficient permissions")
+		return
+	}
 
-    var updates struct {
-        FirstName string `json:"firstName"`
-        LastName  string `json:"lastName"`
-        Email     string `json:"email"`
-        Phone     string `json:"phone"`
-        Status    string `json:"status"`
-        Role      string `json:"role"`
-    }
+	var updates struct {
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
+		Email     string `json:"email"`
+		Phone     string `json:"phone"`
+		Status    string `json:"status"`
+		Role      string `json:"role"`
+	}
 
-    if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
-        utils.WriteError(w, http.StatusBadRequest, "INVALID_INPUT", "Invalid request body")
-        return
-    }
+	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_INPUT", "Invalid request body")
+		return
+	}
 
-    // Prevent changing master role
-    if admin.Role == "master" {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Cannot modify master account")
-        return
-    }
+	// Prevent changing master role
+	if admin.Role == "master" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Cannot modify master account")
+		return
+	}
 
-    // Update fields
-    admin.FirstName = updates.FirstName
-    admin.LastName = updates.LastName
-    admin.Email = updates.Email
-    admin.Phone = &updates.Phone
-    admin.Status = updates.Status
-    
-    // Only master can change roles
-    if currentAdmin.Role == "master" {
-        admin.Role = updates.Role
-    }
+	// Update fields
+	admin.FirstName = updates.FirstName
+	admin.LastName = updates.LastName
+	admin.Email = updates.Email
+	admin.Phone = &updates.Phone
+	admin.Status = updates.Status
 
-    if err := db.DB.Save(&admin).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update administrator")
-        return
-    }
+	// Only master can change roles
+	if currentAdmin.Role == "master" {
+		admin.Role = updates.Role
+	}
 
-    admin.Password = "" // Don't return password
-    json.NewEncoder(w).Encode(admin)
+	if err := db.DB.Save(&admin).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update administrator")
+		return
+	}
+
+	admin.Password = "" // Don't return password
+	json.NewEncoder(w).Encode(admin)
 }
 
 // DeleteAdmin deletes an administrator
@@ -800,34 +854,34 @@ func UpdateAdmin(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/administrators/{id} [delete]
 // @Security     BearerAuth
 func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
-    currentAdmin := r.Context().Value("admin").(*models.Administrator)
-    adminID := chi.URLParam(r, "id")
+	currentAdmin := r.Context().Value("admin").(*models.Administrator)
+	adminID := chi.URLParam(r, "id")
 
-    var admin models.Administrator
-    if err := db.DB.First(&admin, adminID).Error; err != nil {
-        utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Administrator not found")
-        return
-    }
+	var admin models.Administrator
+	if err := db.DB.First(&admin, adminID).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Administrator not found")
+		return
+	}
 
-    // Prevent deleting master account
-    if admin.Role == "master" {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Cannot delete master account")
-        return
-    }
+	// Prevent deleting master account
+	if admin.Role == "master" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Cannot delete master account")
+		return
+	}
 
-    // Check permissions
-    if currentAdmin.Role == "moderator" || 
-       (currentAdmin.Role == "admin" && admin.Role == "admin") {
-        utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Insufficient permissions")
-        return
-    }
+	// Check permissions
+	if currentAdmin.Role == "moderator" ||
+		(currentAdmin.Role == "admin" && admin.Role == "admin") {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Insufficient permissions")
+		return
+	}
 
-    if err := db.DB.Delete(&admin).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to delete administrator")
-        return
-    }
+	if err := db.DB.Delete(&admin).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to delete administrator")
+		return
+	}
 
-    w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // GetAdministrators godoc
@@ -840,17 +894,17 @@ func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/admin/administrators [get]
 // @Security     BearerAuth
 func GetAdministrators(w http.ResponseWriter, r *http.Request) {
-    var admins []models.Administrator
-    if err := db.DB.Find(&admins).Error; err != nil {
-        utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve administrators")
-        return
-    }
+	var admins []models.Administrator
+	if err := db.DB.Find(&admins).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to retrieve administrators")
+		return
+	}
 
-    // Не віддавати паролі
-    for i := range admins {
-        admins[i].Password = ""
-    }
+	// Не віддавати паролі
+	for i := range admins {
+		admins[i].Password = ""
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(admins)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(admins)
 }
