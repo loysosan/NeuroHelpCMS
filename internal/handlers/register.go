@@ -26,6 +26,11 @@ type RegisterRequest struct {
 	FullDescription  *string `json:"fullDescription"`
 	ShortDescription *string `json:"shortDescription"` // Can be mapped to Description
 	VideoURL         *string `json:"videoUrl"`
+
+	// Fields for the client's child
+	ChildAge     *int    `json:"childAge"` // Changed from *uint to *int
+	ChildGender  *string `json:"childGender"`
+	ChildProblem *string `json:"childProblem"`
 }
 
 // RegisterUser godoc
@@ -92,6 +97,44 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to process psychologist portfolio")
 			return
 		}
+	}
+
+	// If the user is a client, create a child record
+	if user.Role == "client" {
+		child := models.Child{
+			ClientID: user.ID, // Link child to the client user
+		}
+
+		// Set age if provided
+		if req.ChildAge != nil {
+			child.Age = *req.ChildAge
+		} else {
+			child.Age = 0 // Default value for age if not provided
+		}
+
+		// Set gender if provided
+		if req.ChildGender != nil {
+			child.Gender = *req.ChildGender
+		} else {
+			child.Gender = "notspecified" // Default value as per model enum
+		}
+
+		// Set problem description if provided
+		if req.ChildProblem != nil {
+			child.Problem = *req.ChildProblem
+		} else {
+			child.Problem = "" // Set empty string if no problem description provided
+		}
+
+		if err := db.DB.Create(&child).Error; err != nil {
+			log.Error().Err(err).Msg("RegisterUser: failed to create child record")
+			// If child creation failed, delete the user for consistency
+			db.DB.Delete(&user)
+			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to create child profile")
+			return
+		}
+
+		log.Info().Uint64("childId", child.ID).Str("userEmail", user.Email).Msg("RegisterUser: child record created successfully")
 	}
 
 	log.Info().Str("email", user.Email).Str("role", user.Role).Msg("RegisterUser: user successfully registered")

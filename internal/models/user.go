@@ -12,7 +12,7 @@ type User struct {
 	FirstName string    `gorm:"type:varchar(100);not null"`
 	LastName  string    `gorm:"type:varchar(100);not null"`
 	Phone     *string   `gorm:"type:varchar(20)"`
-	Status    string    `gorm:"type:enum('Active', 'Disabled', 'Blocked');not null;default:Disabled"`
+	Status    string    `gorm:"type:enum('Active', 'Disabled', 'Blocked');not null;default:'Disabled'"`
 	PlanID    *uint64   `gorm:""`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
@@ -21,6 +21,7 @@ type User struct {
 	VerificationToken string         `gorm:"type:varchar(64);index"`
 	TokenSentAt       time.Time      `gorm:"autoCreateTime"`
 	Portfolio         Portfolio      `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
+	Child             Child          `gorm:"foreignKey:ClientID;constraint:OnDelete:RESTRICT"`
 	Skills            []Skill        `gorm:"many2many:psychologist_skills;joinForeignKey:PsychologistID;joinReferences:SkillID"`
 	Reviews           []Review       `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	BlogPosts         []BlogPost     `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
