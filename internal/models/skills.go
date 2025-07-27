@@ -42,6 +42,8 @@ type Portfolio struct {
 	FacebookURL    *string    `gorm:"type:varchar(255)"`
 	InstagramURL   *string    `gorm:"type:varchar(255)"`
 	VideoURL       *string    `gorm:"type:varchar(255)"`
+	ClientAgeMin   *int       `gorm:"type:int;comment:Minimum client age"`
+	ClientAgeMax   *int       `gorm:"type:int;comment:Maximum client age"`
 	CreatedAt      time.Time  `gorm:"autoCreateTime"`
 	UpdatedAt      time.Time  `gorm:"autoUpdateTime"`
 	Diplomas       []Diploma  `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`
@@ -56,4 +58,14 @@ type Diploma struct {
 	IssueDate   time.Time `gorm:"type:date;not null"`
 	DocumentURL *string   `gorm:"type:varchar(255)"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
+}
+
+type Child struct {
+	ID        uint64    `gorm:"primaryKey;autoIncrement"`
+	ClientID  uint64    `gorm:"unique;not null;comment:Reference to the client user"`
+	Age       int       `gorm:"type:int;not null;comment:Child's age"`
+	Problem   string    `gorm:"type:text;not null;comment:Description of the child's problem"`
+	Gender    string    `gorm:"type:enum('male', 'female', 'notspecified');not null;default:'notspecified';comment:Child's gender"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
