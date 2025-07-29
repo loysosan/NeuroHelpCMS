@@ -29,7 +29,7 @@ type AdminHandlersTestSuite struct {
 }
 
 func (suite *AdminHandlersTestSuite) SetupSuite() {
-	// Получаем параметры БД из переменных окружения
+	// Get database parameters from environment variables
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" {
 		dbHost = "localhost"
@@ -50,26 +50,26 @@ func (suite *AdminHandlersTestSuite) SetupSuite() {
 		dbName = "testdb"
 	}
 
-	// Подключение к тестовой базе данных
+	// Connect to test database
 	dsn := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":3306)/" + dbName + "?charset=utf8mb4&parseTime=True&loc=Local"
 	testDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	suite.Require().NoError(err)
 
 	suite.db = testDB
-	db.DB = testDB // Устанавливаем глобальную переменную для handlers
+	db.DB = testDB // Set global variable for handlers
 
-	// Миграция моделей
+	// Migrate models
 	err = testDB.AutoMigrate(
 		&models.User{},
 		&models.Administrator{},
 		&models.Plan{},
 		&models.Skill{},
 		&models.Category{},
-		&models.News{}, // Добавлена миграция для News
+		&models.News{}, // Added migration for News
 	)
 	suite.Require().NoError(err)
 
-	// Настройка роутера
+	// Setup router
 	suite.router = chi.NewRouter()
 	suite.setupRoutes()
 }
@@ -132,7 +132,7 @@ func (suite *AdminHandlersTestSuite) setupRoutes() {
 		r.Delete("/news/{id}", handlers.DeleteNews)
 	})
 
-	// Публичные маршруты для новостей
+	// Public routes for news
 	suite.router.Route("/api/news", func(r chi.Router) {
 		r.Get("/", handlers.GetPublicNews)
 		r.Get("/{id}", handlers.GetPublicNewsItem)
@@ -153,9 +153,9 @@ func (suite *AdminHandlersTestSuite) mockAdminMiddleware(next http.Handler) http
 	})
 }
 
-// Helper method для создания тестового пользователя
+// Helper method to create test user
 func (suite *AdminHandlersTestSuite) createTestUser() *models.User {
-	// Используем временную метку для уникальности
+	// Use timestamp for uniqueness
 	timestamp := time.Now().UnixNano()
 	user := &models.User{
 		FirstName: "John",
@@ -170,7 +170,7 @@ func (suite *AdminHandlersTestSuite) createTestUser() *models.User {
 	return user
 }
 
-// Helper method для создания тестового skill
+// Helper method to create test skill
 func (suite *AdminHandlersTestSuite) createTestSkill() *models.Skill {
 	category := suite.createTestCategory()
 	skill := &models.Skill{
@@ -182,7 +182,7 @@ func (suite *AdminHandlersTestSuite) createTestSkill() *models.Skill {
 	return skill
 }
 
-// Helper method для создания тестовой категории
+// Helper method to create test category
 func (suite *AdminHandlersTestSuite) createTestCategory() *models.Category {
 	category := &models.Category{
 		Name: "Test Category",
@@ -192,16 +192,16 @@ func (suite *AdminHandlersTestSuite) createTestCategory() *models.Category {
 	return category
 }
 
-// ============== ТЕСТЫ ДЛЯ GetUser ==============
+// ============== TESTS FOR GetUser ==============
 
 func (suite *AdminHandlersTestSuite) TestGetUser_Success() {
-	// Создаем тестового пользователя
+	// Create test user
 	user := suite.createTestUser()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("/api/admin/users/%d", user.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(user.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -223,7 +223,7 @@ func (suite *AdminHandlersTestSuite) TestGetUser_NotFound() {
 	req := httptest.NewRequest("GET", "/api/admin/users/999", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -234,8 +234,8 @@ func (suite *AdminHandlersTestSuite) TestGetUser_NotFound() {
 }
 
 func (suite *AdminHandlersTestSuite) TestGetUser_InvalidID_ShouldBe400() {
-	// Этот тест показывает, что handler должен возвращать 400 для невалидного ID
-	// но текущая реализация возвращает 404
+	// This test shows that handler should return 400 for invalid ID
+	// but current implementation returns 404
 	req := httptest.NewRequest("GET", "/api/admin/users/abc", nil)
 	w := httptest.NewRecorder()
 
@@ -245,15 +245,15 @@ func (suite *AdminHandlersTestSuite) TestGetUser_InvalidID_ShouldBe400() {
 
 	suite.router.ServeHTTP(w, req)
 
-	// Если хотите, чтобы handler возвращал 400 для невалидного ID,
-	// нужно изменить логику в handlers/admin.go
+	// If you want handler to return 400 for invalid ID,
+	// need to change logic in handlers/admin.go
 	suite.T().Logf("Current behavior: invalid ID returns %d", w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ UpdateUser ==============
+// ============== TESTS FOR UpdateUser ==============
 
 func (suite *AdminHandlersTestSuite) TestUpdateUser_Success() {
-	// Создаем тестового пользователя
+	// Create test user
 	user := suite.createTestUser()
 
 	updateData := map[string]interface{}{
@@ -270,35 +270,35 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_Success() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(user.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	suite.router.ServeHTTP(w, req)
 
-	// Проверяем что handler отвечает успешно
+	// Check that handler responds successfully
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем формат ответа
+	// Check response format
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), true, response["success"])
 	assert.Equal(suite.T(), "User data updated successfully", response["message"])
 
-	// Проверяем что response содержит пользователя
+	// Check that response contains user
 	data, exists := response["data"].(map[string]interface{})
 	assert.True(suite.T(), exists, "Response should contain data field")
 	assert.NotNil(suite.T(), data["ID"], "Response should contain user ID")
 
-	// ИЗВЕСТНАЯ ПРОБЛЕМА: Handler не обновляет данные в БД
-	// Проверяем что данные НЕ изменились (документируем баг)
+	// KNOWN ISSUE: Handler doesn't update data in DB
+	// Check that data NOT changed (documenting bug)
 	assert.Equal(suite.T(), "John", data["FirstName"], "BUG: Handler should update FirstName but doesn't")
 	assert.Equal(suite.T(), "Doe", data["LastName"], "BUG: Handler should update LastName but doesn't")
 	assert.Equal(suite.T(), "client", data["Role"], "BUG: Handler should update Role but doesn't")
 
-	// Проверяем что email тоже не изменился
+	// Check that email also didn't change
 	assert.Contains(suite.T(), data["Email"].(string), "john.doe.", "BUG: Handler should update Email but doesn't")
 
 	suite.T().Log("✅ Test passed: Handler responds with correct format")
@@ -306,9 +306,9 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_Success() {
 	suite.T().Log("🔧 Fix required: Check handlers/admin.go UpdateUser function")
 }
 
-// Добавляем тест для проверки что БД действительно не изменилась
+// Add test to check that DB actually didn't change
 func (suite *AdminHandlersTestSuite) TestUpdateUser_DatabaseNotUpdated() {
-	// Создаем пользователя
+	// Create user
 	user := suite.createTestUser()
 	originalFirstName := user.FirstName
 	originalLastName := user.LastName
@@ -327,33 +327,33 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_DatabaseNotUpdated() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(user.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	suite.router.ServeHTTP(w, req)
 
-	// Handler отвечает успешно
+	// Handler responds successfully
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что данные в базе не изменились
+	// Check that data in database didn't change
 	var updatedUser models.User
 	err := suite.db.First(&updatedUser, user.ID).Error
 	assert.NoError(suite.T(), err)
 
-	// Ожидаем, что данные не изменятся
+	// Expect that data won't change
 	assert.Equal(suite.T(), originalFirstName, updatedUser.FirstName)
 	assert.Equal(suite.T(), originalLastName, updatedUser.LastName)
 	assert.Equal(suite.T(), originalEmail, updatedUser.Email)
 	assert.Equal(suite.T(), originalRole, updatedUser.Role)
 }
 
-// Добавляем тест для проверки что handler принимает правильные поля
+// Add test to check that handler accepts correct fields
 func (suite *AdminHandlersTestSuite) TestUpdateUser_AcceptsCorrectFields() {
 	user := suite.createTestUser()
 
-	// Тестируем разные форматы полей
+	// Test different field formats
 	testCases := []map[string]interface{}{
 		// CamelCase
 		{
@@ -379,14 +379,14 @@ func (suite *AdminHandlersTestSuite) TestUpdateUser_AcceptsCorrectFields() {
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
-		// Добавляем параметр в контекст
+		// Add parameter to context
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("id", strconv.FormatUint(user.ID, 10))
 		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 		suite.router.ServeHTTP(w, req)
 
-		// Проверяем что handler принимает запрос (не 400)
+		// Check that handler accepts request (not 400)
 		assert.Equal(suite.T(), http.StatusOK, w.Code, "Handler should accept field format #%d", i+1)
 	}
 }
@@ -404,7 +404,7 @@ func (suite *AdminHandlersTestSuite) TestCreateSkill_MissingFields() {
 
 	suite.router.ServeHTTP(w, req)
 
-	// Ожидаем 500 вместо 400
+	// Expect 500 instead of 400
 	assert.Equal(suite.T(), http.StatusInternalServerError, w.Code)
 
 	// Test missing "categoryId" field
@@ -419,7 +419,7 @@ func (suite *AdminHandlersTestSuite) TestCreateSkill_MissingFields() {
 
 	suite.router.ServeHTTP(w, req)
 
-	// Ожидаем 500 вместо 400
+	// Expect 500 instead of 400
 	assert.Equal(suite.T(), http.StatusInternalServerError, w.Code)
 }
 
@@ -444,7 +444,7 @@ func (suite *AdminHandlersTestSuite) TestCreateSkill_CategoryNotFound() {
 	// Test non-existent "categoryId"
 	skillData := map[string]interface{}{
 		"name":       "Communication",
-		"categoryId": 999, // Несуществующий ID категории
+		"categoryId": 999, // Non-existent category ID
 	}
 
 	body, _ := json.Marshal(skillData)
@@ -454,17 +454,17 @@ func (suite *AdminHandlersTestSuite) TestCreateSkill_CategoryNotFound() {
 
 	suite.router.ServeHTTP(w, req)
 
-	// Ожидаем 500 вместо 404
+	// Expect 500 instead of 404
 	assert.Equal(suite.T(), http.StatusInternalServerError, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ GetSkills ==============
+// ============== TESTS FOR GetSkills ==============
 
 func (suite *AdminHandlersTestSuite) TestGetSkills_Success() {
-	// Создаем тестовую категорию
+	// Create test category
 	category := suite.createTestCategory()
 
-	// Создаем несколько тестовых skills
+	// Create several test skills
 	skills := []models.Skill{
 		{
 			Name:       "Communication",
@@ -493,7 +493,7 @@ func (suite *AdminHandlersTestSuite) TestGetSkills_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), responseSkills, 2)
 
-	// Проверяем, что skills возвращены правильно
+	// Check that skills are returned correctly
 	skillNames := make([]string, len(responseSkills))
 	for i, skill := range responseSkills {
 		skillNames[i] = skill.Name
@@ -516,7 +516,7 @@ func (suite *AdminHandlersTestSuite) TestGetSkills_EmptyDatabase() {
 	assert.Len(suite.T(), responseSkills, 0)
 }
 
-// ============== СУЩЕСТВУЮЩИЕ ТЕСТЫ ==============
+// ============== EXISTING TESTS ==============
 
 func (suite *AdminHandlersTestSuite) TestCreateUser_Success() {
 	userData := map[string]interface{}{
@@ -540,7 +540,7 @@ func (suite *AdminHandlersTestSuite) TestCreateUser_Success() {
 }
 
 func (suite *AdminHandlersTestSuite) TearDownSuite() {
-	// Очистка после всех тестов
+	// Cleanup after all tests
 	suite.db.Exec("DELETE FROM news")
 	suite.db.Exec("DELETE FROM users")
 	suite.db.Exec("DELETE FROM skills")
@@ -558,7 +558,7 @@ func TestAdminHandlersTestSuite(t *testing.T) {
 	suite.Run(t, new(AdminHandlersTestSuite))
 }
 
-// ============== ТЕСТЫ ДЛЯ CreateSkillCategory ==============
+// ============== TESTS FOR CreateSkillCategory ==============
 
 func (suite *AdminHandlersTestSuite) TestCreateSkillCategory_Success() {
 	categoryData := map[string]interface{}{
@@ -574,7 +574,7 @@ func (suite *AdminHandlersTestSuite) TestCreateSkillCategory_Success() {
 
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
 
-	// Проверяем, что category создана в БД
+	// Check that category is created in DB
 	var category models.Category
 	err := suite.db.Where("name = ?", "Psychology").First(&category).Error
 	assert.NoError(suite.T(), err)
@@ -592,14 +592,14 @@ func (suite *AdminHandlersTestSuite) TestCreateSkillCategory_InvalidJSON() {
 }
 
 func (suite *AdminHandlersTestSuite) TestCreateSkillCategory_DuplicateName() {
-	// Создаем первую категорию
+	// Create first category
 	category1 := &models.Category{
 		Name: "Psychology",
 	}
 	err := suite.db.Create(category1).Error
 	suite.Require().NoError(err)
 
-	// Пытаемся создать вторую категорию с таким же именем
+	// Try to create second category with same name
 	categoryData := map[string]interface{}{
 		"name": "Psychology",
 	}
@@ -614,10 +614,10 @@ func (suite *AdminHandlersTestSuite) TestCreateSkillCategory_DuplicateName() {
 	assert.Equal(suite.T(), http.StatusConflict, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ GetSkillCategories ==============
+// ============== TESTS FOR GetSkillCategories ==============
 
 func (suite *AdminHandlersTestSuite) TestGetSkillCategories_Success() {
-	// Создаем несколько тестовых категорий
+	// Create several test categories
 	categories := []models.Category{
 		{Name: "Psychology"},
 		{Name: "Therapy"},
@@ -641,7 +641,7 @@ func (suite *AdminHandlersTestSuite) TestGetSkillCategories_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), responseCategories, 3)
 
-	// Проверяем, что категории возвращены правильно
+	// Check that categories are returned correctly
 	categoryNames := make([]string, len(responseCategories))
 	for i, category := range responseCategories {
 		categoryNames[i] = category.Name
@@ -665,16 +665,16 @@ func (suite *AdminHandlersTestSuite) TestGetSkillCategories_EmptyDatabase() {
 	assert.Len(suite.T(), responseCategories, 0)
 }
 
-// ============== ТЕСТЫ ДЛЯ DeleteUser ==============
+// ============== TESTS FOR DeleteUser ==============
 
 func (suite *AdminHandlersTestSuite) TestDeleteUser_Success() {
-	// Создаем тестового пользователя
+	// Create test user
 	user := suite.createTestUser()
 
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/users/%d", user.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(user.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -683,17 +683,17 @@ func (suite *AdminHandlersTestSuite) TestDeleteUser_Success() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что пользователь удален из БД
+	// Check that user is deleted from DB
 	var deletedUser models.User
 	err := suite.db.First(&deletedUser, user.ID).Error
-	assert.Error(suite.T(), err) // Должна быть ошибка "record not found"
+	assert.Error(suite.T(), err) // Should be "record not found" error
 }
 
 func (suite *AdminHandlersTestSuite) TestDeleteUser_NotFound() {
 	req := httptest.NewRequest("DELETE", "/api/admin/users/999", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -707,7 +707,7 @@ func (suite *AdminHandlersTestSuite) TestDeleteUser_InvalidID() {
 	req := httptest.NewRequest("DELETE", "/api/admin/users/invalid", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "invalid")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -717,10 +717,10 @@ func (suite *AdminHandlersTestSuite) TestDeleteUser_InvalidID() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ GetPlans ==============
+// ============== TESTS FOR GetPlans ==============
 
 func (suite *AdminHandlersTestSuite) TestGetPlans_Success() {
-	// Создаем несколько тестовых планов
+	// Create several test plans
 	plans := []models.Plan{
 		{Name: "Basic Plan", Price: 100},
 		{Name: "Premium Plan", Price: 200},
@@ -744,7 +744,7 @@ func (suite *AdminHandlersTestSuite) TestGetPlans_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), responsePlans, 3)
 
-	// Проверяем, что планы возвращены правильно
+	// Check that plans are returned correctly
 	planNames := make([]string, len(responsePlans))
 	for i, plan := range responsePlans {
 		planNames[i] = plan.Name
@@ -768,10 +768,10 @@ func (suite *AdminHandlersTestSuite) TestGetPlans_EmptyDatabase() {
 	assert.Len(suite.T(), responsePlans, 0)
 }
 
-// ============== ТЕСТЫ ДЛЯ DeletePlan ==============
+// ============== TESTS FOR DeletePlan ==============
 
 func (suite *AdminHandlersTestSuite) TestDeletePlan_Success() {
-	// Создаем тестовый план
+	// Create test plan
 	plan := &models.Plan{
 		Name:  "Test Plan",
 		Price: 100,
@@ -782,7 +782,7 @@ func (suite *AdminHandlersTestSuite) TestDeletePlan_Success() {
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/plans/%d", plan.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(plan.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -791,17 +791,17 @@ func (suite *AdminHandlersTestSuite) TestDeletePlan_Success() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что план удален из БД
+	// Check that plan is deleted from DB
 	var deletedPlan models.Plan
 	err = suite.db.First(&deletedPlan, plan.ID).Error
-	assert.Error(suite.T(), err) // Должна быть ошибка "record not found"
+	assert.Error(suite.T(), err) // Should be "record not found" error
 }
 
 func (suite *AdminHandlersTestSuite) TestDeletePlan_NotFound() {
 	req := httptest.NewRequest("DELETE", "/api/admin/plans/999", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -815,7 +815,7 @@ func (suite *AdminHandlersTestSuite) TestDeletePlan_InvalidID() {
 	req := httptest.NewRequest("DELETE", "/api/admin/plans/invalid", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "invalid")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -826,7 +826,7 @@ func (suite *AdminHandlersTestSuite) TestDeletePlan_InvalidID() {
 }
 
 func (suite *AdminHandlersTestSuite) TestDeletePlan_PlanInUse() {
-	// Создаем тестовый план
+	// Create test plan
 	plan := &models.Plan{
 		Name:  "Test Plan",
 		Price: 100,
@@ -834,7 +834,7 @@ func (suite *AdminHandlersTestSuite) TestDeletePlan_PlanInUse() {
 	err := suite.db.Create(plan).Error
 	suite.Require().NoError(err)
 
-	// Создаем пользователя с этим планом
+	// Create user with this plan
 	user := &models.User{
 		FirstName: "John",
 		LastName:  "Doe",
@@ -850,7 +850,7 @@ func (suite *AdminHandlersTestSuite) TestDeletePlan_PlanInUse() {
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/plans/%d", plan.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(plan.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -859,22 +859,22 @@ func (suite *AdminHandlersTestSuite) TestDeletePlan_PlanInUse() {
 
 	assert.Equal(suite.T(), http.StatusConflict, w.Code)
 
-	// Проверяем, что план не удален из БД
+	// Check that plan is not deleted from DB
 	var existingPlan models.Plan
 	err = suite.db.First(&existingPlan, plan.ID).Error
-	assert.NoError(suite.T(), err) // План должен остаться
+	assert.NoError(suite.T(), err) // Plan should remain
 }
 
-// ============== ТЕСТЫ ДЛЯ DeleteSkill ==============
+// ============== TESTS FOR DeleteSkill ==============
 
 func (suite *AdminHandlersTestSuite) TestDeleteSkill_Success() {
-	// Создаем тестовый skill
+	// Create test skill
 	skill := suite.createTestSkill()
 
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/skills/%d", skill.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(skill.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -883,17 +883,17 @@ func (suite *AdminHandlersTestSuite) TestDeleteSkill_Success() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что skill удален из БД
+	// Check that skill is deleted from DB
 	var deletedSkill models.Skill
 	err := suite.db.First(&deletedSkill, skill.ID).Error
-	assert.Error(suite.T(), err) // Должна быть ошибка "record not found"
+	assert.Error(suite.T(), err) // Should be "record not found" error
 }
 
 func (suite *AdminHandlersTestSuite) TestDeleteSkill_NotFound() {
 	req := httptest.NewRequest("DELETE", "/api/admin/skills/999", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -907,7 +907,7 @@ func (suite *AdminHandlersTestSuite) TestDeleteSkill_InvalidID() {
 	req := httptest.NewRequest("DELETE", "/api/admin/skills/invalid", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "invalid")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -917,16 +917,16 @@ func (suite *AdminHandlersTestSuite) TestDeleteSkill_InvalidID() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ DeleteSkillCategory ==============
+// ============== TESTS FOR DeleteSkillCategory ==============
 
 func (suite *AdminHandlersTestSuite) TestDeleteSkillCategory_Success() {
-	// Создаем тестовую категорию
+	// Create test category
 	category := suite.createTestCategory()
 
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/skills/categories/%d", category.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(category.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -935,17 +935,17 @@ func (suite *AdminHandlersTestSuite) TestDeleteSkillCategory_Success() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что категория удалена из БД
+	// Check that category is deleted from DB
 	var deletedCategory models.Category
 	err := suite.db.First(&deletedCategory, category.ID).Error
-	assert.Error(suite.T(), err) // Должна быть ошибка "record not found"
+	assert.Error(suite.T(), err) // Should be "record not found" error
 }
 
 func (suite *AdminHandlersTestSuite) TestDeleteSkillCategory_NotFound() {
 	req := httptest.NewRequest("DELETE", "/api/admin/skills/categories/999", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -959,7 +959,7 @@ func (suite *AdminHandlersTestSuite) TestDeleteSkillCategory_InvalidID() {
 	req := httptest.NewRequest("DELETE", "/api/admin/skills/categories/invalid", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "invalid")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -970,7 +970,7 @@ func (suite *AdminHandlersTestSuite) TestDeleteSkillCategory_InvalidID() {
 }
 
 func (suite *AdminHandlersTestSuite) TestDeleteSkillCategory_WithSkills() {
-	// Создаем категорию и навык в ней
+	// Create category and skill in it
 	category := suite.createTestCategory()
 	skill := &models.Skill{
 		Name:       "Test Skill",
@@ -982,7 +982,7 @@ func (suite *AdminHandlersTestSuite) TestDeleteSkillCategory_WithSkills() {
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/skills/categories/%d", category.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(category.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -991,17 +991,17 @@ func (suite *AdminHandlersTestSuite) TestDeleteSkillCategory_WithSkills() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что навык обновлен (category_id = null)
+	// Check that skill is updated (category_id = null)
 	var updatedSkill models.Skill
 	err = suite.db.First(&updatedSkill, skill.ID).Error
 	assert.NoError(suite.T(), err)
-	assert.Zero(suite.T(), updatedSkill.CategoryID) // Должно быть 0 (null)
+	assert.Zero(suite.T(), updatedSkill.CategoryID) // Should be 0 (null)
 }
 
-// ============== ТЕСТЫ ДЛЯ UpdateSkill ==============
+// ============== TESTS FOR UpdateSkill ==============
 
 func (suite *AdminHandlersTestSuite) TestUpdateSkill_Success() {
-	// Создаем тестовый навык
+	// Create test skill
 	skill := suite.createTestSkill()
 	newCategory := suite.createTestCategory()
 
@@ -1015,7 +1015,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateSkill_Success() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(skill.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1024,7 +1024,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateSkill_Success() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что навык обновлен в БД
+	// Check that skill is updated in DB
 	var updatedSkill models.Skill
 	err := suite.db.First(&updatedSkill, skill.ID).Error
 	assert.NoError(suite.T(), err)
@@ -1042,7 +1042,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateSkill_NotFound() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1059,7 +1059,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateSkill_InvalidJSON() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(skill.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1069,10 +1069,10 @@ func (suite *AdminHandlersTestSuite) TestUpdateSkill_InvalidJSON() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ UpdateSkillCategory ==============
+// ============== TESTS FOR UpdateSkillCategory ==============
 
 func (suite *AdminHandlersTestSuite) TestUpdateSkillCategory_Success() {
-	// Создаем тестовую категорию
+	// Create test category
 	category := suite.createTestCategory()
 
 	updateData := map[string]interface{}{
@@ -1084,7 +1084,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateSkillCategory_Success() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(category.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1093,7 +1093,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateSkillCategory_Success() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что категория обновлена в БД
+	// Check that category is updated in DB
 	var updatedCategory models.Category
 	err := suite.db.First(&updatedCategory, category.ID).Error
 	assert.NoError(suite.T(), err)
@@ -1110,7 +1110,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateSkillCategory_NotFound() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1127,7 +1127,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateSkillCategory_InvalidJSON() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(category.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1137,7 +1137,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateSkillCategory_InvalidJSON() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ CreateAdmin ==============
+// ============== TESTS FOR CreateAdmin ==============
 
 func (suite *AdminHandlersTestSuite) TestCreateAdmin_Success() {
 	adminData := map[string]interface{}{
@@ -1158,7 +1158,7 @@ func (suite *AdminHandlersTestSuite) TestCreateAdmin_Success() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что администратор создан в БД
+	// Check that administrator is created in DB
 	var admin models.Administrator
 	err := suite.db.Where("username = ?", "new_admin").First(&admin).Error
 	assert.NoError(suite.T(), err)
@@ -1196,12 +1196,12 @@ func (suite *AdminHandlersTestSuite) TestCreateAdmin_MasterRoleForbidden() {
 	assert.Equal(suite.T(), http.StatusForbidden, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ UpdateAdmin ==============
+// ============== TESTS FOR UpdateAdmin ==============
 
 func (suite *AdminHandlersTestSuite) TestUpdateAdmin_Success() {
-	// Создаем администратора для обновления
+	// Create administrator to update
 	admin := &models.Administrator{
-		Username:  fmt.Sprintf("test_admin_%d", time.Now().UnixNano()), // Уникальное имя пользователя
+		Username:  fmt.Sprintf("test_admin_%d", time.Now().UnixNano()), // Unique username
 		Email:     "test@example.com",
 		Password:  "password",
 		FirstName: "Test",
@@ -1223,7 +1223,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateAdmin_Success() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(admin.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1233,10 +1233,10 @@ func (suite *AdminHandlersTestSuite) TestUpdateAdmin_Success() {
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ DeleteAdmin ==============
+// ============== TESTS FOR DeleteAdmin ==============
 
 func (suite *AdminHandlersTestSuite) TestDeleteAdmin_Success() {
-	// Создаем администратора для удаления
+	// Create administrator to delete
 	admin := &models.Administrator{
 		Username:  "delete_admin",
 		Email:     "delete@example.com",
@@ -1251,7 +1251,7 @@ func (suite *AdminHandlersTestSuite) TestDeleteAdmin_Success() {
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/administrators/%d", admin.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(admin.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1260,17 +1260,17 @@ func (suite *AdminHandlersTestSuite) TestDeleteAdmin_Success() {
 
 	assert.Equal(suite.T(), http.StatusNoContent, w.Code)
 
-	// Проверяем, что администратор удален из БД
+	// Check that administrator is deleted from DB
 	var deletedAdmin models.Administrator
 	err = suite.db.First(&deletedAdmin, admin.ID).Error
-	assert.Error(suite.T(), err) // Должна быть ошибка "record not found"
+	assert.Error(suite.T(), err) // Should be "record not found" error
 }
 
 func (suite *AdminHandlersTestSuite) TestDeleteAdmin_NotFound() {
 	req := httptest.NewRequest("DELETE", "/api/admin/administrators/999", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1280,13 +1280,13 @@ func (suite *AdminHandlersTestSuite) TestDeleteAdmin_NotFound() {
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ GetAdministrators ==============
+// ============== TESTS FOR GetAdministrators ==============
 
 func (suite *AdminHandlersTestSuite) TestGetAdministrators_Success() {
-	// Удаляем всех администраторов
+	// Delete all administrators
 	suite.db.Exec("DELETE FROM administrators")
 
-	// Создаем несколько администраторов
+	// Create several administrators
 	admins := []models.Administrator{
 		{Username: "admin1", Email: "admin1@example.com", Password: "pass", FirstName: "Admin", LastName: "One", Role: "admin"},
 		{Username: "admin2", Email: "admin2@example.com", Password: "pass", FirstName: "Admin", LastName: "Two", Role: "moderator"},
@@ -1309,14 +1309,14 @@ func (suite *AdminHandlersTestSuite) TestGetAdministrators_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), responseAdmins, 2)
 
-	// Проверяем, что пароли не возвращаются
+	// Check that passwords are not returned
 	for _, admin := range responseAdmins {
 		assert.Empty(suite.T(), admin.Password)
 	}
 }
 
 func (suite *AdminHandlersTestSuite) TestGetAdministrators_EmptyDatabase() {
-	// Удаляем всех администраторов
+	// Delete all administrators
 	suite.db.Exec("DELETE FROM administrators")
 
 	req := httptest.NewRequest("GET", "/api/admin/administrators", nil)
@@ -1332,10 +1332,10 @@ func (suite *AdminHandlersTestSuite) TestGetAdministrators_EmptyDatabase() {
 	assert.Len(suite.T(), responseAdmins, 0)
 }
 
-// ============== HELPER METHODS ДЛЯ NEWS ==============
+// ============== HELPER METHODS FOR NEWS ==============
 
 func (suite *AdminHandlersTestSuite) createTestNews() *models.News {
-	// Создаем тестового администратора как автора
+	// Create test administrator as author
 	admin := &models.Administrator{
 		Username:  fmt.Sprintf("news_author_%d", time.Now().UnixNano()),
 		Email:     fmt.Sprintf("author_%d@example.com", time.Now().UnixNano()),
@@ -1361,7 +1361,7 @@ func (suite *AdminHandlersTestSuite) createTestNews() *models.News {
 	return news
 }
 
-// ============== ТЕСТЫ ДЛЯ CreateNews ==============
+// ============== TESTS FOR CreateNews ==============
 
 func (suite *AdminHandlersTestSuite) TestCreateNews_Success() {
 	newsData := map[string]interface{}{
@@ -1382,12 +1382,12 @@ func (suite *AdminHandlersTestSuite) TestCreateNews_Success() {
 
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
 
-	// Проверяем, что новость создана в БД
+	// Check that news is created in DB
 	var news models.News
 	err := suite.db.Where("title = ?", "New Test News").First(&news).Error
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "New Test News", news.Title)
-	assert.Equal(suite.T(), uint64(1), news.AuthorID) // ID test_admin из middleware
+	assert.Equal(suite.T(), uint64(1), news.AuthorID) // ID test_admin from middleware
 }
 
 func (suite *AdminHandlersTestSuite) TestCreateNews_InvalidJSON() {
@@ -1403,7 +1403,7 @@ func (suite *AdminHandlersTestSuite) TestCreateNews_InvalidJSON() {
 func (suite *AdminHandlersTestSuite) TestCreateNews_MissingFields() {
 	newsData := map[string]interface{}{
 		"title": "Test News",
-		// content отсутствует
+		// content is missing
 	}
 
 	body, _ := json.Marshal(newsData)
@@ -1416,10 +1416,10 @@ func (suite *AdminHandlersTestSuite) TestCreateNews_MissingFields() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ GetAllNews ==============
+// ============== TESTS FOR GetAllNews ==============
 
 func (suite *AdminHandlersTestSuite) TestGetAllNews_Success() {
-	// Создаем несколько новостей
+	// Create several news items
 	suite.createTestNews()
 	suite.createTestNews()
 
@@ -1437,12 +1437,12 @@ func (suite *AdminHandlersTestSuite) TestGetAllNews_Success() {
 }
 
 func (suite *AdminHandlersTestSuite) TestGetAllNews_WithPublishedFilter() {
-	// Создаем опубликованную новость
+	// Create published news
 	news1 := suite.createTestNews()
 	news1.Published = true
 	suite.db.Save(news1)
 
-	// Создаем неопубликованную новость
+	// Create unpublished news
 	news2 := suite.createTestNews()
 	news2.Published = false
 	suite.db.Save(news2)
@@ -1461,7 +1461,7 @@ func (suite *AdminHandlersTestSuite) TestGetAllNews_WithPublishedFilter() {
 	assert.True(suite.T(), responseNews[0].Published)
 }
 
-// ============== ТЕСТЫ ДЛЯ GetNews ==============
+// ============== TESTS FOR GetNews ==============
 
 func (suite *AdminHandlersTestSuite) TestGetNews_Success() {
 	news := suite.createTestNews()
@@ -1469,7 +1469,7 @@ func (suite *AdminHandlersTestSuite) TestGetNews_Success() {
 	req := httptest.NewRequest("GET", fmt.Sprintf("/api/admin/news/%d", news.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(news.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1489,7 +1489,7 @@ func (suite *AdminHandlersTestSuite) TestGetNews_NotFound() {
 	req := httptest.NewRequest("GET", "/api/admin/news/999", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1503,7 +1503,7 @@ func (suite *AdminHandlersTestSuite) TestGetNews_InvalidID() {
 	req := httptest.NewRequest("GET", "/api/admin/news/invalid", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "invalid")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1513,7 +1513,7 @@ func (suite *AdminHandlersTestSuite) TestGetNews_InvalidID() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ UpdateNews ==============
+// ============== TESTS FOR UpdateNews ==============
 
 func (suite *AdminHandlersTestSuite) TestUpdateNews_Success() {
 	news := suite.createTestNews()
@@ -1529,7 +1529,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateNews_Success() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(news.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1538,7 +1538,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateNews_Success() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что новость обновлена в БД
+	// Check that news is updated in DB
 	var updatedNews models.News
 	err := suite.db.First(&updatedNews, news.ID).Error
 	assert.NoError(suite.T(), err)
@@ -1558,7 +1558,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateNews_NotFound() {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1568,7 +1568,7 @@ func (suite *AdminHandlersTestSuite) TestUpdateNews_NotFound() {
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ DeleteNews ==============
+// ============== TESTS FOR DeleteNews ==============
 
 func (suite *AdminHandlersTestSuite) TestDeleteNews_Success() {
 	news := suite.createTestNews()
@@ -1576,7 +1576,7 @@ func (suite *AdminHandlersTestSuite) TestDeleteNews_Success() {
 	req := httptest.NewRequest("DELETE", fmt.Sprintf("/api/admin/news/%d", news.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(news.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1585,17 +1585,17 @@ func (suite *AdminHandlersTestSuite) TestDeleteNews_Success() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	// Проверяем, что новость удалена из БД
+	// Check that news is deleted from DB
 	var deletedNews models.News
 	err := suite.db.First(&deletedNews, news.ID).Error
-	assert.Error(suite.T(), err) // Должна быть ошибка "record not found"
+	assert.Error(suite.T(), err) // Should be "record not found" error
 }
 
 func (suite *AdminHandlersTestSuite) TestDeleteNews_NotFound() {
 	req := httptest.NewRequest("DELETE", "/api/admin/news/999", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1605,10 +1605,10 @@ func (suite *AdminHandlersTestSuite) TestDeleteNews_NotFound() {
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ GetPublicNews ==============
+// ============== TESTS FOR GetPublicNews ==============
 
 func (suite *AdminHandlersTestSuite) TestGetPublicNews_Success() {
-	// Создаем опубликованную публичную новость
+	// Create published public news
 	news := suite.createTestNews()
 	news.Published = true
 	news.IsPublic = true
@@ -1630,11 +1630,12 @@ func (suite *AdminHandlersTestSuite) TestGetPublicNews_Success() {
 }
 
 func (suite *AdminHandlersTestSuite) TestGetPublicNews_WithLimit() {
-	// Создаем несколько новостей
-	for i := 0; i < 5; i++ {
+	// Create more than 4 news for homepage
+	for i := 0; i < 6; i++ {
 		news := suite.createTestNews()
 		news.Published = true
 		news.IsPublic = true
+		news.ShowOnHome = true
 		suite.db.Save(news)
 	}
 
@@ -1648,10 +1649,10 @@ func (suite *AdminHandlersTestSuite) TestGetPublicNews_WithLimit() {
 	var responseNews []models.News
 	err := json.Unmarshal(w.Body.Bytes(), &responseNews)
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), responseNews, 3)
+	assert.Len(suite.T(), responseNews, 3) // Should be max 3
 }
 
-// ============== ТЕСТЫ ДЛЯ GetPublicNewsItem ==============
+// ============== TESTS FOR GetPublicNewsItem ==============
 
 func (suite *AdminHandlersTestSuite) TestGetPublicNewsItem_Success() {
 	news := suite.createTestNews()
@@ -1662,7 +1663,7 @@ func (suite *AdminHandlersTestSuite) TestGetPublicNewsItem_Success() {
 	req := httptest.NewRequest("GET", fmt.Sprintf("/api/news/%d", news.ID), nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", strconv.FormatUint(news.ID, 10))
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1682,7 +1683,7 @@ func (suite *AdminHandlersTestSuite) TestGetPublicNewsItem_NotFound() {
 	req := httptest.NewRequest("GET", "/api/news/999", nil)
 	w := httptest.NewRecorder()
 
-	// Добавляем параметр в контекст
+	// Add parameter to context
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("id", "999")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -1692,10 +1693,10 @@ func (suite *AdminHandlersTestSuite) TestGetPublicNewsItem_NotFound() {
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 }
 
-// ============== ТЕСТЫ ДЛЯ GetNewsCount ==============
+// ============== TESTS FOR GetNewsCount ==============
 
 func (suite *AdminHandlersTestSuite) TestGetNewsCount_Success() {
-	// Создаем несколько опубликованных новостей
+	// Create several published news
 	for i := 0; i < 3; i++ {
 		news := suite.createTestNews()
 		news.Published = true
@@ -1730,10 +1731,10 @@ func (suite *AdminHandlersTestSuite) TestGetNewsCount_EmptyDatabase() {
 	assert.Equal(suite.T(), float64(0), response["count"])
 }
 
-// ============== ТЕСТЫ ДЛЯ GetHomeNews ==============
+// ============== TESTS FOR GetHomeNews ==============
 
 func (suite *AdminHandlersTestSuite) TestGetHomeNews_Success() {
-	// Создаем новости для главной страницы
+	// Create news for homepage
 	for i := 0; i < 3; i++ {
 		news := suite.createTestNews()
 		news.Published = true
@@ -1754,7 +1755,7 @@ func (suite *AdminHandlersTestSuite) TestGetHomeNews_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), responseNews, 3)
 
-	// Проверяем, что все новости показаны на главной
+	// Check that all news are shown on home
 	for _, news := range responseNews {
 		assert.True(suite.T(), news.ShowOnHome)
 		assert.True(suite.T(), news.Published)
@@ -1762,7 +1763,7 @@ func (suite *AdminHandlersTestSuite) TestGetHomeNews_Success() {
 }
 
 func (suite *AdminHandlersTestSuite) TestGetHomeNews_LimitTo4() {
-	// Создаем больше 4 новостей для главной страницы
+	// Create more than 4 news for homepage
 	for i := 0; i < 6; i++ {
 		news := suite.createTestNews()
 		news.Published = true
@@ -1781,5 +1782,5 @@ func (suite *AdminHandlersTestSuite) TestGetHomeNews_LimitTo4() {
 	var responseNews []models.News
 	err := json.Unmarshal(w.Body.Bytes(), &responseNews)
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), responseNews, 4) // Должно быть максимум 4
+	assert.Len(suite.T(), responseNews, 4) // Should be max 4
 }

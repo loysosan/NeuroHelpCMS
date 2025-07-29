@@ -3,16 +3,16 @@ import { useAuth } from '../context/AuthContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CreatePlanModal from '../components/CreatePlanModal';
 import AdminLayout from '../components/AdminLayout';
-import EditPlanModal from '../components/EditPlanModal'; // Імпортуємо новий компонент
+import EditPlanModal from '../components/EditPlanModal'; // Import the new component
 
-// Оновлюємо тип Plan відповідно до структури з бекенду
+// Update the Plan type according to the backend structure
 type Plan = {
   ID: number;
   Name: string;
   Description: string;
   Price: number;
-  DurationDays: number; // змінено з Duration
-  Features: string;     // змінено з string[]
+  DurationDays: number; // changed from Duration
+  Features: string;     // changed from string[]
   CreatedAt: string;
   UpdatedAt: string;
 };
@@ -113,7 +113,7 @@ const AdminPlans: React.FC = () => {
 
       if (!res.ok) throw new Error('Не вдалося оновити план');
 
-      await fetchPlans(); // Оновлюємо список планів
+      await fetchPlans(); // Refresh the list of plans
       setIsEditModalOpen(false);
       setPlanToEdit(null);
     } catch (err: any) {
@@ -188,7 +188,7 @@ const AdminPlans: React.FC = () => {
               </div>
 
               <div className="text-gray-700">
-                {/* Відображаємо Features як текст, а не масив */}
+                {/* Display Features as text, not an array */}
                 <p className="flex items-center">
                   <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
