@@ -21,7 +21,7 @@ func NewTestHelpers(db *gorm.DB, t *testing.T) *TestHelpers {
 	return &TestHelpers{db: db, t: t}
 }
 
-// CreateTestUser создает тестового пользователя
+// CreateTestUser creates a test user
 func (h *TestHelpers) CreateTestUser(email string, role string) *models.User {
 	user := &models.User{
 		FirstName: "Test",
@@ -36,7 +36,7 @@ func (h *TestHelpers) CreateTestUser(email string, role string) *models.User {
 	return user
 }
 
-// MakeJSONRequest создает HTTP запрос с JSON телом
+// MakeJSONRequest creates an HTTP request with a JSON body
 func (h *TestHelpers) MakeJSONRequest(method, url string, data interface{}) (*httptest.ResponseRecorder, *http.Request) {
 	body, _ := json.Marshal(data)
 	req := httptest.NewRequest(method, url, bytes.NewBuffer(body))
@@ -45,7 +45,7 @@ func (h *TestHelpers) MakeJSONRequest(method, url string, data interface{}) (*ht
 	return w, req
 }
 
-// AssertUserExists проверяет существование пользователя
+// AssertUserExists checks if a user exists
 func (h *TestHelpers) AssertUserExists(email string) {
 	var user models.User
 	err := h.db.Where("email = ?", email).First(&user).Error
