@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"user-api/internal/models"
 
@@ -50,4 +51,12 @@ func (h *TestHelpers) AssertUserExists(email string) {
 	var user models.User
 	err := h.db.Where("email = ?", email).First(&user).Error
 	assert.NoError(h.t, err, "User should exist in database")
+}
+
+// getEnv is a helper to read environment variables with a fallback.
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }

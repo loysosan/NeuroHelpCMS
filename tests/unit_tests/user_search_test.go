@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -465,14 +464,7 @@ func (suite *UserSearchTestSuite) TestSearchSpecialists_EmptyResults() {
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 }
 
-// Helper functions
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
+// Helper functions have been moved to test_helpers.go
 
 func TestUserSearchTestSuite(t *testing.T) {
 	suite.Run(t, new(UserSearchTestSuite))

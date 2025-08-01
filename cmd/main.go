@@ -127,11 +127,22 @@ func main() {
 		// Search endpoints (only for registered users)
 		r.Post("/api/users/search/specialists", handlers.SearchSpecialists)
 		r.Get("/api/users/search/specialists", handlers.SearchSpecialistsGET)
+
+		// --- Routes for managing availability (for psychologists) ---
+		r.Post("/api/users/availability", handlers.CreateAvailabilitySlot)
+		r.Delete("/api/users/availability/{slotId}", handlers.DeleteAvailabilitySlot)
+
+		// --- Routes for sessions (for clients and psychologists) ---
+		r.Post("/api/users/sessions/book/{slotId}", handlers.BookSession)
+		r.Get("/api/users/sessions/my", handlers.GetMySessions)
 	})
 
 	// Public user endpoints
 	r.Get("/api/users/blog/{psychologist_id}", handlers.GetBlogPosts)
 	r.Get("/api/users/blog/post/{blog_id}", handlers.GetBlogPost)
+
+	// Public route for viewing psychologist availability
+	r.Get("/api/users/availability/{psychologistId}", handlers.GetPsychologistAvailability)
 
 	// Services API endpoints
 	r.Get("/api/healthz", healthz.HealthCheck)
