@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 	"user-api/internal/db"
@@ -324,12 +323,4 @@ func (suite *UserSessionsTestSuite) TestGetMySessions_Psychologist() {
 // Test runner
 func TestUserSessionsTestSuite(t *testing.T) {
 	suite.Run(t, new(UserSessionsTestSuite))
-}
-
-// getEnv is a helper to read environment variables
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
 }
