@@ -222,7 +222,7 @@ func (suite *UserSessionsTestSuite) TestBookSession_Success() {
 	var session models.Session
 	err := suite.db.First(&session).Error
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), client.ID, session.ClientID)
+	assert.Equal(suite.T(), client.ID, *session.ClientID) // ИЗМЕНЕНО: Разыменовываем указатель
 	assert.Equal(suite.T(), psychologist.ID, session.PsychologistID)
 
 	// Check availability status updated
