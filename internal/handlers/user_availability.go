@@ -72,7 +72,7 @@ func CreateAvailabilitySlot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendResponse(w, http.StatusCreated, map[string]interface{}{
+	utils.WriteJSON(w, http.StatusCreated, map[string]interface{}{
 		"success": true,
 		"data":    availability,
 	})
@@ -104,7 +104,7 @@ func GetPsychologistAvailability(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, availability)
+	utils.WriteJSON(w, http.StatusOK, availability)
 }
 
 // DeleteAvailabilitySlot godoc
@@ -141,5 +141,5 @@ func DeleteAvailabilitySlot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Slot deleted"})
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"success": true, "message": "Slot deleted"})
 }
