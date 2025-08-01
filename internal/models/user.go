@@ -5,18 +5,17 @@ import (
 )
 
 type User struct {
-	ID        uint64    `gorm:"primaryKey;autoIncrement"`
-	Email     string    `gorm:"type:varchar(255);unique;not null"`
-	Password  string    `gorm:"type:varchar(255);not null"`
-	Role      string    `gorm:"type:enum('client', 'psychologist');not null"`
-	FirstName string    `gorm:"type:varchar(100);not null"`
-	LastName  string    `gorm:"type:varchar(100);not null"`
-	Phone     *string   `gorm:"type:varchar(20)"`
-	Status    string    `gorm:"type:enum('Active', 'Disabled', 'Blocked');not null;default:'Disabled'"`
-	PlanID    *uint64   `gorm:""`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	// Email verification status and token
+	ID                uint64         `gorm:"primaryKey;autoIncrement"`
+	Email             string         `gorm:"type:varchar(255);unique;not null"`
+	Password          string         `gorm:"type:varchar(255);not null"`
+	Role              string         `gorm:"type:enum('client', 'psychologist');not null"`
+	FirstName         string         `gorm:"type:varchar(100);not null"`
+	LastName          string         `gorm:"type:varchar(100);not null"`
+	Phone             *string        `gorm:"type:varchar(20)"`
+	Status            string         `gorm:"type:enum('Active', 'Disabled', 'Blocked');not null;default:'Disabled'"`
+	PlanID            *uint64        `gorm:""`
+	CreatedAt         time.Time      `gorm:"autoCreateTime"`
+	UpdatedAt         time.Time      `gorm:"autoUpdateTime"`
 	Verified          bool           `gorm:"not null;default:false"`
 	VerificationToken string         `gorm:"type:varchar(64);index"`
 	TokenSentAt       time.Time      `gorm:"autoCreateTime"`
@@ -26,6 +25,7 @@ type User struct {
 	Reviews           []Review       `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	BlogPosts         []BlogPost     `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	Sessions          []Session      `gorm:"foreignKey:PsychologistID;constraint:OnDelete:SET NULL"`
+	ClientSessions    []Session      `gorm:"foreignKey:ClientID;constraint:OnDelete:SET NULL"`
 	MessagesSent      []Message      `gorm:"foreignKey:SenderID;constraint:OnDelete:SET NULL"`
 	MessagesReceived  []Message      `gorm:"foreignKey:ReceiverID;constraint:OnDelete:SET NULL"`
 	Availability      []Availability `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
