@@ -96,8 +96,8 @@ func GetPsychologistAvailability(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var availability []models.Availability
-	// ИЗМЕНЕНО: Добавлена фильтрация по статусу 'available'
-	if err := db.DB.Where("psychologist_id = ? AND status = ?", psychologistID, "available").Find(&availability).Error; err != nil {
+	// ИЗМЕНЕНО: Добавлена фильтрация по статусу 'available' и времени начала
+	if err := db.DB.Where("psychologist_id = ? AND status = ? AND start_time > ?", psychologistID, "available", time.Now()).Find(&availability).Error; err != nil {
 		log.Error().Err(err).Msg("Failed to get availability from db")
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to get availability")
 		return
