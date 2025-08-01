@@ -75,7 +75,7 @@ func BookSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendResponse(w, http.StatusCreated, map[string]interface{}{
+	utils.WriteJSON(w, http.StatusCreated, map[string]interface{}{
 		"success": true,
 		"message": "Session booked successfully",
 		"data":    session,
@@ -107,5 +107,5 @@ func GetMySessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, sessions)
+	utils.WriteJSON(w, http.StatusOK, sessions)
 }
