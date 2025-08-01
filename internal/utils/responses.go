@@ -19,3 +19,10 @@ func WriteError(w http.ResponseWriter, status int, code string, message string) 
 		Message: message,
 	})
 }
+
+// WriteJSON writes a JSON response to the http.ResponseWriter
+func WriteJSON(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}
