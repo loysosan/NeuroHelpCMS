@@ -57,7 +57,7 @@ func BookSession(w http.ResponseWriter, r *http.Request) {
 
 	session := models.Session{
 		PsychologistID: slot.PsychologistID,
-		ClientID:       client.ID,
+		ClientID:       &client.ID, // Изменено: передаем указатель на ID
 		StartTime:      slot.StartTime,
 		EndTime:        slot.EndTime,
 		Status:         "confirmed", // Или 'pending', если нужно подтверждение психолога
