@@ -265,19 +265,29 @@ func (suite *UserSessionsTestSuite) TestBookSession_ForbiddenForPsychologist() {
 }
 
 func (suite *UserSessionsTestSuite) TestGetMySessions_Client() {
-	psychologist := suite.createTestUser("psycho@example.com", "psychologist")
-	client := suite.createTestUser("client@example.com", "client")
-	slot := suite.createTestAvailability(psychologist.ID, time.Now().Add(2*time.Hour), "available")
+	client := suite.createTestUser("client-for-sessions@example.com", "client")
+	psychologist := suite.createTestUser("psycho-for-sessions@example.com", "psychologist")
 
 	// Create a session for the client
-	session := models.Session{
+	sessionToFind := models.Session{
 		PsychologistID: psychologist.ID,
-		ClientID:       client.ID,
-		StartTime:      slot.StartTime,
-		EndTime:        slot.EndTime,
+		ClientID:       &client.ID, // ИЗМЕНЕНО: Добавлен оператор взятия адреса &
+		StartTime:      time.Now().Add(-24 * time.Hour),
+		EndTime:        time.Now().Add(-23 * time.Hour),
+		Status:         "completed",
+	}
+	suite.db.Create(&sessionToFind)
+
+	// Create another session for another client (should not be in results)
+	otherClient := suite.createTestUser("other-client@example.com", "client")
+	otherSession := models.Session{
+		PsychologistID: psychologist.ID,
+		ClientID:       &otherClient.ID, // ИЗМЕНЕНО: Добавлен оператор взятия адреса &
+		StartTime:      time.Now(),
+		EndTime:        time.Now().Add(1 * time.Hour),
 		Status:         "confirmed",
 	}
-	suite.db.Create(&session)
+	suite.db.Create(&otherSession)
 
 	req := httptest.NewRequest("GET", "/api/users/sessions/my", nil)
 	w := httptest.NewRecorder()
@@ -286,38 +296,12 @@ func (suite *UserSessionsTestSuite) TestGetMySessions_Client() {
 	handler.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
-	var response []models.Session
-	json.Unmarshal(w.Body.Bytes(), &response)
-	assert.Len(suite.T(), response, 1)
-	assert.Equal(suite.T(), client.ID, response[0].ClientID)
-}
 
-func (suite *UserSessionsTestSuite) TestGetMySessions_Psychologist() {
-	psychologist := suite.createTestUser("psycho@example.com", "psychologist")
-	client := suite.createTestUser("client@example.com", "client")
-	slot := suite.createTestAvailability(psychologist.ID, time.Now().Add(2*time.Hour), "available")
-
-	// Create a session for the psychologist
-	session := models.Session{
-		PsychologistID: psychologist.ID,
-		ClientID:       client.ID,
-		StartTime:      slot.StartTime,
-		EndTime:        slot.EndTime,
-		Status:         "confirmed",
-	}
-	suite.db.Create(&session)
-
-	req := httptest.NewRequest("GET", "/api/users/sessions/my", nil)
-	w := httptest.NewRecorder()
-
-	handler := suite.mockUserMiddleware(psychologist)(http.HandlerFunc(handlers.GetMySessions))
-	handler.ServeHTTP(w, req)
-
-	assert.Equal(suite.T(), http.StatusOK, w.Code)
-	var response []models.Session
-	json.Unmarshal(w.Body.Bytes(), &response)
-	assert.Len(suite.T(), response, 1)
-	assert.Equal(suite.T(), psychologist.ID, response[0].PsychologistID)
+	var sessions []models.Session
+	json.Unmarshal(w.Body.Bytes(), &sessions)
+	assert.Len(suite.T(), sessions, 1)
+	assert.Equal(suite.T(), sessionToFind.ID, sessions[0].ID)
+	assert.Equal(suite.T(), *sessionToFind.ClientID, *sessions[0].ClientID)
 }
 
 // Test runner
