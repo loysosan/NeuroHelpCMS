@@ -58,11 +58,14 @@ func (suite *UserSessionsTestSuite) TearDownSuite() {
 
 // SetupTest runs before each test
 func (suite *UserSessionsTestSuite) SetupTest() {
+	// Clean up data before each test
 	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 0")
 	suite.db.Exec("TRUNCATE TABLE sessions")
-	suite.db.Exec("TRUNCATE TABLE availability")
+	suite.db.Exec("TRUNCATE TABLE availabilities") // ИЗМЕНЕНО: имя таблицы
 	suite.db.Exec("TRUNCATE TABLE users")
 	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 1")
+
+	// Re-seed data if necessary
 }
 
 // mockUserMiddleware creates a middleware to simulate an authenticated user
