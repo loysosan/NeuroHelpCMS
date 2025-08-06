@@ -112,6 +112,26 @@ The application will be available at:
 - Backend API: http://localhost:8080
 - Swagger Documentation: http://localhost:8080/swagger/index.html
 
+### Running Frontend Locally (without Docker)
+
+If you want to run only the frontend for development, follow these steps:
+
+1.  **Navigate to the `frontend` directory:**
+    ```bash
+    cd frontend
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Start the development server:**
+    ```bash
+    npm run dev
+    ```
+    The frontend will be available at the address shown in the terminal (usually `http://localhost:5173`). Note that for the application to work fully, the backend must also be running (e.g., via Docker).
+
 ## Docker Commands
 
 Build and start containers:
