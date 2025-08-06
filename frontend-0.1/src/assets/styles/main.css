@@ -1,0 +1,35 @@
+frontend-0.1/
+│
+├── admin/
+│   ├── index.html
+│   ├── css/
+│   │   └── admin.css
+│   ├── js/
+│   │   └── admin.js
+│   ├── api/
+│   │   ├── auth.js          // Ендпоїнт для авторизації адмінки
+│   │   └── dashboard.js     // Ендпоїнт для отримання даних для дашборду
+│   └── components/
+│       ├── Header.js
+│       ├── Sidebar.js
+│       └── Footer.js
+│
+├── user/
+│   ├── index.html
+│   ├── css/
+│   │   └── user.css
+│   ├── js/
+│   │   └── user.js
+│   ├── api/
+│   │   ├── auth.js          // Ендпоїнт для авторизації користувача
+│   │   └── profile.js       // Ендпоїнт для отримання даних профілю
+│   └── components/
+│       ├── Header.js
+│       ├── Footer.js
+│       └── ProductList.js
+│
+├── assets/
+│   ├── images/
+│   └── fonts/
+│
+└── README.md
