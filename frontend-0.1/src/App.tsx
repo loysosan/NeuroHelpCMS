@@ -1,31 +1,24 @@
-frontend-0.1/
-│
-├── admin/                     # Адміністративна частина
-│   ├── index.html             # Головна сторінка адмінки
-│   ├── styles/                # Стилі для адмінки
-│   │   └── admin.css          # CSS файл для адмінки
-│   ├── scripts/               # Скрипти для адмінки
-│   │   └── admin.js           # JS файл для адмінки
-│   ├── components/            # Компоненти для адмінки
-│   │   ├── Header.js          # Компонент заголовка
-│   │   ├── Sidebar.js         # Компонент бокового меню
-│   │   └── Dashboard.js       # Компонент для дашборду
-│   └── api/                   # API запити для адмінки
-│       ├── auth.js            # Запити для авторизації адмінки
-│       └── data.js            # Запити для отримання даних
-│
-├── user/                      # Користувацька частина (порожня)
-│   ├── index.html             # Головна сторінка користувацької частини
-│   ├── styles/                # Стилі для користувацької частини
-│   │   └── user.css           # CSS файл для користувацької частини
-│   ├── scripts/               # Скрипти для користувацької частини
-│   │   └── user.js            # JS файл для користувацької частини
-│   ├── components/            # Компоненти для користувацької частини
-│   │   ├── Header.js          # Компонент заголовка
-│   │   ├── Footer.js          # Компонент підвалу
-│   │   └── Home.js            # Головний компонент для користувацької частини
-│   └── api/                   # API запити для користувацької частини
-│       ├── auth.js            # Запити для авторизації користувача
-│       └── data.js            # Запити для отримання даних
-│
-└── README.md                  # Документація проекту
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AdminAuthProvider } from './context/AdminAuthContext';
+import AdminRoutes from './routes/AdminRoutes';
+// import UserRoutes from './routes/UserRoutes'; // для майбутньої користувацької частини
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route 
+          path="/admin/*" 
+          element={
+            <AdminAuthProvider>
+              <AdminRoutes />
+            </AdminAuthProvider>
+          } 
+        />
+        <Route path="*" element={<Navigate to="/admin/login" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

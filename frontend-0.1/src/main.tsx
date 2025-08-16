@@ -1,46 +1,10 @@
-frontend-0.1/
-│
-├── admin/
-│   ├── index.html               # Головна сторінка адмінки
-│   ├── login.html               # Сторінка авторизації для адміністратора
-│   ├── dashboard.html            # Панель управління
-│   ├── users/
-│   │   ├── index.html           # Сторінка управління користувачами
-│   │   ├── edit.html            # Сторінка редагування користувача
-│   ├── products/
-│   │   ├── index.html           # Сторінка управління продуктами
-│   │   ├── edit.html            # Сторінка редагування продукту
-│   ├── orders/
-│   │   ├── index.html           # Сторінка управління замовленнями
-│   │   ├── details.html         # Сторінка деталей замовлення
-│   ├── styles/
-│   │   └── admin.css            # CSS для адмінки
-│   └── scripts/
-│       └── admin.js             # JS для адмінки
-│
-├── user/
-│   ├── index.html               # Головна сторінка користувацької частини
-│   ├── login.html               # Сторінка авторизації для користувача
-│   ├── register.html            # Сторінка реєстрації
-│   ├── profile.html             # Сторінка профілю користувача
-│   ├── products/
-│   │   ├── index.html           # Сторінка перегляду продуктів
-│   │   ├── details.html         # Сторінка деталей продукту
-│   ├── cart.html                # Сторінка кошика
-│   ├── styles/
-│   │   └── user.css             # CSS для користувацької частини
-│   └── scripts/
-│       └── user.js              # JS для користувацької частини
-│
-├── api/
-│   ├── admin/
-│   │   ├── auth.js              # Ендпоінти для авторизації адміністратора
-│   │   ├── users.js             # Ендпоінти для управління користувачами
-│   │   ├── products.js          # Ендпоінти для управління продуктами
-│   │   └── orders.js            # Ендпоінти для управління замовленнями
-│   └── user/
-│       ├── auth.js              # Ендпоінти для авторизації користувача
-│       ├── products.js          # Ендпоінти для перегляду продуктів
-│       └── cart.js              # Ендпоінти для роботи з кошиком
-│
-└── README.md                    # Документація проекту
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
