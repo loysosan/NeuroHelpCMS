@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
+    port: 3001,
     proxy: {
       // Проксіруємо всі виклики, що починаються з /api, на Go-API-сервіс (ім'я сервісу "api" у docker-compose)
       '/api': {
