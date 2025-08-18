@@ -317,7 +317,7 @@ export const UsersPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleStyle(u.Role)}`}>
-                          {u.Role === 'psychologist' ? 'Психолог' :
+                          {u.Role === 'psychologist' ? 'Психолог1' :
                            u.Role === 'client' ? 'Клієнт' : u.Role}
                         </span>
                       </td>
