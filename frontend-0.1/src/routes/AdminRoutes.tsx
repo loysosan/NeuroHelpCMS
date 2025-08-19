@@ -6,7 +6,7 @@ import { DashboardPage } from '../pages/admin/DashboardPage';
 import { NewsPage } from '../pages/admin/NewsPage';
 import { UsersPage } from '../pages/admin/UsersPage';
 import { PlansPage } from '../pages/admin/PlansPage';
-import { SkillsPage } from '../pages/admin/SkillsPage';
+import SkillsPage from '../pages/admin/SkillsPage';
 import { AdministratorsPage } from '../pages/admin/AdministratorsPage';
 import { AdminPrivateRoute } from '../utils/AdminPrivateRoute';
 
