@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { ConfirmationModal } from '../../components/admin/modals/ConfirmationModal';
 import { CreateAdminModal } from '../../components/admin/modals/CreateAdminModal';
+import { EditAdminModal } from '../../components/admin/modals/EditAdminModal';
 
 interface Administrator {
   ID: number;
@@ -22,6 +23,7 @@ export const AdministratorsPage: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editing, setEditing] = useState<Administrator | null>(null);
 
   const [search, setSearch] = useState('');
 
@@ -198,6 +200,11 @@ export const AdministratorsPage: React.FC = () => {
                     <td className="px-6 py-3 whitespace-nowrap text-right">
                       <div className="flex gap-2 justify-end">
                         <button
+                          onClick={()=>setEditing(a)}
+                          className="text-indigo-600 hover:text-indigo-900 px-2 py-1 text-xs rounded hover:bg-indigo-50"
+                          disabled={a.Role==='master'}
+                        >Редагувати</button>
+                        <button
                           onClick={()=>requestDelete(a.ID, a.Role)}
                           className="text-red-600 hover:text-red-900 px-2 py-1 text-xs rounded hover:bg-red-50 disabled:opacity-40"
                           disabled={a.Role==='master'}
@@ -236,6 +243,37 @@ export const AdministratorsPage: React.FC = () => {
         onConfirm={confirmDelete}
         title="Підтвердження видалення"
         message="Видалити адміністратора? Цю дію неможливо скасувати."
+      />
+
+      <EditAdminModal
+        isOpen={!!editing}
+        onClose={()=>setEditing(null)}
+        admin={editing}
+        onSubmit={async (d)=>{
+          if(!token) return;
+          const res = await fetch(`/api/admin/administrators/${d.id}`,{
+            method:'PUT',
+            headers:{
+              'Content-Type':'application/json',
+              Authorization:`Bearer ${token}`
+            },
+            body: JSON.stringify({
+              firstName: d.firstName,
+              lastName: d.lastName,
+              email: d.email,
+              phone: d.phone,
+              status: d.status,
+              role: d.role
+            })
+          });
+          if(!res.ok){
+            let msg='Не вдалося оновити адміністратора';
+            try { const j=await res.json(); msg=j.message||msg; } catch {}
+            throw new Error(msg);
+          }
+          setEditing(null);
+          await fetchAdmins();
+        }}
       />
     </div>
   );
