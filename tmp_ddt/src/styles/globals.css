@@ -1,0 +1,225 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  
+  /* NeuroHelp Color Palette */
+  --neuro-primary: #4F46E5;
+  --neuro-accent: #F59E0B;
+  --neuro-success: #10B981;
+  --neuro-warning: #FBBF24;
+  --neuro-error: #DC2626;
+  --neuro-bg-base: #F9FAFB;
+  --neuro-surface: #FFFFFF;
+  --neuro-text-main: #1F2937;
+  --neuro-text-muted: #6B7280;
+  --neuro-border: #E5E7EB;
+  --neuro-focus: #6366F1;
+  
+  --background: var(--neuro-bg-base);
+  --foreground: var(--neuro-text-main);
+  --card: var(--neuro-surface);
+  --card-foreground: var(--neuro-text-main);
+  --popover: var(--neuro-surface);
+  --popover-foreground: var(--neuro-text-main);
+  --primary: var(--neuro-primary);
+  --primary-foreground: #ffffff;
+  --secondary: #F3F4F6;
+  --secondary-foreground: var(--neuro-text-main);
+  --muted: #F3F4F6;
+  --muted-foreground: var(--neuro-text-muted);
+  --accent: var(--neuro-accent);
+  --accent-foreground: #ffffff;
+  --destructive: var(--neuro-error);
+  --destructive-foreground: #ffffff;
+  --border: var(--neuro-border);
+  --input: var(--neuro-border);
+  --input-background: var(--neuro-surface);
+  --switch-background: #D1D5DB;
+  --font-weight-medium: 600;
+  --font-weight-normal: 400;
+  --ring: var(--neuro-focus);
+  --chart-1: var(--neuro-primary);
+  --chart-2: var(--neuro-accent);
+  --chart-3: var(--neuro-success);
+  --chart-4: var(--neuro-warning);
+  --chart-5: var(--neuro-error);
+  --radius: 0.5rem;
+  --sidebar: var(--neuro-surface);
+  --sidebar-foreground: var(--neuro-text-main);
+  --sidebar-primary: var(--neuro-primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #F3F4F6;
+  --sidebar-accent-foreground: var(--neuro-text-main);
+  --sidebar-border: var(--neuro-border);
+  --sidebar-ring: var(--neuro-focus);
+}
+
+.dark {
+  --neuro-bg-base: #111827;
+  --neuro-surface: #1F2937;
+  --neuro-text-main: #F9FAFB;
+  --neuro-text-muted: #9CA3AF;
+  --neuro-border: #374151;
+  
+  --background: var(--neuro-bg-base);
+  --foreground: var(--neuro-text-main);
+  --card: var(--neuro-surface);
+  --card-foreground: var(--neuro-text-main);
+  --popover: var(--neuro-surface);
+  --popover-foreground: var(--neuro-text-main);
+  --primary: var(--neuro-primary);
+  --primary-foreground: #ffffff;
+  --secondary: #374151;
+  --secondary-foreground: var(--neuro-text-main);
+  --muted: #374151;
+  --muted-foreground: var(--neuro-text-muted);
+  --accent: var(--neuro-accent);
+  --accent-foreground: #ffffff;
+  --destructive: var(--neuro-error);
+  --destructive-foreground: #ffffff;
+  --border: var(--neuro-border);
+  --input: var(--neuro-border);
+  --ring: var(--neuro-focus);
+  --sidebar: var(--neuro-surface);
+  --sidebar-foreground: var(--neuro-text-main);
+  --sidebar-primary: var(--neuro-primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #374151;
+  --sidebar-accent-foreground: var(--neuro-text-main);
+  --sidebar-border: var(--neuro-border);
+  --sidebar-ring: var(--neuro-focus);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}
+
+/**
+ * Base typography using NeuroHelp design system
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: 2.5rem; /* 40px */
+      font-weight: 600;
+      line-height: 1.5;
+      font-family: 'Inter', sans-serif;
+    }
+
+    h2 {
+      font-size: 1.75rem; /* 28px */
+      font-weight: 600;
+      line-height: 1.5;
+      font-family: 'Inter', sans-serif;
+    }
+
+    h3 {
+      font-size: 1.25rem; /* 20px */
+      font-weight: 600;
+      line-height: 1.5;
+      font-family: 'Inter', sans-serif;
+    }
+
+    h4 {
+      font-size: 1rem; /* 16px */
+      font-weight: 600;
+      line-height: 1.5;
+      font-family: 'Inter', sans-serif;
+    }
+
+    p {
+      font-size: 1rem; /* 16px */
+      font-weight: 400;
+      line-height: 1.5;
+      font-family: 'Inter', sans-serif;
+    }
+
+    small {
+      font-size: 0.875rem; /* 14px */
+      font-weight: 400;
+      line-height: 1.5;
+      font-family: 'Inter', sans-serif;
+    }
+
+    label {
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1.5;
+      font-family: 'Inter', sans-serif;
+    }
+
+    button {
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1.5;
+      font-family: 'Inter', sans-serif;
+    }
+
+    input {
+      font-size: 1rem;
+      font-weight: 400;
+      line-height: 1.5;
+      font-family: 'Inter', sans-serif;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Focus outline styles for accessibility */
+.focus-outline {
+  outline: 2px solid var(--neuro-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
