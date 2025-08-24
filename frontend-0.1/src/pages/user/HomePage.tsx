@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Header from '../../components/user/Header';
 import QuickSearchForm from '../../components/user/QuickSearchForm';
 import BottomNavigation from '../../components/user/BottomNavigation';
+import Footer from '../../components/user/Footer';
 
 interface News {
   id: number;
@@ -208,7 +209,7 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
-
+      <Footer />
       <BottomNavigation />
     </div>
   );
