@@ -5,3 +5,4 @@ config.ini
 */node_modules
 package-lock.json
 .vscode
+tmp_*
