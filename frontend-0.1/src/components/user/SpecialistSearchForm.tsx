@@ -175,19 +175,12 @@ const SpecialistSearchForm: React.FC<Props> = ({ onSearch }) => {
               className="w-full h-10 rounded-md border border-gray-300 text-sm px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
-          <div className="flex flex-col justify-end space-y-2 md:col-span-2 lg:col-span-1">
+          <div className="flex flex-col justify-end md:col-span-2 lg:col-span-1">
             <button
               type="submit"
               className="h-10 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors"
             >
               Застосувати
-            </button>
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="h-10 rounded-md border text-sm hover:bg-gray-50"
-            >
-              Скинути
             </button>
           </div>
         </div>
