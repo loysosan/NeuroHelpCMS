@@ -74,6 +74,7 @@ const HomePage: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900 pb-24 md:pb-0">
       <Header />
 
+      {/* Hero + пошук */}
       <section className="relative px-4 pt-12 pb-12 md:pt-20 md:pb-14 max-w-7xl mx-auto w-full">
         <div className="max-w-4xl">
           <h1 className="font-semibold tracking-tight text-3xl md:text-5xl mb-6">
@@ -87,6 +88,72 @@ const HomePage: React.FC = () => {
         <div className="pointer-events-none absolute inset-0 -z-10 opacity-30 bg-[radial-gradient(circle_at_20%_30%,#6366f130,transparent_60%)]" />
       </section>
 
+      {/* Нові блоки реєстрації (спеціаліст / користувач) */}
+      <section className="px-4 max-w-7xl mx-auto w-full mb-16">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="group relative overflow-hidden rounded-2xl border bg-white p-8 flex flex-col shadow-sm">
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-indigo-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+              Стати спеціалістом
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Отримуйте клієнтів, керуйте записами та публікуйте експертні матеріали. Інструменти аналітики й видимість у каталозі.
+            </p>
+            <ul className="text-sm text-gray-600 space-y-2 mb-6">
+              <li className="flex gap-2"><span className="text-indigo-600">•</span>Персональний профіль</li>
+              <li className="flex gap-2"><span className="text-indigo-600">•</span>Гнучкі формати (онлайн / офлайн)</li>
+              <li className="flex gap-2"><span className="text-indigo-600">•</span>Статистика переглядів</li>
+            </ul>
+            <div className="mt-auto flex flex-wrap gap-3">
+              {/* Оновлено: кнопка веде на квіз-реєстрацію */}
+              <button
+                onClick={() => navigate('/quiz-register?role=psychologist')}
+                className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors"
+              >
+                Зареєструватися
+              </button>
+              
+              <button
+                onClick={() => navigate('/login?role=specialist')}
+                className="px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Увійти
+              </button>
+            </div>
+          </div>
+
+          <div className="group relative overflow-hidden rounded-2xl border bg-white p-8 flex flex-col shadow-sm">
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-violet-50/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+              Стати користувачем
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Зберігайте обраних спеціалістів, швидко знаходьте потрібну допомогу та отримуйте доступ до персоналізованих матеріалів.
+            </p>
+            <ul className="text-sm text-gray-600 space-y-2 mb-6">
+              <li className="flex gap-2"><span className="text-violet-600">•</span>Закладки та історія</li>
+              <li className="flex gap-2"><span className="text-violet-600">•</span>Персональні рекомендації</li>
+              <li className="flex gap-2"><span className="text-violet-600">•</span>Доступ до новин та статей</li>
+            </ul>
+            <div className="mt-auto flex flex-wrap gap-3">
+              <button
+                onClick={() => navigate('/register')}
+                className="px-5 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-500 transition-colors"
+              >
+                Зареєструватися
+              </button>
+              <button
+                onClick={() => navigate('/login')}
+                className="px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Увійти
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Секція новин */}
       <section className="px-4 max-w-7xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -95,9 +162,10 @@ const HomePage: React.FC = () => {
               Оновлення платформи, корисні поради та експертні статті
             </p>
           </div>
-          <Link to="/news" className="hidden md:inline-flex text-sm font-medium text-indigo-600 hover:underline">
+          {/* Якщо треба забрати лінк – видали цей <Link> */}
+          {/* <Link to="/news" className="hidden md:inline-flex text-sm font-medium text-indigo-600 hover:underline">
             Переглянути всі →
-          </Link>
+          </Link> */}
         </div>
 
         {loading && (
@@ -146,51 +214,23 @@ const HomePage: React.FC = () => {
         )}
 
         {!loading && !error && news.length > 0 && (
-          <div className="space-y-10">
-            {(() => {
-              const previews = news.slice(0, 2);
-              return (
-                <div className="grid gap-6 md:grid-cols-2">
-                  {previews.map(n => (
-                    <NewsCard
-                      key={n.id}
-                      item={n}
-                      variant="highlight"
-                    />
-                  ))}
-                </div>
-              );
-            })()}
-          </div>
-        )}
-      </section>
-
-      <section className="mt-20 mb-24 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="rounded-2xl border bg-white p-8 md:p-12 flex flex-col md:flex-row gap-8 items-center shadow-sm">
-            <div className="flex-1">
-              <h3 className="text-2xl font-semibold mb-3">Почніть сьогодні</h3>
-              <p className="text-gray-500 mb-6 max-w-prose">
-                Створіть обліковий запис, щоб знаходити фахівців швидше та зберігати улюблені матеріали.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <button
-                  onClick={() => navigate('/login')}
-                  className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-500 transition-colors"
-                >
-                  Увійти / Реєстрація
-                </button>
-                <button
-                  onClick={() => navigate('/search')}
-                  className="border border-gray-300 hover:bg-gray-50 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Знайти спеціаліста
-                </button>
-              </div>
+            <div className="space-y-10">
+              {(() => {
+                const previews = news.slice(0, 2);
+                return (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {previews.map((n, idx) => (
+                      <NewsCard
+                        key={n.id}
+                        item={{ ...n, highlight: true }}   // обидві у великому стилі
+                        variant="highlight"
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
-            <div className="opacity-50 text-7xl md:text-8xl select-none">♟</div>
-          </div>
-        </div>
+        )}
       </section>
 
       <Footer />
