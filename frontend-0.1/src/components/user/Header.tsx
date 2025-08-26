@@ -5,7 +5,7 @@ import { Heart, Menu, Search, User, LogIn } from 'lucide-react';
 const navItems = [
   { to: '/', id: 'home', label: 'Головна' },
   { to: '/search', id: 'search', label: 'Спеціалісти', icon: Search },
-  { to: '/articles', id: 'articles', label: 'Статті' },
+  { to: '/news', id: 'articles', label: 'Статті' },
   { to: '/about', id: 'about', label: 'Про нас' }
 ];
 
