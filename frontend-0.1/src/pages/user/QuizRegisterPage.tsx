@@ -109,7 +109,7 @@ const QuizRegisterPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Основна інформація</h3>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Імʼя *</label>
                 <input className="w-full h-11 rounded-lg border px-3 text-sm"
@@ -124,13 +124,13 @@ const QuizRegisterPage: React.FC = () => {
                   onChange={e => setField('lastName', e.target.value)}
                   required />
               </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Телефон *</label>
-              <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                value={data.phone}
-                onChange={e => setField('phone', e.target.value)}
-                required />
+              <div>
+                <label className="text-sm font-medium mb-1 block">Телефон *</label>
+                <input className="w-full h-11 rounded-lg border px-3 text-sm"
+                  value={data.phone}
+                  onChange={e => setField('phone', e.target.value)}
+                  required />
+              </div>
             </div>
             <div className="flex justify-end">
               <button type="button" onClick={next}
@@ -144,21 +144,23 @@ const QuizRegisterPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Облікові дані</h3>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Email *</label>
-              <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                type="email"
-                value={data.email}
-                onChange={e => setField('email', e.target.value)}
-                required />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Пароль *</label>
-              <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                type="password"
-                value={data.password}
-                onChange={e => setField('password', e.target.value)}
-                required />
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Email *</label>
+                <input className="w-full h-11 rounded-lg border px-3 text-sm"
+                  type="email"
+                  value={data.email}
+                  onChange={e => setField('email', e.target.value)}
+                  required />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Пароль *</label>
+                <input className="w-full h-11 rounded-lg border px-3 text-sm"
+                  type="password"
+                  value={data.password}
+                  onChange={e => setField('password', e.target.value)}
+                  required />
+              </div>
             </div>
             <div className="flex justify-between">
               <button type="button" onClick={back}
@@ -176,7 +178,7 @@ const QuizRegisterPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Контакти</h3>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Telegram</label>
                 <input className="w-full h-11 rounded-lg border px-3 text-sm"
@@ -206,7 +208,7 @@ const QuizRegisterPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Локація</h3>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Країна *</label>
                 <input className="w-full h-11 rounded-lg border px-3 text-sm"
@@ -221,8 +223,6 @@ const QuizRegisterPage: React.FC = () => {
                   onChange={e => setField('city', e.target.value)}
                   required />
               </div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="text-sm font-medium mb-1 block">Вулиця *</label>
                 <input className="w-full h-11 rounded-lg border px-3 text-sm"
