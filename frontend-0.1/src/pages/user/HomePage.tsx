@@ -137,7 +137,7 @@ const HomePage: React.FC = () => {
             </ul>
             <div className="mt-auto flex flex-wrap gap-3">
               <button
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/quiz-register-client')}
                 className="px-5 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-500 transition-colors"
               >
                 Зареєструватися
