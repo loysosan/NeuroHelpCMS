@@ -112,13 +112,6 @@ const HomePage: React.FC = () => {
               >
                 Зареєструватися
               </button>
-              
-              <button
-                onClick={() => navigate('/login?role=specialist')}
-                className="px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50 transition-colors"
-              >
-                Увійти
-              </button>
             </div>
           </div>
 
@@ -142,94 +135,88 @@ const HomePage: React.FC = () => {
               >
                 Зареєструватися
               </button>
-              <button
-                onClick={() => navigate('/login')}
-                className="px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50 transition-colors"
-              >
-                Увійти
-              </button>
             </div>
           </div>
         </div>
       </section>
 
       {/* Секція новин */}
-      <section className="px-4 max-w-7xl mx-auto w-full">
+      <section className="px-4 max-w-7xl mx-auto w-full mb-4">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">Останні новини</h2>
-            <p className="text-sm md:text-base text-gray-500 mt-1">
-              Оновлення платформи, корисні поради та експертні статті
-            </p>
+        <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">Останні новини</h2>
+        <p className="text-sm md:text-base text-gray-500 mt-1">
+          Оновлення платформи, корисні поради та експертні статті
+        </p>
           </div>
           {/* Якщо треба забрати лінк – видали цей <Link> */}
           {/* <Link to="/news" className="hidden md:inline-flex text-sm font-medium text-indigo-600 hover:underline">
-            Переглянути всі →
+        Переглянути всі →
           </Link> */}
         </div>
 
         {loading && (
           <div className="space-y-8">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="h-80 md:h-full rounded-2xl bg-white border animate-pulse" />
-              <div className="flex flex-col gap-4">
-                <div className="h-32 rounded-xl bg-white border animate-pulse" />
-                <div className="h-32 rounded-xl bg-white border animate-pulse" />
-              </div>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl border bg-white p-4 animate-pulse h-56" />
-              ))}
-            </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="h-80 md:h-full rounded-2xl bg-white border animate-pulse" />
+          <div className="flex flex-col gap-4">
+            <div className="h-32 rounded-xl bg-white border animate-pulse" />
+            <div className="h-32 rounded-xl bg-white border animate-pulse" />
+          </div>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-xl border bg-white p-4 animate-pulse h-56" />
+          ))}
+        </div>
           </div>
         )}
 
         {!loading && error && (
           <div className="rounded-lg border border-red-300 bg-red-50 p-6 max-w-md">
-            <p className="font-medium text-red-600 mb-2">Помилка</p>
-            <p className="text-sm text-red-700 mb-4">{error}</p>
-            <button
-              onClick={fetchHomeNews}
-              className="text-sm bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-500 transition-colors"
-            >
-              Спробувати ще раз
-            </button>
+        <p className="font-medium text-red-600 mb-2">Помилка</p>
+        <p className="text-sm text-red-700 mb-4">{error}</p>
+        <button
+          onClick={fetchHomeNews}
+          className="text-sm bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-500 transition-colors"
+        >
+          Спробувати ще раз
+        </button>
           </div>
         )}
 
         {!loading && !error && news.length === 0 && (
           <div className="rounded-2xl border border-dashed bg-white p-12 text-center shadow-sm">
-            <h3 className="text-lg font-medium mb-2">Новини відсутні</h3>
-            <p className="text-sm text-gray-500 mb-6">
-              Додайте матеріали через адміністративну панель або перевірте пізніше.
-            </p>
-            <Link
-              to="/news"
-              className="inline-flex bg-indigo-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-indigo-500 transition-colors"
-            >
-              Перейти до розділу новин
-            </Link>
+        <h3 className="text-lg font-medium mb-2">Новини відсутні</h3>
+        <p className="text-sm text-gray-500 mb-6">
+          Додайте матеріали через адміністративну панель або перевірте пізніше.
+        </p>
+        <Link
+          to="/news"
+          className="inline-flex bg-indigo-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-indigo-500 transition-colors"
+        >
+          Перейти до розділу новин
+        </Link>
           </div>
         )}
 
         {!loading && !error && news.length > 0 && (
-            <div className="space-y-10">
-              {(() => {
-                const previews = news.slice(0, 2);
-                return (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {previews.map((n, idx) => (
-                      <NewsCard
-                        key={n.id}
-                        item={{ ...n, highlight: true }}   // обидві у великому стилі
-                        variant="highlight"
-                      />
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
+        <div className="space-y-10">
+          {(() => {
+            const previews = news.slice(0, 2);
+            return (
+          <div className="grid gap-6 md:grid-cols-2">
+            {previews.map((n, idx) => (
+              <NewsCard
+            key={n.id}
+            item={{ ...n, highlight: true }}   // обидві у великому стилі
+            variant="highlight"
+              />
+            ))}
+          </div>
+            );
+          })()}
+        </div>
         )}
       </section>
 

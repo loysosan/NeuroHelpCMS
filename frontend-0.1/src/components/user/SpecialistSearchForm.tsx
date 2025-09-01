@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Filter, ChevronUp, ChevronDown, Search, X } from 'lucide-react';
 
 export interface SpecialistSearchValues {
   q: string;
@@ -23,9 +24,8 @@ const formatOptions = [
 ];
 
 const SpecialistSearchForm: React.FC<Props> = ({ onSearch }) => {
-  const [openFilters, setOpenFilters] = useState(true);
   const [v, setV] = useState<SpecialistSearchValues>({
-    q: '',
+    q: '', // залишаємо в стейті, але не показуємо
     specialization: '',
     city: '',
     format: '',
@@ -33,6 +33,7 @@ const SpecialistSearchForm: React.FC<Props> = ({ onSearch }) => {
     maxPrice: undefined,
     minExperience: undefined
   });
+  const [openFilters, setOpenFilters] = useState(false);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,39 +67,44 @@ const SpecialistSearchForm: React.FC<Props> = ({ onSearch }) => {
 
   return (
     <form onSubmit={submit} className="space-y-4">
+      {/* Видалено поле для вводу запиту */}
       <div className="flex flex-col md:flex-row gap-3">
-        <input
-          value={v.q}
-          onChange={e => set('q', e.target.value)}
-          placeholder="Пошук спеціаліста / ключові слова..."
-          className="flex-1 h-12 rounded-lg border border-gray-300 bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
         <button
           type="button"
-            onClick={() => setOpenFilters(o => !o)}
-          className="h-12 px-4 rounded-lg border border-gray-300 bg-white text-sm hover:bg-gray-50"
+          onClick={() => setOpenFilters(!openFilters)}
+          className="flex items-center justify-center gap-2 h-12 px-6 rounded-lg border border-gray-300 bg-white text-sm font-medium hover:bg-gray-50 transition-colors"
         >
-          {openFilters ? 'Приховати фільтри' : 'Фільтри'}
+          <Filter className="w-4 h-4" />
+          Фільтри
+          {openFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
+        
         <button
           type="submit"
-          className="h-12 px-6 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors"
+          className="h-12 px-8 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors flex items-center justify-center gap-2"
         >
-          Знайти
+          <Search className="w-4 h-4" />
+          Знайти спеціалістів
         </button>
       </div>
 
       {pills.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {pills.map(p => (
-            <span key={p.k} className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full text-xs">
-              {p.label}
-              <button type="button" onClick={() => removePill(p.k)} className="hover:text-indigo-900">×</button>
+          {pills.map(pill => (
+            <span
+              key={pill.k}
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-medium"
+            >
+              {pill.label}
+              <button
+                type="button"
+                onClick={() => removePill(pill.k)}
+                className="hover:bg-indigo-200 rounded-full p-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
             </span>
           ))}
-          <button type="button" onClick={clearFilters} className="text-xs text-gray-500 hover:text-gray-700 underline">
-            Скинути
-          </button>
         </div>
       )}
 
