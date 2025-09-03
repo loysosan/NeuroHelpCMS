@@ -2,6 +2,8 @@
 
 A content management system built with Go backend and React frontend, containerized with Docker. This CMS is specifically designed for psychology services platform with features for psychologists and clients.
 
+![Main Page NeuroHelp](screen.png)
+
 ## Project Structure
 
 ```
