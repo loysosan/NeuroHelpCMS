@@ -1,167 +1,194 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { Heart, Menu, Search, User, LogIn } from 'lucide-react';
+import { Link, NavLink } from 'react-router-dom';
+import { Menu, X, LogIn, LogOut } from 'lucide-react';
+import { useUserAuth } from '../../context/UserAuthContext';
+import LoginModal from './LoginModal';
 
 const navItems = [
   { to: '/', id: 'home', label: 'Головна' },
-  { to: '/search', id: 'search', label: 'Спеціалісти', icon: Search },
-  { to: '/news', id: 'articles', label: 'Статті' },
+  { to: '/search', id: 'search', label: 'Спеціалісти' },
+  { to: '/news', id: 'articles', label: 'Новини' },
   { to: '/about', id: 'about', label: 'Про нас' }
 ];
 
 const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { isAuthenticated, user, logout } = useUserAuth();
+
+  const handleLogout = () => {
+    logout();
+    setOpen(false);
+  };
+
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    setOpen(false);
+  };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Heart className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-semibold tracking-tight text-gray-900">NeuroHelp</span>
-          </button>
+    <>
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200">
+        <div className="px-4 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">NH</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">NeuroHelp</span>
+            </Link>
 
-            {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-2">
-            {navItems.map(item => (
-              <NavLink
-                key={item.id}
-                to={item.to}
-                className={({ isActive }) =>
-                  `px-3 h-9 inline-flex items-center gap-2 rounded-md text-sm font-medium transition-colors
-                   ${isActive ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`
-                }
-              >
-                {item.icon && <item.icon className="w-4 h-4" />}
-                {item.label}
+            {/* Desktop navigation */}
+            <div className="hidden md:flex items-center gap-6">
+              <NavLink to="/" className={({ isActive }) => 
+                `text-sm font-medium transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-700 hover:text-gray-900'}`
+              }>
+                Головна
               </NavLink>
-            ))}
-          </nav>
+              <NavLink to="/search" className={({ isActive }) => 
+                `text-sm font-medium transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-700 hover:text-gray-900'}`
+              }>
+                Спеціалісти
+              </NavLink>
+              <NavLink to="/news" className={({ isActive }) => 
+                `text-sm font-medium transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-700 hover:text-gray-900'}`
+              }>
+                Новини
+              </NavLink>
 
-          {/* Desktop user actions */}
-          <div className="hidden md:flex items-center gap-3">
-            <NavLink
-              to="/favorites"
-              className={({ isActive }) =>
-                `px-3 h-9 inline-flex items-center gap-2 rounded-md text-sm font-medium transition-colors
-                 ${isActive ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`
-              }
-            >
-              <Heart className="w-4 h-4" />
-              Обране
-            </NavLink>
-            <NavLink
-              to="/profile"
-              className={({ isActive }) =>
-                `px-3 h-9 inline-flex items-center gap-2 rounded-md text-sm font-medium transition-colors
-                 ${isActive ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`
-              }
-            >
-              <User className="w-4 h-4" />
-              Профіль
-            </NavLink>
-            <button
-              onClick={() => navigate('/login')}
-              className="px-4 h-9 inline-flex items-center gap-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
-            >
-              <LogIn className="w-4 h-4" />
-              Увійти
-            </button>
-          </div>
-
-          {/* Mobile menu trigger */}
-          <button
-            onClick={() => setOpen(true)}
-            className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-md hover:bg-gray-100 text-gray-700"
-            aria-label="Меню"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile sheet */}
-      {open && (
-        <div className="fixed inset-0 z-50">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setOpen(false)}
-          />
-          <div className="absolute top-0 right-0 h-full w-80 bg-white shadow-xl flex flex-col">
-            <div className="px-5 h-16 flex items-center justify-between border-b">
-              <span className="font-semibold text-lg">Меню</span>
-              <button
-                onClick={() => setOpen(false)}
-                className="text-sm text-gray-500 hover:text-gray-800"
-              >
-                Закрити
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
-              {navItems.map(item => (
-                <NavLink
-                  key={item.id}
-                  to={item.to}
-                  onClick={() => setOpen(false)}
-                  className={({ isActive }) =>
-                    `w-full inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium
-                     ${isActive ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`
-                  }
-                >
-                  {item.icon && <item.icon className="w-4 h-4" />}
-                  {item.label}
-                </NavLink>
-              ))}
-
-              <div className="pt-4 mt-4 border-t space-y-2">
-                <NavLink
-                  to="/favorites"
-                  onClick={() => setOpen(false)}
-                  className={({ isActive }) =>
-                    `w-full inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium
-                     ${isActive ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:bg-gray-100'}`
-                  }
-                >
-                  <Heart className="w-4 h-4" />
-                  Обране
-                </NavLink>
-                <NavLink
-                  to="/profile"
-                  onClick={() => setOpen(false)}
-                  className={({ isActive }) =>
-                    `w-full inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium
-                     ${isActive ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:bg-gray-100'}`
-                  }
-                >
-                  <User className="w-4 h-4" />
-                  Профіль
-                </NavLink>
+              {isAuthenticated ? (
+                <>
+                  <NavLink to="/profile" className={({ isActive }) => 
+                    `text-sm font-medium transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-700 hover:text-gray-900'}`
+                  }>
+                    Профіль
+                  </NavLink>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-600">
+                      {user?.firstName} {user?.lastName}
+                    </span>
+                    <button
+                      onClick={handleLogout}
+                      className="px-4 h-9 inline-flex items-center gap-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Вийти
+                    </button>
+                  </div>
+                </>
+              ) : (
                 <button
-                  onClick={() => {
-                    setOpen(false);
-                    navigate('/login');
-                  }}
-                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500"
+                  onClick={() => setShowLoginModal(true)}
+                  className="px-4 h-9 inline-flex items-center gap-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
                   Увійти
                 </button>
-              </div>
+              )}
             </div>
-            <div className="px-5 py-4 border-t text-xs text-gray-500">
-              © {new Date().getFullYear()} NeuroHelp
-            </div>
+
+            {/* Mobile menu trigger */}
+            <button
+              onClick={() => setOpen(true)}
+              className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-md hover:bg-gray-100 text-gray-700"
+              aria-label="Меню"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
           </div>
         </div>
-      )}
-    </header>
+
+        {/* Mobile sheet */}
+        {open && (
+          <div className="fixed inset-0 z-50">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setOpen(false)}
+            />
+            <div className="absolute right-0 top-0 h-full w-80 max-w-full bg-white shadow-xl">
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between p-4 border-b">
+                  <span className="text-lg font-semibold">Меню</span>
+                  <button onClick={() => setOpen(false)} className="p-2 hover:bg-gray-100 rounded-md">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <nav className="flex-1 p-4 space-y-2">
+                  <Link
+                    to="/"
+                    onClick={() => setOpen(false)}
+                    className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-md"
+                  >
+                    Головна
+                  </Link>
+                  <Link
+                    to="/search"
+                    onClick={() => setOpen(false)}
+                    className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-md"
+                  >
+                    Спеціалісти
+                  </Link>
+                  <Link
+                    to="/news"
+                    onClick={() => setOpen(false)}
+                    className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-md"
+                  >
+                    Новини
+                  </Link>
+
+                  {isAuthenticated && (
+                    <Link
+                      to="/profile"
+                      onClick={() => setOpen(false)}
+                      className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-md"
+                    >
+                      Профіль
+                    </Link>
+                  )}
+                </nav>
+
+                <div className="p-4 border-t">
+                  {isAuthenticated ? (
+                    <div className="space-y-3">
+                      <div className="px-4 py-2 bg-gray-50 rounded-md">
+                        <p className="text-sm font-medium text-gray-900">
+                          {user?.firstName} {user?.lastName}
+                        </p>
+                        <p className="text-xs text-gray-600">{user?.email}</p>
+                      </div>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      >
+                        Вийти
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setOpen(false);
+                        setShowLoginModal(true);
+                      }}
+                      className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors"
+                    >
+                      Увійти
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={handleLoginSuccess}
+      />
+    </>
   );
 };
 
