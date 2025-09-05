@@ -50,11 +50,27 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
     setError('');
     setIsLoading(true);
 
+    console.log('Form submission with:', { email, password: '***' }); // Для отладки
+
+    // Валидація на клієнті
+    if (!email.trim()) {
+      setError('Email обов\'язковий для заповнення');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setError('Пароль обов\'язковий для заповнення');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       onClose();
       onSuccess?.();
     } catch (err: any) {
+      console.error('Login error:', err); // Для отладки
       setError(err.message);
     } finally {
       setIsLoading(false);
