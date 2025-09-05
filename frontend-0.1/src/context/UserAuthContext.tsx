@@ -42,7 +42,7 @@ export const UserAuthProvider: React.FC<UserAuthProviderProps> = ({ children }) 
 
   const fetchUserProfile = async (authToken: string) => {
     try {
-      const response = await fetch('/api/users/self', {
+      const response = await fetch('/api/users/self', { // ← Этот endpoint правильный
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -66,21 +66,40 @@ export const UserAuthProvider: React.FC<UserAuthProviderProps> = ({ children }) 
   };
 
   const login = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
+    // Валидация
+    if (!email || !password) {
+      throw new Error('Email та пароль обов\'язкові для заповнення');
+    }
+
+    console.log('Sending login request with:', { email, password: '***' });
+
+    const response = await fetch('/api/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ 
+        username: email.trim(), // Отправляем как "username" согласно бэкенду
+        password: password 
+      })
     });
 
+    console.log('Login response status:', response.status);
+
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({ message: 'Помилка авторизації' }));
       throw new Error(errorData.message || 'Помилка авторизації');
     }
 
     const data = await response.json();
-    const authToken = data.token;
+    console.log('Login response data:', data);
+    
+    // Исправляем получение токена - используем тот же подход, что и в старом фронтенде
+    const authToken = data.access_token || data.token;
+    
+    if (!authToken) {
+      throw new Error('Токен не отримано від сервера');
+    }
     
     setToken(authToken);
     localStorage.setItem('userToken', authToken);
