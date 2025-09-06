@@ -148,15 +148,13 @@ export const EditUserModal: React.FC<Props> = ({ isOpen, onClose, onSubmit, toke
                   Роль
                 </label>
                 <select
-                  className="w-full border rounded px-3 py-2"
                   value={form.Role}
                   onChange={e => change('Role', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 >
-                  <option value="client">client</option>
-                  <option value="psychologist">psychologist</option>
-                  <option value="admin">admin</option>
-                  <option value="moderator">moderator</option>
+                  <option value="client">Клієнт</option>
+                  <option value="psychologist">Психолог</option>
                 </select>
               </div>
               <div>
