@@ -48,12 +48,15 @@ export const CreateUserModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) 
           </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Роль</label>
-                <select className="mt-1 w-full border rounded px-2 py-2"
-                  value={form.role} onChange={e=>change('role', e.target.value)}>
-                  <option value="User">User</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Moderator">Moderator</option>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Роль</label>
+                <select
+                  value={form.role} onChange={e=>change('role', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                >
+                  <option value="">Оберіть роль</option>
+                  <option value="client">Клієнт</option>
+                  <option value="psychologist">Психолог</option>
                 </select>
               </div>
               <div>

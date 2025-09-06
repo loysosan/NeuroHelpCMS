@@ -174,8 +174,6 @@ export const UsersPage: React.FC = () => {
     switch (r) {
       case 'psychologist': return 'bg-blue-100 text-blue-800';
       case 'client': return 'bg-purple-100 text-purple-800';
-      case 'admin': return 'bg-indigo-100 text-indigo-800';
-      case 'moderator': return 'bg-teal-100 text-teal-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -317,7 +315,7 @@ export const UsersPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleStyle(u.Role)}`}>
-                          {u.Role === 'psychologist' ? 'Психолог1' :
+                          {u.Role === 'psychologist' ? 'Психолог' :
                            u.Role === 'client' ? 'Клієнт' : u.Role}
                         </span>
                       </td>

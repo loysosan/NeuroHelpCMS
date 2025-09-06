@@ -316,42 +316,49 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	// Delete related data in correct order
 
-	// 1. Delete photos from portfolio if exists
+	// 1. ДОБАВИТЬ: Delete child record if exists
+	if err := tx.Where("client_id = ?", id).Delete(&models.Child{}).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete child records")
+		return
+	}
+
+	// 2. Delete photos from portfolio if exists
 	if err := tx.Exec("DELETE photos FROM photos INNER JOIN portfolios ON photos.portfolio_id = portfolios.id WHERE portfolios.psychologist_id = ?", id).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete photos")
 		return
 	}
 
-	// 2. Delete portfolio
+	// 3. Delete portfolio
 	if err := tx.Where("psychologist_id = ?", id).Delete(&models.Portfolio{}).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete portfolio")
 		return
 	}
 
-	// 3. Delete blog posts
+	// 4. Delete blog posts
 	if err := tx.Where("psychologist_id = ?", id).Delete(&models.BlogPost{}).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete blog posts")
 		return
 	}
 
-	// 4. Delete reviews (both given and received)
+	// 5. Delete reviews (both given and received)
 	if err := tx.Where("client_id = ? OR psychologist_id = ?", id, id).Delete(&models.Review{}).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete reviews")
 		return
 	}
 
-	// 5. Delete psychologist skills (many-to-many relationship)
+	// 6. Delete psychologist skills (many-to-many relationship)
 	if err := tx.Where("psychologist_id = ?", id).Delete(&models.PsychologistSkills{}).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete skills")
 		return
 	}
 
-	// 6. Finally delete user
+	// 7. Finally delete user
 	if err := tx.Delete(&user).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete user")
