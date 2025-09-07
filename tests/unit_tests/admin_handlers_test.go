@@ -58,14 +58,23 @@ func (suite *AdminHandlersTestSuite) SetupSuite() {
 	suite.db = testDB
 	db.DB = testDB // Set global variable for handlers
 
-	// Migrate models
+	// Migrate models - добавляем все необходимые модели для каскадного удаления
 	err = testDB.AutoMigrate(
 		&models.User{},
 		&models.Administrator{},
 		&models.Plan{},
 		&models.Skill{},
 		&models.Category{},
-		&models.News{}, // Added migration for News
+		&models.News{},
+		&models.Child{},              // Добавляем модель Childhild
+		&models.Portfolio{},          // Добавляем модель Portfolioolio
+		&models.BlogPost{},           // Добавляем модель BlogPostPost
+		&models.Review{},             // Добавляем модель Reviewview
+		&models.PsychologistSkills{}, // Добавляем модель PsychologistSkills
+		&models.Session{},            // Добавляем модель Sessionsion
+		&models.Message{},            // Добавляем модель Messagesage
+		&models.Availability{},       // Добавляем модель Availabilitylity
+		&models.Photo{},              // Добавляем модель Photo (если есть)сть)
 	)
 	suite.Require().NoError(err)
 
@@ -78,10 +87,17 @@ func (suite *AdminHandlersTestSuite) SetupTest() {
 	// Disable foreign key checks
 	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 0")
 
-	// Clear all tables
+	// Clear all tables - добавляем все связанные таблицы
 	suite.db.Exec("TRUNCATE TABLE news")
 	suite.db.Exec("TRUNCATE TABLE psychologist_skills")
 	suite.db.Exec("TRUNCATE TABLE portfolios")
+	suite.db.Exec("TRUNCATE TABLE children")       // Добавляем таблицу children
+	suite.db.Exec("TRUNCATE TABLE blog_posts")     // Добавляем таблицу blog_posts
+	suite.db.Exec("TRUNCATE TABLE reviews")        // Добавляем таблицу reviews
+	suite.db.Exec("TRUNCATE TABLE sessions")       // Добавляем таблицу sessions
+	suite.db.Exec("TRUNCATE TABLE messages")       // Добавляем таблицу messages
+	suite.db.Exec("TRUNCATE TABLE availabilities") // Добавляем таблицу availabilities
+	suite.db.Exec("TRUNCATE TABLE photos")         // Добавляем таблицу photos (если есть)
 	suite.db.Exec("TRUNCATE TABLE users")
 	suite.db.Exec("TRUNCATE TABLE skills")
 	suite.db.Exec("TRUNCATE TABLE categories")
@@ -90,6 +106,7 @@ func (suite *AdminHandlersTestSuite) SetupTest() {
 
 	// Enable foreign key checks
 	suite.db.Exec("SET FOREIGN_KEY_CHECKS = 1")
+
 	admin := &models.Administrator{
 		Username:  "test_admin",
 		Email:     fmt.Sprintf("admin_%d@example.com", time.Now().UnixNano()),
@@ -540,8 +557,17 @@ func (suite *AdminHandlersTestSuite) TestCreateUser_Success() {
 }
 
 func (suite *AdminHandlersTestSuite) TearDownSuite() {
-	// Cleanup after all tests
+	// Cleanup after all tests - добавляем все связанные таблицы
 	suite.db.Exec("DELETE FROM news")
+	suite.db.Exec("DELETE FROM children")
+	suite.db.Exec("DELETE FROM blog_posts")
+	suite.db.Exec("DELETE FROM reviews")
+	suite.db.Exec("DELETE FROM sessions")
+	suite.db.Exec("DELETE FROM messages")
+	suite.db.Exec("DELETE FROM availabilities")
+	suite.db.Exec("DELETE FROM photos")
+	suite.db.Exec("DELETE FROM psychologist_skills")
+	suite.db.Exec("DELETE FROM portfolios")
 	suite.db.Exec("DELETE FROM users")
 	suite.db.Exec("DELETE FROM skills")
 	suite.db.Exec("DELETE FROM categories")
