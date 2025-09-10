@@ -22,7 +22,6 @@ interface RegistrationData {
   fullDescription: string;
   shortDescription: string;
   skills: string[];
-  photo: File | null;
   videoUrl: string;
 }
 
@@ -42,7 +41,6 @@ const empty: RegistrationData = {
   fullDescription: '',
   shortDescription: '',
   skills: [],
-  photo: null,
   videoUrl: ''
 };
 
@@ -64,7 +62,7 @@ const QuizRegisterPage: React.FC = () => {
     setBusy(true);
     try {
       const payload = { ...data };
-      const photo = payload.photo;
+      // Прибираємо всю логіку з фото
       delete (payload as any).photo;
 
       const res = await fetch('/api/register', {
@@ -77,11 +75,7 @@ const QuizRegisterPage: React.FC = () => {
         throw new Error(j.error?.message || j.message || 'Помилка реєстрації');
       }
 
-      if (photo) {
-        const fd = new FormData();
-        fd.append('file', photo);
-        await fetch('/api/register/photo', { method: 'POST', body: fd });
-      }
+      // Видаляємо всю логіку завантаження фото
 
       navigate('/registration-success');
     } catch (e: any) {
@@ -95,7 +89,8 @@ const QuizRegisterPage: React.FC = () => {
     submit();
   };
 
-  const progress = Math.round((step / 6) * 100);
+  // Змінюємо кількість кроків з 6 на 5
+  const progress = Math.round((step / 5) * 100);
 
   const skillToggle = (val: string) =>
     setData(s => {
@@ -105,6 +100,7 @@ const QuizRegisterPage: React.FC = () => {
 
   const renderStep = () => {
     switch (step) {
+      // Кроки 1-4 залишаються без змін
       case 1:
         return (
           <div className="space-y-6">
@@ -174,7 +170,7 @@ const QuizRegisterPage: React.FC = () => {
             </div>
           </div>
         );
-      case 3: // Контакти (для спеціаліста)
+      case 3:
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Контакти</h3>
@@ -204,7 +200,7 @@ const QuizRegisterPage: React.FC = () => {
             </div>
           </div>
         );
-      case 4: // Адреса (обидва, якщо клієнт перескочив)
+      case 4:
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Локація</h3>
@@ -239,26 +235,21 @@ const QuizRegisterPage: React.FC = () => {
               </div>
             </div>
             <div className="flex justify-between">
-              {data.role === 'psychologist' && (
-                <button type="button" onClick={back}
-                  className="px-5 h-11 rounded-lg border text-sm hover:bg-gray-50">
-                  Назад
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => (data.role === 'psychologist' ? next() : submit())}
-                disabled={busy}
-                className="px-6 h-11 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-60"
-              >
-                {data.role === 'psychologist' ? 'Далі' : busy ? 'Надсилання...' : 'Завершити'}
+              <button type="button" onClick={back}
+                className="px-5 h-11 rounded-lg border text-sm hover:bg-gray-50">
+                Назад
+              </button>
+              <button type="button" onClick={next}
+                className="px-6 h-11 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500">
+                Далі
               </button>
             </div>
           </div>
         );
-      case 5: // Профіль спеціаліста
+      // Крок 5 (колишній крок 5) - Професійний профіль + YouTube відео + завершення
+      case 5:
         return (
-          <div className="space-y-6">
+          <form onSubmit={onSubmitFinal} className="space-y-6">
             <h3 className="text-xl font-semibold">Професійний профіль</h3>
             <div>
               <label className="text-sm font-medium mb-1 block">Короткий опис *</label>
@@ -300,35 +291,6 @@ const QuizRegisterPage: React.FC = () => {
                 })}
               </div>
             </div>
-            <div className="flex justify-between">
-              <button type="button" onClick={back}
-                className="px-5 h-11 rounded-lg border text-sm hover:bg-gray-50">
-                Назад
-              </button>
-              <button type="button" onClick={next}
-                className="px-6 h-11 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500">
-                Далі
-              </button>
-            </div>
-          </div>
-        );
-      case 6: // Медіа
-        return (
-          <form onSubmit={onSubmitFinal} className="space-y-6">
-            <h3 className="text-xl font-semibold">Медіа</h3>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Фото профілю *</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={e => {
-                  const f = e.target.files?.[0] || null;
-                  setField('photo', f);
-                }}
-                required
-                className="w-full text-sm"
-              />
-            </div>
             <div>
               <label className="text-sm font-medium mb-1 block">YouTube відео (URL)</label>
               <input
@@ -338,6 +300,9 @@ const QuizRegisterPage: React.FC = () => {
                 onChange={e => setField('videoUrl', e.target.value)}
                 placeholder="https://youtube.com/watch?v=..."
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Додайте відео-презентацію (необов'язково). Можна буде додати пізніше в профілі.
+              </p>
             </div>
             <div className="flex justify-between">
               <button type="button" onClick={back}
@@ -349,7 +314,7 @@ const QuizRegisterPage: React.FC = () => {
                 disabled={busy}
                 className="px-6 h-11 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-60"
               >
-                {busy ? 'Надсилання...' : 'Завершити'}
+                {busy ? 'Надсилання...' : 'Завершити реєстрацію'}
               </button>
             </div>
           </form>
@@ -367,7 +332,7 @@ const QuizRegisterPage: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Реєстрація спеціаліста</h1>
               <span className="text-xs font-medium text-gray-500">
-                Крок {step}/6
+                Крок {step}/5
               </span>
             </div>
             <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
