@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -195,14 +196,14 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create upload directory
-	uploadDir := "./uploads/portfolio"
+	// Create user-specific upload directory
+	uploadDir := filepath.Join("./uploads/portfolio", fmt.Sprintf("%d", user.ID))
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "UPLOAD_ERROR", "Failed to create upload directory")
 		return
 	}
 
-	// Generate unique filename using UUID-like format
+	// Generate unique filename using UUID-like format (preserve original extension)
 	uniqueID, err := generateUniqueID()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "ID_GENERATION_ERROR", "Failed to generate unique ID")
@@ -222,14 +223,16 @@ func UploadPortfolioPhoto(w http.ResponseWriter, r *http.Request) {
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, file); err != nil {
+		// cleanup on error
+		os.Remove(filePath)
 		utils.WriteError(w, http.StatusInternalServerError, "UPLOAD_ERROR", "Failed to save file")
 		return
 	}
 
-	// Save to database
+	// Save to database with user-specific URL
 	photo := models.Photo{
 		PortfolioID: user.Portfolio.ID,
-		URL:         "/uploads/portfolio/" + filename,
+		URL:         fmt.Sprintf("/uploads/portfolio/%d/%s", user.ID, filename),
 	}
 
 	if err := db.DB.Create(&photo).Error; err != nil {
