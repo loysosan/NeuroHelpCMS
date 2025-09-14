@@ -6,3 +6,4 @@ config.ini
 package-lock.json
 .vscode
 tmp_*
+figma/
