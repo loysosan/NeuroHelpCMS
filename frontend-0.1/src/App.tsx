@@ -8,6 +8,7 @@ import NewsDetailPage from './pages/user/NewsDetailPage';
 import QuizRegisterPage from './pages/user/QuizRegisterPage';
 import QuizRegisterClientPage from './pages/user/QuizRegisterClientPage';
 import ProfilePage from './pages/user/ProfilePage';
+import ProfilePagePublic from './pages/user/ProfilePagePublic';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="/quiz-register" element={<QuizRegisterPage />} />
             <Route path="/quiz-register-client" element={<QuizRegisterClientPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/specialist/:id" element={<ProfilePagePublic />} />
             
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />
