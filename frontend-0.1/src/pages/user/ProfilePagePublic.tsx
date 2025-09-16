@@ -21,6 +21,16 @@ type Portfolio = {
   Photos?: Photo[] | null;
 };
 
+type Skill = {
+  ID: number;
+  Name: string;
+  CategoryID?: number;
+  Category?: {
+    ID: number;
+    Name: string;
+  };
+};
+
 type PublicUser = {
   ID: number;
   FirstName?: string | null;
@@ -31,7 +41,7 @@ type PublicUser = {
   Role?: string | null;
   ShortDescription?: string | null;
   FullDescription?: string | null;
-  Skills?: string[] | null;
+  Skills?: (string | Skill)[] | null;
   Rating?: number | null;
   ReviewsCount?: number | null;
   Portfolio?: Portfolio | null;
@@ -97,25 +107,27 @@ const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ chi
 );
 
 const CardContent: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`p-6 lg:p-8 ${className}`}>
+  <div className={`p-6 lg:p-7 ${className}`}>
     {children}
   </div>
 );
 
 const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="p-6 lg:p-8 pb-2">
+  <div className="p-6 lg:p-7 pb-0">
     {children}
   </div>
 );
 
 const CardTitle: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <h3 className={`text-xl font-bold text-gray-900 mb-2 flex items-center gap-2 ${className}`}>
+  <h3 className={`text-xl font-bold text-gray-900 mb-0 flex items-center gap-2 ${className}`}>
     {children}
   </h3>
 );
 
 const Badge: React.FC<{ children: React.ReactNode; variant?: string; className?: string }> = ({ 
   children, 
+
+  
   variant = 'default', 
   className = '' 
 }) => {
@@ -168,7 +180,7 @@ const Button: React.FC<{
 };
 
 const Separator = () => (
-  <div className="border-t border-gray-200 my-6" />
+  <div className="border-t border-gray-200 my-3" />
 );
 
 const ProfilePagePublic: React.FC = () => {
@@ -377,6 +389,35 @@ const ProfilePagePublic: React.FC = () => {
   const portfolio = user.Portfolio;
   const rating = user.Rating && typeof user.Rating === 'number' && !isNaN(user.Rating) ? user.Rating : 0;
 
+  // Функція для групування скілів за категоріями
+  const groupSkillsByCategory = (skills: (string | Skill)[]) => {
+    const grouped: { [key: string]: string[] } = {};
+    
+    skills.forEach(skill => {
+      if (typeof skill === 'string') {
+        // Якщо скіл - це рядок, додаємо до категорії "Загальні"
+        if (!grouped['Загальні']) {
+          grouped['Загальні'] = [];
+        }
+        grouped['Загальні'].push(skill);
+      } else if (skill && typeof skill === 'object') {
+        // Якщо скіл - це об'єкт
+        const categoryName = skill.Category?.Name || 'Інші спеціалізації';
+        const skillName = skill.Name || 'Спеціалізація';
+        
+        if (!grouped[categoryName]) {
+          grouped[categoryName] = [];
+        }
+        grouped[categoryName].push(skillName);
+      }
+    });
+    
+    return grouped;
+  };
+
+  const groupedSkills = groupSkillsByCategory(skills);
+  const hasSkills = skills.length > 0;
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
       <Header />
@@ -544,9 +585,9 @@ const ProfilePagePublic: React.FC = () => {
 
       {/* Content Sections */}
       <div className="max-w-7xl mx-auto px-4 -mt-16 relative z-10">
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-4">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-4">
             {/* About Section */}
             <Card>
               <CardHeader>
@@ -555,9 +596,9 @@ const ProfilePagePublic: React.FC = () => {
                   Про спеціаліста
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0 space-y-6">
+              <CardContent className="pt-1 space-y-3">
                 <div>
-                  <h4 className="font-bold text-gray-900 mb-2">Опис</h4>
+                  <h4 className="font-bold text-gray-900 mb-1">Опис</h4>
                   <p className="text-gray-600 leading-relaxed text-lg">
                     {user.ShortDescription || user.FullDescription || 'Професійний дитячий психолог з багаторічним досвідом роботи з дітьми з розладами аутистичного спектру.'}
                   </p>
@@ -566,7 +607,7 @@ const ProfilePagePublic: React.FC = () => {
                 <Separator />
                 
                 <div>
-                  <h4 className="font-bold text-gray-900 mb-2">Підхід до роботи</h4>
+                  <h4 className="font-bold text-gray-900 mb-1">Підхід до роботи</h4>
                   <p className="text-gray-600 leading-relaxed text-lg">
                     Індивідуальний підхід до кожної дитини, використання сучасних методик ABA-терапії, робота з батьками.
                   </p>
@@ -574,27 +615,33 @@ const ProfilePagePublic: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Specializations */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Спеціалізації</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {skills.length > 0 ? skills.map((skill, index) => (
-                    <div key={index} className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-                      <span className="text-blue-700 font-semibold">{skill}</span>
-                    </div>
-                  )) : (
-                    ['ABA-терапія', 'Поведінкова модифікація', 'Мовленнєва терапія', 'Соціальна взаємодія', 'Емоційна регуляція', 'Ігрові навички'].map((spec, index) => (
-                      <div key={index} className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-                        <span className="text-blue-700 font-semibold">{spec}</span>
+            {/* Specializations - тільки якщо є скіли */}
+            {hasSkills && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Спеціалізації</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-1">
+                  <div className="space-y-4">
+                    {Object.entries(groupedSkills).map(([categoryName, categorySkills]) => (
+                      <div key={categoryName}>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2 text-blue-600">
+                          {categoryName}
+                        </h4>
+                        <div className="space-y-1 ml-3">
+                          {categorySkills.map((skillName, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 bg-blue-600 rounded-full flex-shrink-0"></div>
+                              <span className="text-gray-700 text-base">{skillName}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Portfolio Photos */}
             {portfolio?.Photos && portfolio.Photos.length > 0 && (
@@ -602,11 +649,11 @@ const ProfilePagePublic: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Портфоліо</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-1">
                   {portfolio.Description && (
-                    <p className="text-gray-600 leading-relaxed mb-6 text-lg">{portfolio.Description}</p>
+                    <p className="text-gray-600 leading-relaxed mb-4 text-lg">{portfolio.Description}</p>
                   )}
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {portfolio.Photos.filter(isValidPhoto).map((photo, index) => (
                       <div key={photo.ID || index} className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-300">
                         <ImageFallback
@@ -623,13 +670,13 @@ const ProfilePagePublic: React.FC = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-8">
+          <div className="space-y-4">
             {/* Contact Info */}
             <Card>
               <CardHeader>
                 <CardTitle>Контактна інформація</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0 space-y-4">
+              <CardContent className="pt-1 space-y-3">
                 <div className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-gray-500" />
                   <span className="text-gray-700">{user.Phone || 'Не вказано'}</span>
@@ -651,17 +698,17 @@ const ProfilePagePublic: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Досвід та освіта</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 space-y-6">
+                <CardContent className="pt-1 space-y-3">
                   {portfolio.Experience && (
                     <div>
                       <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Досвід роботи</span>
-                      <p className="text-gray-700 leading-relaxed mt-2">{portfolio.Experience}</p>
+                      <p className="text-gray-700 leading-relaxed mt-1">{portfolio.Experience}</p>
                     </div>
                   )}
                   {portfolio.Education && (
                     <div>
                       <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Освіта</span>
-                      <p className="text-gray-700 leading-relaxed mt-2">{portfolio.Education}</p>
+                      <p className="text-gray-700 leading-relaxed mt-1">{portfolio.Education}</p>
                     </div>
                   )}
                 </CardContent>
