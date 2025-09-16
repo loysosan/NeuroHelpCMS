@@ -100,48 +100,57 @@ const Header: React.FC = () => {
 
         {/* Mobile sheet */}
         {open && (
-          <div className="fixed inset-0 z-50">
+          <>
+            {/* Оверлей позади меню */}
             <div
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
               onClick={() => setOpen(false)}
+              className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity"
             />
-            <div className="absolute right-0 top-0 h-full w-80 max-w-full bg-white shadow-xl">
-              <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between p-4 border-b">
-                  <span className="text-lg font-semibold">Меню</span>
-                  <button onClick={() => setOpen(false)} className="p-2 hover:bg-gray-100 rounded-md">
-                    <X className="w-5 h-5" />
+
+            {/* Панель меню */}
+            <div
+              className="fixed top-0 left-0 right-0 z-50 bg-white/95 supports-[backdrop-filter]:backdrop-blur-md border-b border-gray-200 shadow-lg
+                         animate-in slide-in-from-top duration-200"
+            >
+              <div className="max-w-7xl mx-auto">
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <span className="font-semibold text-gray-900">Меню</span>
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="p-2 rounded-lg hover:bg-gray-100"
+                  >
+                    <span className="sr-only">Закрити</span>
+                    ✕
                   </button>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-2">
+                <nav className="px-2 py-3 space-y-1">
                   <Link
                     to="/"
                     onClick={() => setOpen(false)}
-                    className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-md"
+                    className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
                   >
                     Головна
                   </Link>
                   <Link
                     to="/search"
                     onClick={() => setOpen(false)}
-                    className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-md"
+                    className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
                   >
                     Спеціалісти
                   </Link>
                   <Link
                     to="/news"
                     onClick={() => setOpen(false)}
-                    className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-md"
+                    className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
                   >
                     Новини
                   </Link>
-
                   {isAuthenticated && (
                     <Link
                       to="/profile"
                       onClick={() => setOpen(false)}
-                      className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-md"
+                      className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
                     >
                       Профіль
                     </Link>
@@ -151,34 +160,46 @@ const Header: React.FC = () => {
                 <div className="p-4 border-t">
                   {isAuthenticated ? (
                     <div className="space-y-3">
-                      <div className="px-4 py-2 bg-gray-50 rounded-md">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user?.firstName} {user?.lastName}
-                        </p>
-                        <p className="text-xs text-gray-600">{user?.email}</p>
-                      </div>
+                      <Link
+                        to="/favorites"
+                        onClick={() => setOpen(false)}
+                        className="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium rounded-lg
+                                   bg-indigo-600 text-white hover:bg-indigo-500"
+                      >
+                        Обране
+                      </Link>
                       <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                        onClick={() => { logout(); setOpen(false); }}
+                        className="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium rounded-lg
+                                   border border-gray-300 hover:bg-gray-50"
                       >
                         Вийти
                       </button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => {
-                        setOpen(false);
-                        setShowLoginModal(true);
-                      }}
-                      className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors"
-                    >
-                      Увійти
-                    </button>
+                    <div className="space-y-3">
+                      <Link
+                        to="/login"
+                        onClick={() => setOpen(false)}
+                        className="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium rounded-lg
+                                   bg-indigo-600 text-white hover:bg-indigo-500"
+                      >
+                        Увійти
+                      </Link>
+                      <Link
+                        to="/register"
+                        onClick={() => setOpen(false)}
+                        className="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium rounded-lg
+                                   border border-gray-300 hover:bg-gray-50"
+                      >
+                        Реєстрація
+                      </Link>
+                    </div>
                   )}
                 </div>
               </div>
             </div>
-          </div>
+          </>
         )}
       </header>
 
