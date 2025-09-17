@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, MapPin, Phone, Mail, Calendar, Heart, MessageCircle, Clock, Award, Users, CheckCircle, Shield, Video, ArrowLeft } from 'lucide-react';
+import { Star, MapPin, Phone, Mail, Calendar, Heart, MessageCircle, Clock, Award, Users, CheckCircle, Shield, Video, ArrowLeft, Target, GraduationCap } from 'lucide-react';
 import Header from '../../components/user/Header';
 import Footer from '../../components/user/Footer';
 import BottomNavigation from '../../components/user/BottomNavigation';
@@ -18,7 +18,10 @@ type Portfolio = {
   Description?: string | null;
   Experience?: string | null;
   Education?: string | null;
+  YearsOfExperience?: number | null;
   Photos?: Photo[] | null;
+  ContactPhone?: string | null;
+  Telegram?: string | null;
 };
 
 type Skill = {
@@ -31,13 +34,19 @@ type Skill = {
   };
 };
 
+type City = {
+  ID: number;
+  Name: string;
+};
+
 type PublicUser = {
   ID: number;
   FirstName?: string | null;
   LastName?: string | null;
   Email?: string | null;
   Phone?: string | null;
-  City?: string | null;
+  CityID?: number | null;
+  City?: City | null;
   Role?: string | null;
   ShortDescription?: string | null;
   FullDescription?: string | null;
@@ -107,13 +116,13 @@ const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ chi
 );
 
 const CardContent: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`p-6 lg:p-7 ${className}`}>
+  <div className={`p-[27px] lg:p-[31px] ${className}`}>
     {children}
   </div>
 );
 
 const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="p-6 lg:p-7 pb-0">
+  <div className="p-[27px] lg:p-[31px] pb-0">
     {children}
   </div>
 );
@@ -126,8 +135,6 @@ const CardTitle: React.FC<{ children: React.ReactNode; className?: string }> = (
 
 const Badge: React.FC<{ children: React.ReactNode; variant?: string; className?: string }> = ({ 
   children, 
-
-  
   variant = 'default', 
   className = '' 
 }) => {
@@ -189,8 +196,9 @@ const ProfilePagePublic: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [err, setErr] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [cityName, setCityName] = useState<string>('');
 
-  const useAuthenticatedFetch = () => {
+  const authenticatedFetch = useCallback(async (url: string, options: RequestInit = {}) => {
     const getToken = () => localStorage.getItem('userToken');
     const getRefreshToken = () => localStorage.getItem('refreshToken');
 
@@ -221,48 +229,42 @@ const ProfilePagePublic: React.FC = () => {
       }
     };
 
-    const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
-      let token = getToken();
+    let token = getToken();
 
-      const makeRequest = async (authToken: string | null) => {
-        const headers = {
-          'Content-Type': 'application/json',
-          ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
-          ...options.headers,
-        };
-
-        return fetch(url, {
-          ...options,
-          headers,
-        });
+    const makeRequest = async (authToken: string | null) => {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+        ...options.headers,
       };
 
-      let response = await makeRequest(token);
+      return fetch(url, {
+        ...options,
+        headers,
+      });
+    };
 
-      if (response.status === 401 && token) {
-        const refreshed = await refreshTokens();
-        
-        if (refreshed) {
-          token = getToken();
-          response = await makeRequest(token);
-        } else {
-          localStorage.removeItem('userToken');
-          localStorage.removeItem('refreshToken');
-        }
-      }
+    let response = await makeRequest(token);
 
-      if (response.status === 401 || response.status === 403) {
+    if (response.status === 401 && token) {
+      const refreshed = await refreshTokens();
+      
+      if (refreshed) {
+        token = getToken();
+        response = await makeRequest(token);
+      } else {
         localStorage.removeItem('userToken');
         localStorage.removeItem('refreshToken');
       }
+    }
 
-      return response;
-    };
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('refreshToken');
+    }
 
-    return authenticatedFetch;
-  };
-
-  const authenticatedFetch = useAuthenticatedFetch();
+    return response;
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -281,7 +283,17 @@ const ProfilePagePublic: React.FC = () => {
             const selfData = await selfResponse.json();
             
             if (selfData && String(selfData.ID) === String(id)) {
-              if (!cancelled) setUser(selfData);
+              if (!cancelled) {
+                setUser(selfData);
+                // Получаем название города из данных профиля
+                if (selfData.Portfolio?.City) {
+                  setCityName(selfData.Portfolio.City);
+                } else if (selfData.City?.Name) {
+                  setCityName(selfData.City.Name);
+                } else {
+                  setCityName('Місто не вказано');
+                }
+              }
               return;
             } else {
               throw new Error('Ви можете переглядати тільки свій власний профіль');
@@ -304,7 +316,20 @@ const ProfilePagePublic: React.FC = () => {
 
         const data = await response.json();
         
-        if (!cancelled) setUser(data);
+        if (!cancelled) {
+          setUser(data);
+          
+          // Получаем название города из ответа API
+          if (data.Portfolio?.City) {
+            // Город из портфолио (строка)
+            setCityName(data.Portfolio.City);
+          } else if (data.City?.Name) {
+            // Город как объект с Name
+            setCityName(data.City.Name);
+          } else {
+            setCityName('Місто не вказано');
+          }
+        }
       } catch (err: any) {
         if (!cancelled) setErr(err.message || 'Не вдалося завантажити профіль');
       } finally {
@@ -314,7 +339,7 @@ const ProfilePagePublic: React.FC = () => {
 
     fetchProfile();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, authenticatedFetch]);
 
   if (loading) {
     return (
@@ -388,6 +413,12 @@ const ProfilePagePublic: React.FC = () => {
   const skills = user.Skills || [];
   const portfolio = user.Portfolio;
   const rating = user.Rating && typeof user.Rating === 'number' && !isNaN(user.Rating) ? user.Rating : 0;
+
+  // Debug logs
+  console.log('User data:', user);
+  console.log('Portfolio data:', portfolio);
+  console.log('Skills data:', skills);
+  console.log('Full name:', fullName);
 
   // Функція для групування скілів за категоріями
   const groupSkillsByCategory = (skills: (string | Skill)[]) => {
@@ -479,17 +510,37 @@ const ProfilePagePublic: React.FC = () => {
                       <div className="space-y-3 mb-6">
                         <div className="flex items-center gap-2 justify-center sm:justify-start text-gray-600">
                           <MapPin className="w-5 h-5 flex-shrink-0" />
-                          <span className="text-base sm:text-lg">{user.City || 'Місто не вказано'}</span>
+                          <span className="text-base sm:text-lg">{cityName || 'Місто не вказано'}</span>
                         </div>
                         <div className="flex items-center gap-6 flex-wrap justify-center sm:justify-start text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <Award className="w-5 h-5 flex-shrink-0" />
-                            <span className="text-base sm:text-lg whitespace-nowrap">8 років досвіду</span>
-                          </div>
+                          {portfolio?.YearsOfExperience && (
+                            <div className="flex items-center gap-2">
+                              <Award className="w-5 h-5 flex-shrink-0" />
+                              <span className="text-base sm:text-lg whitespace-nowrap">
+                                {`${portfolio.YearsOfExperience} ${portfolio.YearsOfExperience === 1 ? 'рік' : portfolio.YearsOfExperience < 5 ? 'роки' : 'років'} досвіду`}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-2">
                             <Clock className="w-5 h-5 flex-shrink-0" />
                             <span className="text-base sm:text-lg whitespace-nowrap">зазвичай протягом 2 год</span>
                           </div>
+                        </div>
+                        
+                        {/* Публічні контакти під досвідом */}
+                        <div className="flex items-center gap-6 flex-wrap justify-center sm:justify-start text-gray-600 pt-2">
+                          {portfolio?.ContactPhone && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-5 h-5 flex-shrink-0" />
+                              <span className="text-base sm:text-lg">{portfolio.ContactPhone}</span>
+                            </div>
+                          )}
+                          {portfolio?.Telegram && (
+                            <div className="flex items-center gap-2">
+                              <MessageCircle className="w-5 h-5 flex-shrink-0" />
+                              <span className="text-base sm:text-lg">@{portfolio.Telegram.replace('@', '')}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -544,17 +595,13 @@ const ProfilePagePublic: React.FC = () => {
                     </Link>
                     
                     <div className="grid grid-cols-2 gap-3">
-                      {user.Email && (
-                        <a href={`mailto:${user.Email}`}>
-                          <Button 
-                            variant="outline"
-                            className="border-blue-200 text-blue-600 hover:bg-blue-50 w-full"
-                          >
-                            <MessageCircle className="w-4 h-4 mr-1" />
-                            Написати
-                          </Button>
-                        </a>
-                      )}
+                      <Button 
+                        variant="outline"
+                        className="border-blue-200 text-blue-600 hover:bg-blue-50 w-full"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-1" />
+                        Написати
+                      </Button>
                       <Button 
                         variant="outline"
                         onClick={() => setIsFavorite(!isFavorite)}
@@ -585,9 +632,9 @@ const ProfilePagePublic: React.FC = () => {
 
       {/* Content Sections */}
       <div className="max-w-7xl mx-auto px-4 -mt-16 relative z-10">
-        <div className="grid lg:grid-cols-3 gap-4">
+        <div className="space-y-4">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="space-y-4">
             {/* About Section */}
             <Card>
               <CardHeader>
@@ -597,21 +644,15 @@ const ProfilePagePublic: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-1 space-y-3">
-                <div>
-                  <h4 className="font-bold text-gray-900 mb-1">Опис</h4>
-                  <p className="text-gray-600 leading-relaxed text-lg">
-                    {user.ShortDescription || user.FullDescription || 'Професійний дитячий психолог з багаторічним досвідом роботи з дітьми з розладами аутистичного спектру.'}
-                  </p>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <h4 className="font-bold text-gray-900 mb-1">Підхід до роботи</h4>
-                  <p className="text-gray-600 leading-relaxed text-lg">
-                    Індивідуальний підхід до кожної дитини, використання сучасних методик ABA-терапії, робота з батьками.
-                  </p>
-                </div>
+                {portfolio?.Description ? (
+                  <div>
+                    <p className="text-gray-600 leading-relaxed text-lg">{portfolio.Description}</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-600 leading-relaxed text-lg">Професійний спеціаліст з багаторічним досвідом роботи.</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -619,7 +660,10 @@ const ProfilePagePublic: React.FC = () => {
             {hasSkills && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Спеціалізації</CardTitle>
+                  <CardTitle>
+                    <Target className="w-6 h-6 text-blue-600" />
+                    Спеціалізації
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
                   <div className="space-y-4">
@@ -643,77 +687,21 @@ const ProfilePagePublic: React.FC = () => {
               </Card>
             )}
 
-            {/* Portfolio Photos */}
-            {portfolio?.Photos && portfolio.Photos.length > 0 && (
+            {/* Education Section */}
+            {portfolio?.Education && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Портфоліо</CardTitle>
+                  <CardTitle>
+                    <GraduationCap className="w-6 h-6 text-blue-600" />
+                    Освіта
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
-                  {portfolio.Description && (
-                    <p className="text-gray-600 leading-relaxed mb-4 text-lg">{portfolio.Description}</p>
-                  )}
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {portfolio.Photos.filter(isValidPhoto).map((photo, index) => (
-                      <div key={photo.ID || index} className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-300">
-                        <ImageFallback
-                          src={photo.URL}
-                          alt={`Portfolio ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-gray-600 leading-relaxed text-lg">{portfolio.Education}</p>
                 </CardContent>
               </Card>
             )}
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-4">
-            {/* Contact Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Контактна інформація</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-1 space-y-3">
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-gray-500" />
-                  <span className="text-gray-700">{user.Phone || 'Не вказано'}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-gray-500" />
-                  <span className="text-gray-700">{user.Email || 'Не вказано'}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MessageCircle className="w-5 h-5 text-gray-500" />
-                  <span className="text-gray-700">@specialist_telegram</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Experience & Education */}
-            {portfolio && (portfolio.Experience || portfolio.Education) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Досвід та освіта</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-1 space-y-3">
-                  {portfolio.Experience && (
-                    <div>
-                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Досвід роботи</span>
-                      <p className="text-gray-700 leading-relaxed mt-1">{portfolio.Experience}</p>
-                    </div>
-                  )}
-                  {portfolio.Education && (
-                    <div>
-                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Освіта</span>
-                      <p className="text-gray-700 leading-relaxed mt-1">{portfolio.Education}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>
