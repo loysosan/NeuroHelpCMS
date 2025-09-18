@@ -14,7 +14,6 @@ type Session struct {
 	Status         string    `gorm:"type:enum('pending', 'confirmed', 'completed', 'canceled');not null"`
 	CreatedAt      time.Time `gorm:"autoCreateTime"`
 
-	// Добавьте эти связи
 	Psychologist User `gorm:"foreignKey:PsychologistID"`
 	Client       User `gorm:"foreignKey:ClientID"`
 }
