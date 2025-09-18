@@ -95,7 +95,7 @@ const ImageFallback: React.FC<{ src?: string; alt?: string; className?: string }
     <div className="relative">
       {imgLoading && (
         <div className="absolute inset-0 bg-gray-100 animate-pulse flex items-center justify-center rounded-xl">
-          <span className="text-xs text-gray-500">Завантаження...</span>
+          <span className="text-sm text-gray-500 font-medium">Завантаження...</span>
         </div>
       )}
       <img 
@@ -116,13 +116,13 @@ const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ chi
 );
 
 const CardContent: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`p-[27px] lg:p-[31px] ${className}`}>
+  <div className={`px-6 lg:px-8 py-4 lg:py-5 pb-0 ${className}`}>
     {children}
   </div>
 );
 
 const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="p-[27px] lg:p-[31px] pb-0">
+  <div className="px-6 lg:px-8 py-4 lg:py-4 pb-0">
     {children}
   </div>
 );
@@ -380,7 +380,7 @@ const ProfilePagePublic: React.FC = () => {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Помилка завантаження</h3>
-              <p className="text-gray-600 mb-6">{err}</p>
+              <p className="text-gray-600 mb-6 text-base font-medium">{err}</p>
               <div className="space-y-3">
                 <Link to="/login">
                   <Button className="w-full">Увійти в систему</Button>
@@ -403,7 +403,7 @@ const ProfilePagePublic: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center p-6">
           <h3 className="text-2xl font-bold text-gray-900 mb-3">Профіль не знайдено</h3>
-          <p className="text-gray-600">Спеціаліст з таким ID не існує</p>
+          <p className="text-gray-600 text-base font-medium">Спеціаліст з таким ID не існує</p>
         </div>
       </div>
     );
@@ -413,12 +413,6 @@ const ProfilePagePublic: React.FC = () => {
   const skills = user.Skills || [];
   const portfolio = user.Portfolio;
   const rating = user.Rating && typeof user.Rating === 'number' && !isNaN(user.Rating) ? user.Rating : 0;
-
-  // Debug logs
-  console.log('User data:', user);
-  console.log('Portfolio data:', portfolio);
-  console.log('Skills data:', skills);
-  console.log('Full name:', fullName);
 
   // Функція для групування скілів за категоріями
   const groupSkillsByCategory = (skills: (string | Skill)[]) => {
@@ -461,8 +455,8 @@ const ProfilePagePublic: React.FC = () => {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div className="flex items-center gap-2">
-              <span className="text-gray-900 font-medium">Спеціаліст</span>
-              <Badge variant="secondary">
+              <span className="text-gray-900 font-semibold text-lg">Спеціаліст</span>
+              <Badge variant="secondary" className="text-sm">
                 {user.Role === 'psychologist' ? 'Психолог' : (user.Role || 'Спеціаліст')}
               </Badge>
             </div>
@@ -496,49 +490,51 @@ const ProfilePagePublic: React.FC = () => {
                     {/* Name and basic info */}
                     <div className="text-center sm:text-left flex-1">
                       <div className="mb-4">
-                        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 leading-tight">{fullName}</h1>
-                        <Badge variant="primary" className="mb-3">
+                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 leading-tight tracking-tight">{fullName}</h1>
+                        <Badge variant="primary" className="mb-3 text-sm font-medium">
                           <CheckCircle className="w-3 h-3 mr-1" />
                           Верифіковано
                         </Badge>
                       </div>
                       
-                      <p className="text-xl sm:text-2xl text-blue-600 font-bold mb-4">
+                      <p className="text-xl sm:text-2xl text-blue-600 font-semibold mb-4 leading-relaxed">
                         {user.Role === 'psychologist' ? 'Дитячий психолог' : 'Спеціаліст'}
                       </p>
                       
                       <div className="space-y-3 mb-6">
                         <div className="flex items-center gap-2 justify-center sm:justify-start text-gray-600">
-                          <MapPin className="w-5 h-5 flex-shrink-0" />
-                          <span className="text-base sm:text-lg">{cityName || 'Місто не вказано'}</span>
+                          <MapPin className="w-5 h-5 flex-shrink-0 text-gray-400" />
+                          <span className="text-base sm:text-lg font-medium">{cityName || 'Місто не вказано'}</span>
                         </div>
                         <div className="flex items-center gap-6 flex-wrap justify-center sm:justify-start text-gray-600">
                           {portfolio?.YearsOfExperience && (
                             <div className="flex items-center gap-2">
-                              <Award className="w-5 h-5 flex-shrink-0" />
-                              <span className="text-base sm:text-lg whitespace-nowrap">
+                              <Award className="w-5 h-5 flex-shrink-0 text-gray-400" />
+                              <span className="text-base sm:text-lg font-medium whitespace-nowrap">
                                 {`${portfolio.YearsOfExperience} ${portfolio.YearsOfExperience === 1 ? 'рік' : portfolio.YearsOfExperience < 5 ? 'роки' : 'років'} досвіду`}
                               </span>
                             </div>
                           )}
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-5 h-5 flex-shrink-0" />
-                            <span className="text-base sm:text-lg whitespace-nowrap">зазвичай протягом 2 год</span>
-                          </div>
+                          {portfolio?.Experience && (
+                            <div className="flex items-center gap-2">
+                              <Award className="w-5 h-5 flex-shrink-0 text-gray-400" />
+                              <span className="text-base sm:text-lg font-medium">{portfolio.Experience} років досвіду</span>
+                            </div>
+                          )}
                         </div>
                         
                         {/* Публічні контакти під досвідом */}
                         <div className="flex items-center gap-6 flex-wrap justify-center sm:justify-start text-gray-600 pt-2">
                           {portfolio?.ContactPhone && (
                             <div className="flex items-center gap-2">
-                              <Phone className="w-5 h-5 flex-shrink-0" />
-                              <span className="text-base sm:text-lg">{portfolio.ContactPhone}</span>
+                              <Phone className="w-5 h-5 flex-shrink-0 text-gray-400" />
+                              <span className="text-base sm:text-lg font-medium">{portfolio.ContactPhone}</span>
                             </div>
                           )}
                           {portfolio?.Telegram && (
                             <div className="flex items-center gap-2">
-                              <MessageCircle className="w-5 h-5 flex-shrink-0" />
-                              <span className="text-base sm:text-lg">@{portfolio.Telegram.replace('@', '')}</span>
+                              <MessageCircle className="w-5 h-5 flex-shrink-0 text-gray-400" />
+                              <span className="text-base sm:text-lg font-medium">@{portfolio.Telegram.replace('@', '')}</span>
                             </div>
                           )}
                         </div>
@@ -547,7 +543,7 @@ const ProfilePagePublic: React.FC = () => {
                       {/* Languages */}
                       <div className="flex flex-wrap gap-2 justify-center sm:justify-start mb-4">
                         {['Українська', 'Російська', 'Англійська'].map((lang, index) => (
-                          <Badge key={index} variant="outline" className="text-sm">
+                          <Badge key={index} variant="outline" className="text-sm font-medium px-4 py-2">
                             {lang}
                           </Badge>
                         ))}
@@ -558,9 +554,9 @@ const ProfilePagePublic: React.FC = () => {
                         <div className="flex items-center gap-3 justify-center sm:justify-start">
                           <div className="flex items-center gap-1">
                             <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                            <span className="font-bold text-lg text-gray-900">{rating.toFixed(1)}</span>
+                            <span className="font-bold text-xl text-gray-900">{rating.toFixed(1)}</span>
                           </div>
-                          <span className="text-gray-600">
+                          <span className="text-gray-600 font-medium">
                             ({user.ReviewsCount || 0} відгуків)
                           </span>
                         </div>
@@ -574,10 +570,10 @@ const ProfilePagePublic: React.FC = () => {
                   {/* Price Card */}
                   <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200 mb-6">
                     <CardContent className="p-6 text-center">
-                      <div className="text-3xl font-bold text-blue-600 mb-2">
+                      <div className="text-4xl font-bold text-blue-600 mb-2 leading-none">
                         800 грн
                       </div>
-                      <p className="text-sm text-gray-600">за 60 хв сесію</p>
+                      <p className="text-sm text-gray-600 font-medium">за 60 хв сесію</p>
                     </CardContent>
                   </Card>
 
@@ -638,21 +634,20 @@ const ProfilePagePublic: React.FC = () => {
             {/* About Section */}
             <Card>
               <CardHeader>
-                <CardTitle>
+                <CardTitle className="text-2xl">
                   <Shield className="w-6 h-6 text-blue-600" />
                   Про спеціаліста
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-1 space-y-3">
-                {portfolio?.Description ? (
-                  <div>
-                    <p className="text-gray-600 leading-relaxed text-lg">{portfolio.Description}</p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-gray-600 leading-relaxed text-lg">Професійний спеціаліст з багаторічним досвідом роботи.</p>
-                  </div>
+                {portfolio?.Description && (
+                  <>
+                    <div>
+                      <p className="text-gray-700 leading-relaxed text-base font-medium">{portfolio.Description}</p>
+                    </div>
+                  </>
                 )}
+                
               </CardContent>
             </Card>
 
@@ -660,7 +655,7 @@ const ProfilePagePublic: React.FC = () => {
             {hasSkills && (
               <Card>
                 <CardHeader>
-                  <CardTitle>
+                  <CardTitle className="text-2xl">
                     <Target className="w-6 h-6 text-blue-600" />
                     Спеціалізації
                   </CardTitle>
@@ -669,14 +664,14 @@ const ProfilePagePublic: React.FC = () => {
                   <div className="space-y-4">
                     {Object.entries(groupedSkills).map(([categoryName, categorySkills]) => (
                       <div key={categoryName}>
-                        <h4 className="text-lg font-bold text-gray-900 mb-2 text-blue-600">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3 text-blue-600">
                           {categoryName}
                         </h4>
-                        <div className="space-y-1 ml-3">
+                        <div className="space-y-2 ml-4">
                           {categorySkills.map((skillName, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <div className="w-1.5 h-1.5 bg-blue-600 rounded-full flex-shrink-0"></div>
-                              <span className="text-gray-700 text-base">{skillName}</span>
+                            <div key={index} className="flex items-center gap-3">
+                              <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                              <span className="text-gray-700 text-base font-medium">{skillName}</span>
                             </div>
                           ))}
                         </div>
@@ -691,13 +686,13 @@ const ProfilePagePublic: React.FC = () => {
             {portfolio?.Education && (
               <Card>
                 <CardHeader>
-                  <CardTitle>
+                  <CardTitle className="text-2xl">
                     <GraduationCap className="w-6 h-6 text-blue-600" />
                     Освіта
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1">
-                  <p className="text-gray-600 leading-relaxed text-lg">{portfolio.Education}</p>
+                  <p className="text-gray-700 leading-relaxed text-base font-medium">{portfolio.Education}</p>
                 </CardContent>
               </Card>
             )}
