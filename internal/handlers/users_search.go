@@ -46,15 +46,15 @@ type SpecialistSearchResult struct {
 
 // PortfolioSearchResult portfolio structure for search
 type PortfolioSearchResult struct {
-	Description  string     `json:"description"`
-	Experience   int        `json:"experience"`
-	Education    string     `json:"education"`
-	ContactEmail *string    `json:"contactEmail"`
-	ContactPhone *string    `json:"contactPhone"`
-	City         *string    `json:"city"`
-	DateOfBirth  *time.Time `json:"dateOfBirth"`
-	Gender       *string    `json:"gender"`
-	Age          *int       `json:"age"`
+	Description  string             `json:"description"`
+	Experience   int                `json:"experience"`
+	Educations   []models.Education `json:"educations"`
+	ContactEmail *string            `json:"contactEmail"`
+	ContactPhone *string            `json:"contactPhone"`
+	City         *string            `json:"city"`
+	DateOfBirth  *time.Time         `json:"dateOfBirth"`
+	Gender       *string            `json:"gender"`
+	Age          *int               `json:"age"`
 }
 
 // SkillSearchResult skill structure for search
@@ -149,6 +149,7 @@ func SearchSpecialists(w http.ResponseWriter, r *http.Request) {
 	offset := (req.Page - 1) * req.Limit
 	if err := query.
 		Preload("Portfolio").
+		Preload("Portfolio.Educations").
 		Preload("Skills").
 		Preload("Skills.Category").
 		Preload("Rating").
@@ -175,7 +176,7 @@ func SearchSpecialists(w http.ResponseWriter, r *http.Request) {
 		portfolio := PortfolioSearchResult{
 			Description:  user.Portfolio.Description,
 			Experience:   user.Portfolio.Experience,
-			Education:    user.Portfolio.Education,
+			Educations:   user.Portfolio.Educations,
 			ContactEmail: user.Portfolio.ContactEmail,
 			ContactPhone: user.Portfolio.ContactPhone,
 			City:         user.Portfolio.City,

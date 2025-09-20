@@ -61,7 +61,7 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	if err := db.DB.Preload("Portfolio").Preload("Portfolio.Photos").Preload("Skills").Preload("Skills.Category").Where("email = ?", email).First(&user).Error; err != nil {
+	if err := db.DB.Preload("Portfolio").Preload("Portfolio.Educations").Preload("Skills").Preload("Skills.Category").Where("email = ?", email).First(&user).Error; err != nil {
 		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
 		return
 	}
@@ -99,7 +99,7 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 			"id":           user.Portfolio.ID,
 			"description":  user.Portfolio.Description,
 			"experience":   user.Portfolio.Experience,
-			"education":    user.Portfolio.Education,
+			"educations":   user.Portfolio.Educations, // Замість "education": user.Portfolio.Education
 			"contactEmail": user.Portfolio.ContactEmail,
 			"contactPhone": user.Portfolio.ContactPhone,
 			"city":         user.Portfolio.City,
@@ -112,6 +112,9 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 			"photos":       user.Portfolio.Photos,
 		}
 		response["portfolio"] = portfolioData
+
+		// Наприклад, якщо є portfolio.Education, замініть на portfolio.Educations[0].Title або обробіть як слайс
+		// Якщо це для відображення, використовуйте portfolio.Educations для ітерації
 
 		var rating *models.Rating
 		if err := db.DB.Where("psychologist_id = ?", user.ID).First(&rating).Error; err == nil {

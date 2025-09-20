@@ -23,19 +23,20 @@ import (
 
 // UpdateSelfPortfolioRequest defines the structure for updating a psychologist's portfolio.
 type UpdateSelfPortfolioRequest struct {
-	Description  *string `json:"description"`
-	Experience   *int    `json:"experience"`
-	Education    *string `json:"education"`
-	ContactEmail *string `json:"contactEmail"`
-	ContactPhone *string `json:"contactPhone"`
-	City         *string `json:"city"`
-	Address      *string `json:"address"`
-	DateOfBirth  *string `json:"dateOfBirth"`
-	Gender       *string `json:"gender"`
-	Telegram     *string `json:"telegram"`
-	FacebookURL  *string `json:"facebookURL"`
-	InstagramURL *string `json:"instagramURL"`
-	VideoURL     *string `json:"videoUrl"`
+	Description  *string  `json:"description"`
+	Experience   *int     `json:"experience"`
+	Education    *string  `json:"education"`
+	ContactEmail *string  `json:"contactEmail"`
+	ContactPhone *string  `json:"contactPhone"`
+	City         *string  `json:"city"`
+	Address      *string  `json:"address"`
+	DateOfBirth  *string  `json:"dateOfBirth"`
+	Gender       *string  `json:"gender"`
+	Telegram     *string  `json:"telegram"`
+	FacebookURL  *string  `json:"facebookURL"`
+	InstagramURL *string  `json:"instagramURL"`
+	VideoURL     *string  `json:"videoUrl"`
+	Rate         *float64 `json:"rate"` // Нове поле для ставки
 }
 
 // UpdateSelfPortfolio godoc
@@ -86,8 +87,8 @@ func UpdateSelfPortfolio(w http.ResponseWriter, r *http.Request) {
 	if req.Experience != nil {
 		portfolio.Experience = *req.Experience
 	}
-	if req.Education != nil {
-		portfolio.Education = *req.Education
+	if req.Rate != nil {
+		portfolio.Rate = req.Rate // Оновлення ставки
 	}
 	portfolio.ContactEmail = req.ContactEmail
 	portfolio.ContactPhone = req.ContactPhone
@@ -326,5 +327,251 @@ func DeletePortfolioPhoto(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"message": "Photo deleted successfully",
+	})
+}
+
+// AddLanguageRequest defines the structure for adding a language.
+type AddLanguageRequest struct {
+	Name        string `json:"name" validate:"required"`
+	Proficiency string `json:"proficiency" validate:"required,oneof=native fluent intermediate basic"`
+}
+
+// AddLanguage godoc
+// @Summary      Add a language to portfolio
+// @Description  Allows a psychologist to add a language to their portfolio
+// @Tags         Actions for users
+// @Accept       json
+// @Produce      json
+// @Param        language body AddLanguageRequest true "Language data"
+// @Success      201 {object} map[string]interface{}
+// @Failure      400,401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/portfolio/language [post]
+// @Security     BearerAuth
+func AddLanguage(w http.ResponseWriter, r *http.Request) {
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
+
+	var user models.User
+	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
+
+	if user.Role != "psychologist" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can manage languages")
+		return
+	}
+
+	var req AddLanguageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+		return
+	}
+
+	var portfolio models.Portfolio
+	if err := db.DB.Where("psychologist_id = ?", user.ID).First(&portfolio).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Portfolio not found")
+		return
+	}
+
+	language := models.Language{
+		PortfolioID: portfolio.ID,
+		Name:        req.Name,
+		Proficiency: req.Proficiency,
+	}
+
+	if err := db.DB.Create(&language).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to add language")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Language added successfully",
+		"data":    language,
+	})
+}
+
+// UpdateLanguageRequest defines the structure for updating a language.
+type UpdateLanguageRequest struct {
+	Name        *string `json:"name"`
+	Proficiency *string `json:"proficiency" validate:"omitempty,oneof=native fluent intermediate basic"`
+}
+
+// UpdateLanguage godoc
+// @Summary      Update a language in portfolio
+// @Description  Allows a psychologist to update a language in their portfolio
+// @Tags         Actions for users
+// @Accept       json
+// @Produce      json
+// @Param        language_id path int true "Language ID"
+// @Param        language body UpdateLanguageRequest true "Language data"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/portfolio/language/{language_id} [put]
+// @Security     BearerAuth
+func UpdateLanguage(w http.ResponseWriter, r *http.Request) {
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
+
+	var user models.User
+	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
+
+	if user.Role != "psychologist" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can manage languages")
+		return
+	}
+
+	languageID, err := strconv.ParseUint(chi.URLParam(r, "language_id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid language ID")
+		return
+	}
+
+	var req UpdateLanguageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+		return
+	}
+
+	var language models.Language
+	if err := db.DB.Joins("JOIN portfolios ON languages.portfolio_id = portfolios.id").
+		Where("languages.id = ? AND portfolios.psychologist_id = ?", languageID, user.ID).
+		First(&language).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Language not found or access denied")
+		return
+	}
+
+	if req.Name != nil {
+		language.Name = *req.Name
+	}
+	if req.Proficiency != nil {
+		language.Proficiency = *req.Proficiency
+	}
+
+	if err := db.DB.Save(&language).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update language")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Language updated successfully",
+		"data":    language,
+	})
+}
+
+// DeleteLanguage godoc
+// @Summary      Delete a language from portfolio
+// @Description  Allows a psychologist to delete a language from their portfolio
+// @Tags         Actions for users
+// @Produce      json
+// @Param        language_id path int true "Language ID"
+// @Success      200 {object} map[string]interface{}
+// @Failure      401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/portfolio/language/{language_id} [delete]
+// @Security     BearerAuth
+func DeleteLanguage(w http.ResponseWriter, r *http.Request) {
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
+
+	var user models.User
+	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
+
+	if user.Role != "psychologist" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can manage languages")
+		return
+	}
+
+	languageID, err := strconv.ParseUint(chi.URLParam(r, "language_id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid language ID")
+		return
+	}
+
+	var language models.Language
+	if err := db.DB.Joins("JOIN portfolios ON languages.portfolio_id = portfolios.id").
+		Where("languages.id = ? AND portfolios.psychologist_id = ?", languageID, user.ID).
+		First(&language).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Language not found or access denied")
+		return
+	}
+
+	if err := db.DB.Delete(&language).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to delete language")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Language deleted successfully",
+	})
+}
+
+// GetLanguages godoc
+// @Summary      Get languages from portfolio
+// @Description  Allows a psychologist to get their portfolio languages
+// @Tags         Actions for users
+// @Produce      json
+// @Success      200 {object} map[string]interface{}
+// @Failure      401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/portfolio/languages [get]
+// @Security     BearerAuth
+func GetLanguages(w http.ResponseWriter, r *http.Request) {
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
+
+	var user models.User
+	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
+
+	if user.Role != "psychologist" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can view languages")
+		return
+	}
+
+	var portfolio models.Portfolio
+	if err := db.DB.Where("psychologist_id = ?", user.ID).First(&portfolio).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Portfolio not found")
+		return
+	}
+
+	var languages []models.Language
+	if err := db.DB.Where("portfolio_id = ?", portfolio.ID).Find(&languages).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch languages")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    languages,
 	})
 }
