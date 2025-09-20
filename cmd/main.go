@@ -124,6 +124,12 @@ func main() {
 		r.Get("/api/users/self", handlers.GetSelfProfile)
 		r.Put("/api/users/self/portfolio", handlers.UpdateSelfPortfolio)
 
+		// Нові роути для керування мовами
+		r.Post("/api/users/portfolio/language", handlers.AddLanguage)
+		r.Put("/api/users/portfolio/language/{language_id}", handlers.UpdateLanguage)
+		r.Delete("/api/users/portfolio/language/{language_id}", handlers.DeleteLanguage)
+		r.Get("/api/users/portfolio/languages", handlers.GetLanguages)
+
 		// Search endpoints (only for registered users)
 		r.Post("/api/users/search/specialists", handlers.SearchSpecialists)
 		r.Get("/api/users/search/specialists", handlers.SearchSpecialistsGET)

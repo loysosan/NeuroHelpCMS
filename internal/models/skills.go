@@ -27,27 +27,39 @@ type PsychologistSkills struct {
 }
 
 type Portfolio struct {
-	ID             uint64     `gorm:"primaryKey;autoIncrement"`
-	PsychologistID uint64     `gorm:"unique;not null"`
-	Description    string     `gorm:"type:text"`
-	Experience     int        `gorm:"type:int;default:0"`
-	Education      string     `gorm:"type:text"`
-	ContactEmail   *string    `gorm:"type:varchar(255)"`
-	ContactPhone   *string    `gorm:"type:varchar(20)"`
-	City           *string    `gorm:"type:varchar(100)"`
-	Address        *string    `gorm:"type:varchar(255)"`
-	DateOfBirth    *time.Time `gorm:"type:date"`
-	Gender         *string    `gorm:"type:enum('male', 'female', 'notselected');default:'notselected'"`
-	Telegram       *string    `gorm:"type:varchar(100)"`
-	FacebookURL    *string    `gorm:"type:varchar(255)"`
-	InstagramURL   *string    `gorm:"type:varchar(255)"`
-	VideoURL       *string    `gorm:"type:varchar(255)"`
-	ClientAgeMin   *int       `gorm:"type:int;comment:Minimum client age"`
-	ClientAgeMax   *int       `gorm:"type:int;comment:Maximum client age"`
-	CreatedAt      time.Time  `gorm:"autoCreateTime"`
-	UpdatedAt      time.Time  `gorm:"autoUpdateTime"`
-	Diplomas       []Diploma  `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`
-	Photos         []Photo    `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`
+	ID             uint64      `gorm:"primaryKey;autoIncrement"`
+	PsychologistID uint64      `gorm:"unique;not null"`
+	Description    string      `gorm:"type:text"`
+	Experience     int         `gorm:"type:int;default:0"`
+	ContactEmail   *string     `gorm:"type:varchar(255)"`
+	ContactPhone   *string     `gorm:"type:varchar(20)"`
+	City           *string     `gorm:"type:varchar(100)"`
+	Address        *string     `gorm:"type:varchar(255)"`
+	DateOfBirth    *time.Time  `gorm:"type:date"`
+	Gender         *string     `gorm:"type:enum('male', 'female', 'notselected');default:'notselected'"`
+	Telegram       *string     `gorm:"type:varchar(100)"`
+	FacebookURL    *string     `gorm:"type:varchar(255)"`
+	InstagramURL   *string     `gorm:"type:varchar(255)"`
+	VideoURL       *string     `gorm:"type:varchar(255)"`
+	ClientAgeMin   *int        `gorm:"type:int;comment:Minimum client age"`
+	ClientAgeMax   *int        `gorm:"type:int;comment:Maximum client age"`
+	Rate           *float64    `gorm:"type:decimal(10,2);comment:Hourly rate in currency"`
+	CreatedAt      time.Time   `gorm:"autoCreateTime"`
+	UpdatedAt      time.Time   `gorm:"autoUpdateTime"`
+	Educations     []Education `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`
+	Diplomas       []Diploma   `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`
+	Photos         []Photo     `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`
+	Languages      []Language  `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`
+}
+
+type Education struct {
+	ID          uint64    `gorm:"primaryKey;autoIncrement"`
+	PortfolioID uint64    `gorm:"not null"`
+	Title       string    `gorm:"type:varchar(255);not null"`
+	Institution string    `gorm:"type:varchar(255);not null"`
+	IssueDate   time.Time `gorm:"type:date;not null"`
+	DocumentURL *string   `gorm:"type:varchar(255)"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
 }
 
 type Diploma struct {
@@ -68,4 +80,12 @@ type Child struct {
 	Gender    string    `gorm:"type:enum('male', 'female', 'notspecified');not null;default:'notspecified';comment:Child's gender"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+}
+
+type Language struct {
+	ID          uint64    `gorm:"primaryKey;autoIncrement"`
+	PortfolioID uint64    `gorm:"not null"`
+	Name        string    `gorm:"type:varchar(50);not null;comment:Language name (e.g., Ukrainian, English)"`
+	Proficiency string    `gorm:"type:enum('native', 'fluent', 'intermediate', 'basic');not null;default:'intermediate';comment:Proficiency level"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
 }
