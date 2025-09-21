@@ -13,6 +13,12 @@ type Photo = {
   URL?: string;
 };
 
+type Language = {
+  ID?: number;
+  Name?: string;
+  Proficiency?: string;
+};
+
 type Portfolio = {
   ID?: number;
   Description?: string | null;
@@ -22,6 +28,8 @@ type Portfolio = {
   Photos?: Photo[] | null;
   ContactPhone?: string | null;
   Telegram?: string | null;
+  Rate?: number | null;
+  Languages?: Language[] | null; // Додано поле Languages
 };
 
 type Skill = {
@@ -197,6 +205,7 @@ const ProfilePagePublic: React.FC = () => {
   const [err, setErr] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [cityName, setCityName] = useState<string>('');
+  const [languages, setLanguages] = useState<Language[]>([]);
 
   const authenticatedFetch = useCallback(async (url: string, options: RequestInit = {}) => {
     const getToken = () => localStorage.getItem('userToken');
@@ -317,6 +326,13 @@ const ProfilePagePublic: React.FC = () => {
         const data = await response.json();
         
         if (!cancelled) {
+          // Перевіряємо роль користувача
+          if (data.Role !== 'psychologist') {
+            setErr('Цей профіль доступний тільки для спеціалістів.');
+            setLoading(false);
+            return;
+          }
+
           setUser(data);
           
           // Получаем название города из ответа API
@@ -328,6 +344,21 @@ const ProfilePagePublic: React.FC = () => {
             setCityName(data.City.Name);
           } else {
             setCityName('Місто не вказано');
+          }
+
+          // Завантажуємо мови, якщо користувач - психолог
+          if (data.Role === 'psychologist') {
+            try {
+              const languagesResponse = await authenticatedFetch(`/api/users/${encodeURIComponent(id)}/portfolio/languages`);
+              if (languagesResponse.ok) {
+                const languagesData = await languagesResponse.json();
+                if (languagesData.success && languagesData.data) {
+                  setLanguages(languagesData.data);
+                }
+              }
+            } catch (langErr) {
+              console.warn('Не вдалося завантажити мови:', langErr);
+            }
           }
         }
       } catch (err: any) {
@@ -443,6 +474,17 @@ const ProfilePagePublic: React.FC = () => {
   const groupedSkills = groupSkillsByCategory(skills);
   const hasSkills = skills.length > 0;
 
+  const getLanguageName = (code: string): string => {
+    const languageMap: { [key: string]: string } = {
+      'EN': 'Англійська',
+      'UA': 'Українська',
+      'RU': 'Російська',
+      'PL': 'Польська',
+      'KZ': 'Казахська',
+    };
+    return languageMap[code] || code; // Якщо код не знайдено, повертаємо оригінальний код
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
       <Header />
@@ -496,11 +538,6 @@ const ProfilePagePublic: React.FC = () => {
                           Верифіковано
                         </Badge>
                       </div>
-                      
-                      <p className="text-xl sm:text-2xl text-blue-600 font-semibold mb-4 leading-relaxed">
-                        {user.Role === 'psychologist' ? 'Дитячий психолог' : 'Спеціаліст'}
-                      </p>
-                      
                       <div className="space-y-3 mb-6">
                         <div className="flex items-center gap-2 justify-center sm:justify-start text-gray-600">
                           <MapPin className="w-5 h-5 flex-shrink-0 text-gray-400" />
@@ -542,11 +579,13 @@ const ProfilePagePublic: React.FC = () => {
 
                       {/* Languages */}
                       <div className="flex flex-wrap gap-2 justify-center sm:justify-start mb-4">
-                        {['Українська', 'Російська', 'Англійська'].map((lang, index) => (
+                        {languages.length > 0 ? languages.map((lang, index) => (
                           <Badge key={index} variant="outline" className="text-sm font-medium px-4 py-2">
-                            {lang}
+                            {getLanguageName(lang.Name || '')}
                           </Badge>
-                        ))}
+                        )) : (
+                          <span className="text-gray-600 text-sm">Мови не вказані</span>
+                        )}
                       </div>
 
                       {/* Rating */}
@@ -571,9 +610,8 @@ const ProfilePagePublic: React.FC = () => {
                   <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200 mb-6">
                     <CardContent className="p-6 text-center">
                       <div className="text-4xl font-bold text-blue-600 mb-2 leading-none">
-                        800 грн
+                        {portfolio?.Rate ? `${portfolio.Rate} грн` : 'Ціна не вказана'}
                       </div>
-                      <p className="text-sm text-gray-600 font-medium">за 60 хв сесію</p>
                     </CardContent>
                   </Card>
 
@@ -631,26 +669,6 @@ const ProfilePagePublic: React.FC = () => {
         <div className="space-y-4">
           {/* Main Content */}
           <div className="space-y-4">
-            {/* About Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl">
-                  <Shield className="w-6 h-6 text-blue-600" />
-                  Про спеціаліста
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-1 space-y-3">
-                {portfolio?.Description && (
-                  <>
-                    <div>
-                      <p className="text-gray-700 leading-relaxed text-base font-medium">{portfolio.Description}</p>
-                    </div>
-                  </>
-                )}
-                
-              </CardContent>
-            </Card>
-
             {/* Specializations - тільки якщо є скіли */}
             {hasSkills && (
               <Card>
@@ -681,6 +699,26 @@ const ProfilePagePublic: React.FC = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* About Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">
+                  <Shield className="w-6 h-6 text-blue-600" />
+                  Про спеціаліста
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-1 space-y-3">
+                {portfolio?.Description && (
+                  <>
+                    <div>
+                      <p className="text-gray-700 leading-relaxed text-base font-medium">{portfolio.Description}</p>
+                    </div>
+                  </>
+                )}
+                
+              </CardContent>
+            </Card>
 
             {/* Education Section */}
             {portfolio?.Education && (
