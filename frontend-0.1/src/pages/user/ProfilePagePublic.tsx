@@ -22,6 +22,7 @@ type Portfolio = {
   Photos?: Photo[] | null;
   ContactPhone?: string | null;
   Telegram?: string | null;
+  Rate?: number | null; // Додано поле Rate
 };
 
 type Skill = {
@@ -496,11 +497,6 @@ const ProfilePagePublic: React.FC = () => {
                           Верифіковано
                         </Badge>
                       </div>
-                      
-                      <p className="text-xl sm:text-2xl text-blue-600 font-semibold mb-4 leading-relaxed">
-                        {user.Role === 'psychologist' ? 'Дитячий психолог' : 'Спеціаліст'}
-                      </p>
-                      
                       <div className="space-y-3 mb-6">
                         <div className="flex items-center gap-2 justify-center sm:justify-start text-gray-600">
                           <MapPin className="w-5 h-5 flex-shrink-0 text-gray-400" />
@@ -571,9 +567,8 @@ const ProfilePagePublic: React.FC = () => {
                   <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200 mb-6">
                     <CardContent className="p-6 text-center">
                       <div className="text-4xl font-bold text-blue-600 mb-2 leading-none">
-                        800 грн
+                        {portfolio?.Rate ? `${portfolio.Rate} грн` : 'Ціна не вказана'}
                       </div>
-                      <p className="text-sm text-gray-600 font-medium">за 60 хв сесію</p>
                     </CardContent>
                   </Card>
 
@@ -631,26 +626,6 @@ const ProfilePagePublic: React.FC = () => {
         <div className="space-y-4">
           {/* Main Content */}
           <div className="space-y-4">
-            {/* About Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl">
-                  <Shield className="w-6 h-6 text-blue-600" />
-                  Про спеціаліста
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-1 space-y-3">
-                {portfolio?.Description && (
-                  <>
-                    <div>
-                      <p className="text-gray-700 leading-relaxed text-base font-medium">{portfolio.Description}</p>
-                    </div>
-                  </>
-                )}
-                
-              </CardContent>
-            </Card>
-
             {/* Specializations - тільки якщо є скіли */}
             {hasSkills && (
               <Card>
@@ -681,6 +656,26 @@ const ProfilePagePublic: React.FC = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* About Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">
+                  <Shield className="w-6 h-6 text-blue-600" />
+                  Про спеціаліста
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-1 space-y-3">
+                {portfolio?.Description && (
+                  <>
+                    <div>
+                      <p className="text-gray-700 leading-relaxed text-base font-medium">{portfolio.Description}</p>
+                    </div>
+                  </>
+                )}
+                
+              </CardContent>
+            </Card>
 
             {/* Education Section */}
             {portfolio?.Education && (
