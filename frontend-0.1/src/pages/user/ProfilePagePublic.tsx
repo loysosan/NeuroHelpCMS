@@ -13,6 +13,12 @@ type Photo = {
   URL?: string;
 };
 
+type Language = {
+  ID?: number;
+  Name?: string;
+  Proficiency?: string;
+};
+
 type Portfolio = {
   ID?: number;
   Description?: string | null;
@@ -22,7 +28,8 @@ type Portfolio = {
   Photos?: Photo[] | null;
   ContactPhone?: string | null;
   Telegram?: string | null;
-  Rate?: number | null; // Додано поле Rate
+  Rate?: number | null;
+  Languages?: Language[] | null; // Додано поле Languages
 };
 
 type Skill = {
@@ -198,6 +205,7 @@ const ProfilePagePublic: React.FC = () => {
   const [err, setErr] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [cityName, setCityName] = useState<string>('');
+  const [languages, setLanguages] = useState<Language[]>([]);
 
   const authenticatedFetch = useCallback(async (url: string, options: RequestInit = {}) => {
     const getToken = () => localStorage.getItem('userToken');
@@ -318,6 +326,13 @@ const ProfilePagePublic: React.FC = () => {
         const data = await response.json();
         
         if (!cancelled) {
+          // Перевіряємо роль користувача
+          if (data.Role !== 'psychologist') {
+            setErr('Цей профіль доступний тільки для спеціалістів.');
+            setLoading(false);
+            return;
+          }
+
           setUser(data);
           
           // Получаем название города из ответа API
@@ -329,6 +344,21 @@ const ProfilePagePublic: React.FC = () => {
             setCityName(data.City.Name);
           } else {
             setCityName('Місто не вказано');
+          }
+
+          // Завантажуємо мови, якщо користувач - психолог
+          if (data.Role === 'psychologist') {
+            try {
+              const languagesResponse = await authenticatedFetch(`/api/users/${encodeURIComponent(id)}/portfolio/languages`);
+              if (languagesResponse.ok) {
+                const languagesData = await languagesResponse.json();
+                if (languagesData.success && languagesData.data) {
+                  setLanguages(languagesData.data);
+                }
+              }
+            } catch (langErr) {
+              console.warn('Не вдалося завантажити мови:', langErr);
+            }
           }
         }
       } catch (err: any) {
@@ -444,6 +474,17 @@ const ProfilePagePublic: React.FC = () => {
   const groupedSkills = groupSkillsByCategory(skills);
   const hasSkills = skills.length > 0;
 
+  const getLanguageName = (code: string): string => {
+    const languageMap: { [key: string]: string } = {
+      'EN': 'Англійська',
+      'UA': 'Українська',
+      'RU': 'Російська',
+      'PL': 'Польська',
+      'KZ': 'Казахська',
+    };
+    return languageMap[code] || code; // Якщо код не знайдено, повертаємо оригінальний код
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
       <Header />
@@ -538,11 +579,13 @@ const ProfilePagePublic: React.FC = () => {
 
                       {/* Languages */}
                       <div className="flex flex-wrap gap-2 justify-center sm:justify-start mb-4">
-                        {['Українська', 'Російська', 'Англійська'].map((lang, index) => (
+                        {languages.length > 0 ? languages.map((lang, index) => (
                           <Badge key={index} variant="outline" className="text-sm font-medium px-4 py-2">
-                            {lang}
+                            {getLanguageName(lang.Name || '')}
                           </Badge>
-                        ))}
+                        )) : (
+                          <span className="text-gray-600 text-sm">Мови не вказані</span>
+                        )}
                       </div>
 
                       {/* Rating */}
