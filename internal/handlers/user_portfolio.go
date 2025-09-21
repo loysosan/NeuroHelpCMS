@@ -531,12 +531,13 @@ func DeleteLanguage(w http.ResponseWriter, r *http.Request) {
 
 // GetLanguages godoc
 // @Summary      Get languages from portfolio
-// @Description  Allows a psychologist to get their portfolio languages
+// @Description  Allows authenticated users to get languages from a psychologist's portfolio
 // @Tags         Actions for users
 // @Produce      json
+// @Param        user_id path int true "User ID of the psychologist"
 // @Success      200 {object} map[string]interface{}
 // @Failure      401,403,404,500 {object} map[string]interface{}
-// @Router       /api/users/portfolio/languages [get]
+// @Router       /api/users/{user_id}/portfolio/languages [get]
 // @Security     BearerAuth
 func GetLanguages(w http.ResponseWriter, r *http.Request) {
 	email, ok := r.Context().Value("email").(string)
@@ -545,19 +546,22 @@ func GetLanguages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user models.User
-	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
-		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+	// Get the target user ID from path
+	targetUserID, err := strconv.ParseUint(chi.URLParam(r, "user_id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
 		return
 	}
 
-	if user.Role != "psychologist" {
-		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only psychologists can view languages")
+	// Find the target user and check if they are a psychologist
+	var targetUser models.User
+	if err := db.DB.Where("id = ? AND role = ?", targetUserID, "psychologist").First(&targetUser).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Psychologist not found")
 		return
 	}
 
 	var portfolio models.Portfolio
-	if err := db.DB.Where("psychologist_id = ?", user.ID).First(&portfolio).Error; err != nil {
+	if err := db.DB.Where("psychologist_id = ?", targetUser.ID).First(&portfolio).Error; err != nil {
 		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Portfolio not found")
 		return
 	}
