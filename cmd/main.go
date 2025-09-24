@@ -129,6 +129,7 @@ func main() {
 		r.Put("/api/users/portfolio/language/{language_id}", handlers.UpdateLanguage)
 		r.Delete("/api/users/portfolio/language/{language_id}", handlers.DeleteLanguage)
 		r.Get("/api/users/{user_id}/portfolio/languages", handlers.GetLanguages)
+		r.Get("/api/users/{user_id}/portfolio/educations", handlers.GetEducations)
 
 		// Search endpoints (only for registered users)
 		r.Post("/api/users/search/specialists", handlers.SearchSpecialists)

@@ -579,3 +579,52 @@ func GetLanguages(w http.ResponseWriter, r *http.Request) {
 		"data":    languages,
 	})
 }
+
+// GetEducations godoc
+// @Summary      Get educations from portfolio
+// @Description  Allows authenticated users to get educations from a psychologist's portfolio
+// @Tags         Actions for users
+// @Produce      json
+// @Param        user_id path int true "User ID of the psychologist"
+// @Success      200 {object} map[string]interface{}
+// @Failure      401,403,404,500 {object} map[string]interface{}
+// @Router       /api/users/{user_id}/portfolio/educations [get]
+// @Security     BearerAuth
+func GetEducations(w http.ResponseWriter, r *http.Request) {
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
+
+	targetUserID, err := strconv.ParseUint(chi.URLParam(r, "user_id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
+		return
+	}
+
+	var targetUser models.User
+	if err := db.DB.Where("id = ? AND role = ?", targetUserID, "psychologist").First(&targetUser).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Psychologist not found")
+		return
+	}
+
+	var portfolio models.Portfolio
+	if err := db.DB.Where("psychologist_id = ?", targetUser.ID).First(&portfolio).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Portfolio not found")
+		return
+	}
+
+	var educations []models.Education
+	if err := db.DB.Where("portfolio_id = ?", portfolio.ID).Find(&educations).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to fetch educations")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    educations,
+	})
+}
