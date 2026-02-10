@@ -7,3 +7,5 @@ package-lock.json
 .vscode
 tmp_*
 figma/
+.playwright-mcp/
+CLAUDE.md

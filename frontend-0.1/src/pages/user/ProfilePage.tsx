@@ -18,36 +18,36 @@ type Language = {
 };
 
 type UserProfile = {
-  ID: number;
-  Email: string;
-  FirstName: string;
-  LastName: string;
-  Phone?: string;
-  Role: string;
-  Verified: boolean;
-  Portfolio?: {
-    ID: number;
-    Description?: string;
-    Experience?: number;
-    ContactEmail?: string;
-    ContactPhone?: string;
-    City?: string;
-    Address?: string;
-    DateOfBirth?: string;
-    Gender?: string;
-    Telegram?: string;
-    FacebookURL?: string;
-    InstagramURL?: string;
-    VideoURL?: string;
-    Rate?: number;
-    Photos?: Photo[];
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  role: string;
+  verified: boolean;
+  portfolio?: {
+    id: number;
+    description?: string;
+    experience?: number;
+    contactEmail?: string;
+    contactPhone?: string;
+    city?: string;
+    address?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    telegram?: string;
+    facebookURL?: string;
+    instagramURL?: string;
+    videoURL?: string;
+    rate?: number;
+    photos?: Photo[];
   };
 };
 
 const ProfilePage: React.FC = () => {
   const { user: authUser, logout, isLoading } = useUserAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [languages, setLanguages] = useState<Language[]>([]);
@@ -107,32 +107,32 @@ const ProfilePage: React.FC = () => {
         
         // Initialize forms
         setPersonalForm({
-          FirstName: data.FirstName || '',
-          LastName: data.LastName || '',
-          Phone: data.Phone || '',
+          FirstName: data.firstName || '',
+          LastName: data.lastName || '',
+          Phone: data.phone || '',
         });
-        
-        if (data.Portfolio) {
+
+        if (data.portfolio) {
           setPortfolioForm({
-            description: data.Portfolio.Description || '',
-            experience: data.Portfolio.Experience || 0,
-            contactEmail: data.Portfolio.ContactEmail || '',
-            contactPhone: data.Portfolio.ContactPhone || '',
-            city: data.Portfolio.City || '',
-            address: data.Portfolio.Address || '',
-            dateOfBirth: data.Portfolio.DateOfBirth ? data.Portfolio.DateOfBirth.split('T')[0] : '',
-            gender: data.Portfolio.Gender || '',
-            telegram: data.Portfolio.Telegram || '',
-            facebookURL: data.Portfolio.FacebookURL || '',
-            instagramURL: data.Portfolio.InstagramURL || '',
-            videoURL: data.Portfolio.VideoURL || '',
-            rate: data.Portfolio.Rate || 0,
+            description: data.portfolio.description || '',
+            experience: data.portfolio.experience || 0,
+            contactEmail: data.portfolio.contactEmail || '',
+            contactPhone: data.portfolio.contactPhone || '',
+            city: data.portfolio.city || '',
+            address: data.portfolio.address || '',
+            dateOfBirth: data.portfolio.dateOfBirth ? data.portfolio.dateOfBirth.split('T')[0] : '',
+            gender: data.portfolio.gender || '',
+            telegram: data.portfolio.telegram || '',
+            facebookURL: data.portfolio.facebookURL || '',
+            instagramURL: data.portfolio.instagramURL || '',
+            videoURL: data.portfolio.videoURL || '',
+            rate: data.portfolio.rate || 0,
           });
         }
-        
+
         // Load languages for psychologists
-        if (data.Role === 'psychologist') {
-          const langResponse = await authenticatedFetch(`/api/users/${data.ID}/portfolio/languages`);
+        if (data.role === 'psychologist') {
+          const langResponse = await authenticatedFetch(`/api/users/${data.id}/portfolio/languages`);
           if (langResponse.ok) {
             const langData = await langResponse.json();
             if (langData.success) {
@@ -298,8 +298,8 @@ const ProfilePage: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  const isClient = user.Role === 'client';
-  const isPsychologist = user.Role === 'psychologist';
+  const isClient = user.role === 'client';
+  const isPsychologist = user.role === 'psychologist';
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900 pb-24 md:pb-0">
@@ -393,19 +393,19 @@ const ProfilePage: React.FC = () => {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Ім'я</label>
-                  <p className="text-gray-900 font-medium">{user.FirstName}</p>
+                  <p className="text-gray-900 font-medium">{user.firstName}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Прізвище</label>
-                  <p className="text-gray-900 font-medium">{user.LastName}</p>
+                  <p className="text-gray-900 font-medium">{user.lastName}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <p className="text-gray-900 font-medium">{user.Email}</p>
+                  <p className="text-gray-900 font-medium">{user.email}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
-                  <p className="text-gray-900 font-medium">{user.Phone || 'Не вказано'}</p>
+                  <p className="text-gray-900 font-medium">{user.phone || 'Не вказано'}</p>
                 </div>
               </div>
             )}
@@ -415,13 +415,13 @@ const ProfilePage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Роль</label>
                   <p className="text-gray-900 font-medium">
-                    {user.Role === 'client' ? 'Клієнт' : 'Спеціаліст-психолог'}
+                    {user.role === 'client' ? 'Клієнт' : 'Спеціаліст-психолог'}
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Статус верифікації</label>
-                  <p className={`font-medium ${user.Verified ? 'text-green-600' : 'text-orange-600'}`}>
-                    {user.Verified ? '✅ Підтверджено' : '⏳ Очікує підтвердження'}
+                  <p className={`font-medium ${user.verified ? 'text-green-600' : 'text-orange-600'}`}>
+                    {user.verified ? '✅ Підтверджено' : '⏳ Очікує підтвердження'}
                   </p>
                 </div>
               </div>
@@ -594,29 +594,29 @@ const ProfilePage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {user.Portfolio?.Description && (
+                    {user.portfolio?.description && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Опис діяльності</label>
-                        <p className="text-gray-900 leading-relaxed">{user.Portfolio.Description}</p>
+                        <p className="text-gray-900 leading-relaxed">{user.portfolio.description}</p>
                       </div>
                     )}
-                    
+
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Досвід</label>
                         <p className="text-gray-900 font-medium">
-                          {user.Portfolio?.Experience ? `${user.Portfolio.Experience} років` : 'Не вказано'}
+                          {user.portfolio?.experience ? `${user.portfolio.experience} років` : 'Не вказано'}
                         </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Ставка</label>
                         <p className="text-gray-900 font-medium">
-                          {user.Portfolio?.Rate ? `${user.Portfolio.Rate} грн/год` : 'Не вказано'}
+                          {user.portfolio?.rate ? `${user.portfolio.rate} грн/год` : 'Не вказано'}
                         </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Місто</label>
-                        <p className="text-gray-900 font-medium">{user.Portfolio?.City || 'Не вказано'}</p>
+                        <p className="text-gray-900 font-medium">{user.portfolio?.city || 'Не вказано'}</p>
                       </div>
                     </div>
                   </div>
@@ -643,7 +643,7 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {user.Portfolio?.Photos?.map((photo) => (
+                  {user.portfolio?.photos?.map((photo) => (
                     <div key={photo.ID} className="relative group">
                       <img
                         src={photo.URL}
@@ -658,8 +658,8 @@ const ProfilePage: React.FC = () => {
                       </button>
                     </div>
                   ))}
-                  
-                  {(!user.Portfolio?.Photos || user.Portfolio.Photos.length === 0) && (
+
+                  {(!user.portfolio?.photos || user.portfolio.photos.length === 0) && (
                     <div className="col-span-full text-center py-12 text-gray-500">
                       <Camera className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                       <p>Поки що немає фотографій</p>
