@@ -9,6 +9,7 @@ import QuizRegisterPage from './pages/user/QuizRegisterPage';
 import QuizRegisterClientPage from './pages/user/QuizRegisterClientPage';
 import ProfilePage from './pages/user/ProfilePage';
 import ProfilePagePublic from './pages/user/ProfilePagePublic';
+import GoogleRoleSelectPage from './pages/user/GoogleRoleSelectPage';
 
 function App() {
   return (
@@ -27,7 +28,8 @@ function App() {
             <Route path="/quiz-register-client" element={<QuizRegisterClientPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/specialist/:id" element={<ProfilePagePublic />} />
-            
+            <Route path="/register-role" element={<GoogleRoleSelectPage />} />
+
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

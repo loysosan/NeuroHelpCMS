@@ -47,7 +47,9 @@ func main() {
 
 	// User login endpoint
 	r.Post("/api/login", handlers.UserLogin)
-	// User registration endpoint
+	// Google OAuth endpoint
+	r.Post("/api/auth/google", handlers.GoogleAuth)
+	// Refresh token endpoint
 	r.Post("/api/auth/refresh", handlers.RefreshToken)
 
 	// Security admin URI

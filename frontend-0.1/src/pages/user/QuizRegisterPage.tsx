@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../../components/user/Header';
 import Footer from '../../components/user/Footer';
 import BottomNavigation from '../../components/user/BottomNavigation';
+import type { GoogleUser } from '../../components/user/GoogleLoginButton';
 
 type Role = 'client' | 'psychologist';
 
@@ -46,8 +47,20 @@ const empty: RegistrationData = {
 
 const QuizRegisterPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const googleUser = location.state?.googleUser as GoogleUser | undefined;
+  const isOAuth = !!googleUser;
+
   const [step, setStep] = useState(1);
-  const [data, setData] = useState<RegistrationData>({ ...empty, role: 'psychologist' });
+  const [data, setData] = useState<RegistrationData>({
+    ...empty,
+    role: 'psychologist',
+    ...(googleUser ? {
+      firstName: googleUser.firstName || '',
+      lastName: googleUser.lastName || '',
+      email: googleUser.email || '',
+    } : {}),
+  });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -61,9 +74,13 @@ const QuizRegisterPage: React.FC = () => {
     setError('');
     setBusy(true);
     try {
-      const payload = { ...data };
+      const payload: any = { ...data };
       // Прибираємо всю логіку з фото
-      delete (payload as any).photo;
+      delete payload.photo;
+      // Add googleId for OAuth registration
+      if (googleUser?.googleId) {
+        payload.googleId = googleUser.googleId;
+      }
 
       const res = await fetch('/api/register', {
         method: 'POST',
@@ -108,16 +125,18 @@ const QuizRegisterPage: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Імʼя *</label>
-                <input className="w-full h-11 rounded-lg border px-3 text-sm"
+                <input className={`w-full h-11 rounded-lg border px-3 text-sm ${isOAuth ? 'bg-gray-100 text-gray-500' : ''}`}
                   value={data.firstName}
                   onChange={e => setField('firstName', e.target.value)}
+                  readOnly={isOAuth}
                   required />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Прізвище *</label>
-                <input className="w-full h-11 rounded-lg border px-3 text-sm"
+                <input className={`w-full h-11 rounded-lg border px-3 text-sm ${isOAuth ? 'bg-gray-100 text-gray-500' : ''}`}
                   value={data.lastName}
                   onChange={e => setField('lastName', e.target.value)}
+                  readOnly={isOAuth}
                   required />
               </div>
               <div>
@@ -143,20 +162,28 @@ const QuizRegisterPage: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Email *</label>
-                <input className="w-full h-11 rounded-lg border px-3 text-sm"
+                <input className={`w-full h-11 rounded-lg border px-3 text-sm ${isOAuth ? 'bg-gray-100 text-gray-500' : ''}`}
                   type="email"
                   value={data.email}
                   onChange={e => setField('email', e.target.value)}
+                  readOnly={isOAuth}
                   required />
               </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Пароль *</label>
-                <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                  type="password"
-                  value={data.password}
-                  onChange={e => setField('password', e.target.value)}
-                  required />
-              </div>
+              {!isOAuth && (
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Пароль *</label>
+                  <input className="w-full h-11 rounded-lg border px-3 text-sm"
+                    type="password"
+                    value={data.password}
+                    onChange={e => setField('password', e.target.value)}
+                    required />
+                </div>
+              )}
+              {isOAuth && (
+                <p className="text-sm text-green-600 bg-green-50 p-3 rounded-lg">
+                  Ви реєструєтесь через Google. Пароль не потрібен.
+                </p>
+              )}
             </div>
             <div className="flex justify-between">
               <button type="button" onClick={back}
