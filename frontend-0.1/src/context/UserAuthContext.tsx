@@ -14,6 +14,7 @@ interface UserAuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithToken: (accessToken: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -108,6 +109,13 @@ export const UserAuthProvider: React.FC<UserAuthProviderProps> = ({ children }) 
     await fetchUserProfile(authToken);
   };
 
+  // Login with existing access token (used after Google OAuth)
+  const loginWithToken = async (accessToken: string) => {
+    setToken(accessToken);
+    localStorage.setItem('userToken', accessToken);
+    await fetchUserProfile(accessToken);
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -119,6 +127,7 @@ export const UserAuthProvider: React.FC<UserAuthProviderProps> = ({ children }) 
     token,
     isLoading,
     login,
+    loginWithToken,
     logout,
     isAuthenticated: !!user && !!token
   };

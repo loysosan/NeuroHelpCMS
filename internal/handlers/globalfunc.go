@@ -50,6 +50,16 @@ func processUserCreation(w http.ResponseWriter, user *models.User) bool {
 		return false
 	}
 	// Password hashing
+	// For OAuth users, generate a random password (they authenticate via Google)
+	if user.GoogleID != "" && user.Password == "" {
+		randomPass, err := generateToken(32)
+		if err != nil {
+			log.Error().Err(err).Msg("processUserCreation: failed to generate random password for OAuth user")
+			utils.WriteError(w, http.StatusInternalServerError, "HASH_ERROR", "Unable to generate password")
+			return false
+		}
+		user.Password = randomPass
+	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Error().Err(err).Msg("processUserCreation: password hashing failed")

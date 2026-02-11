@@ -31,6 +31,9 @@ type RegisterRequest struct {
 	ChildAge     *int    `json:"childAge"` // Changed from *uint to *int
 	ChildGender  *string `json:"childGender"`
 	ChildProblem *string `json:"childProblem"`
+
+	// Google OAuth field
+	GoogleID *string `json:"googleId"`
 }
 
 // RegisterUser godoc
@@ -53,9 +56,24 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	user := req.User // Get user data from the request
 
+	// If registering via Google OAuth, set GoogleID on user
+	isOAuth := req.GoogleID != nil && *req.GoogleID != ""
+	if isOAuth {
+		user.GoogleID = *req.GoogleID
+	}
+
 	// Validate and create the user
 	if !processUserCreation(w, &user) {
 		return // Error has already been written in processUserCreation
+	}
+
+	// For OAuth users: auto-verify and activate
+	if isOAuth {
+		user.Verified = true
+		user.Status = "Active"
+		if err := db.DB.Save(&user).Error; err != nil {
+			log.Error().Err(err).Msg("RegisterUser: failed to activate OAuth user")
+		}
 	}
 
 	// If the user is a psychologist, find and update their portfolio
@@ -137,32 +155,35 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		log.Info().Uint64("childId", child.ID).Str("userEmail", user.Email).Msg("RegisterUser: child record created successfully")
 	}
 
-	log.Info().Str("email", user.Email).Str("role", user.Role).Msg("RegisterUser: user successfully registered")
+	log.Info().Str("email", user.Email).Str("role", user.Role).Bool("oauth", isOAuth).Msg("RegisterUser: user successfully registered")
 
-	verifyURL, err := generateAndSaveVerification(&user)
-	if err != nil {
-		log.Error().Err(err).Msg("RegisterUser: failed to generate or save verification token")
-	}
+	// Skip email verification for OAuth users (already verified by Google)
+	if !isOAuth {
+		verifyURL, err := generateAndSaveVerification(&user)
+		if err != nil {
+			log.Error().Err(err).Msg("RegisterUser: failed to generate or save verification token")
+		}
 
-	// Send registration email
-	if err := utils.SendTemplatedEmail(utils.SendTemplatedEmailParams{
-		Vars: []string{
-			"username=" + user.FirstName,
-			"email=" + user.Email,
-			"verify_link=" + verifyURL,
-		},
-		TemplatePath: cfg.Section("email").Key("template_path").String(),
-		ToEmail:      user.Email,
-		SMTPHost:     cfg.Section("email").Key("smtp_host").String(),
-		SMTPPort:     cfg.Section("email").Key("smtp_port").String(),
-		SMTPUser:     cfg.Section("email").Key("smtp_user").String(),
-		SMTPPass:     cfg.Section("email").Key("smtp_pass").String(),
-		FromEmail:    cfg.Section("email").Key("from_email").String(),
-		SendType:     utils.SendSMTP,
-	}); err != nil {
-		log.Error().Err(err).Msg("RegisterUser: failed to send registration email")
-	} else {
-		log.Info().Str("email", user.Email).Msg("RegisterUser: registration email sent")
+		// Send registration email
+		if err := utils.SendTemplatedEmail(utils.SendTemplatedEmailParams{
+			Vars: []string{
+				"username=" + user.FirstName,
+				"email=" + user.Email,
+				"verify_link=" + verifyURL,
+			},
+			TemplatePath: cfg.Section("email").Key("template_path").String(),
+			ToEmail:      user.Email,
+			SMTPHost:     cfg.Section("email").Key("smtp_host").String(),
+			SMTPPort:     cfg.Section("email").Key("smtp_port").String(),
+			SMTPUser:     cfg.Section("email").Key("smtp_user").String(),
+			SMTPPass:     cfg.Section("email").Key("smtp_pass").String(),
+			FromEmail:    cfg.Section("email").Key("from_email").String(),
+			SendType:     utils.SendSMTP,
+		}); err != nil {
+			log.Error().Err(err).Msg("RegisterUser: failed to send registration email")
+		} else {
+			log.Info().Str("email", user.Email).Msg("RegisterUser: registration email sent")
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

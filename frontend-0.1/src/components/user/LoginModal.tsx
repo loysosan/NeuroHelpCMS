@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { useUserAuth } from '../../context/UserAuthContext';
+import GoogleLoginButton, { type GoogleAuthResponse } from './GoogleLoginButton';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -15,8 +16,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { login } = useUserAuth();
+
+  const { login, loginWithToken } = useUserAuth();
+  const navigate = useNavigate();
 
   // Очищуємо форму при відкритті/закритті
   useEffect(() => {
@@ -74,6 +76,21 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
       setError(err.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (response: GoogleAuthResponse) => {
+    if (response.status === 'authenticated' && response.access_token) {
+      try {
+        await loginWithToken(response.access_token);
+        onClose();
+        onSuccess?.();
+      } catch (err: any) {
+        setError(err.message || 'Помилка авторизації');
+      }
+    } else if (response.status === 'registration_required' && response.googleUser) {
+      onClose();
+      navigate('/register-role', { state: { googleUser: response.googleUser } });
     }
   };
 
@@ -163,6 +180,25 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
               {isLoading ? 'Вхід...' : 'Увійти'}
             </button>
           </form>
+
+          {/* Google OAuth separator */}
+          <div className="mt-4 mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">або</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Google Login Button */}
+          <GoogleLoginButton
+            disabled={isLoading}
+            onSuccess={handleGoogleSuccess}
+            onError={(errorMsg) => setError(errorMsg)}
+          />
 
           <div className="mt-6 text-center space-y-3">
             <div className="relative">

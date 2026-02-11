@@ -31,6 +31,7 @@ type User struct {
 	Availability      []Availability `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	Rating            Rating         `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	RefreshToken      string         `gorm:"type:varchar(512);"`
+	GoogleID          string         `gorm:"type:varchar(255);index"`
 }
 
 type Photo struct {

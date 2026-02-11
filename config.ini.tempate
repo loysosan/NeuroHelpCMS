@@ -60,3 +60,12 @@ jwt_user_secret  = your-user-jwt-secret
 
 # JWT secret for user refresh tokens
 jwt_user_refresh_secret = your-user-refresh-jwt-secret
+
+; --------------------------------------------
+; Google OAuth settings
+; --------------------------------------------
+[google]
+# Google OAuth Client ID (from Google Cloud Console)
+client_id = your-google-client-id
+# Google OAuth Client Secret
+client_secret = your-google-client-secret
