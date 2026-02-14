@@ -122,18 +122,16 @@ const QuizRegisterClientPage: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Імʼя *</label>
-                <input className={`w-full h-11 rounded-lg border px-3 text-sm ${isOAuth ? 'bg-gray-100 text-gray-500' : ''}`}
+                <input className="w-full h-11 rounded-lg border px-3 text-sm"
                   value={data.firstName}
                   onChange={e => setField('firstName', e.target.value)}
-                  readOnly={isOAuth}
                   required />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Прізвище *</label>
-                <input className={`w-full h-11 rounded-lg border px-3 text-sm ${isOAuth ? 'bg-gray-100 text-gray-500' : ''}`}
+                <input className="w-full h-11 rounded-lg border px-3 text-sm"
                   value={data.lastName}
                   onChange={e => setField('lastName', e.target.value)}
-                  readOnly={isOAuth}
                   required />
               </div>
               <div>
@@ -168,22 +166,21 @@ const QuizRegisterClientPage: React.FC = () => {
                   readOnly={isOAuth}
                   required />
               </div>
-              {!isOAuth && (
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Пароль *</label>
-                  <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                    type="password"
-                    value={data.password}
-                    onChange={e => setField('password', e.target.value)}
-                    required />
-                  <p className="text-xs text-gray-500 mt-1">Мінімум 6 символів</p>
-                </div>
-              )}
-              {isOAuth && (
-                <p className="text-sm text-green-600 bg-green-50 p-3 rounded-lg">
-                  Ви реєструєтесь через Google. Пароль не потрібен.
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Пароль {isOAuth ? '(необовʼязково)' : '*'}
+                </label>
+                <input className="w-full h-11 rounded-lg border px-3 text-sm"
+                  type="password"
+                  value={data.password}
+                  onChange={e => setField('password', e.target.value)}
+                  required={!isOAuth} />
+                <p className="text-xs text-gray-500 mt-1">
+                  {isOAuth
+                    ? 'Додайте пароль, щоб також входити через email та пароль'
+                    : 'Мінімум 6 символів'}
                 </p>
-              )}
+              </div>
             </div>
             <div className="flex justify-between">
               <button type="button" onClick={back}
