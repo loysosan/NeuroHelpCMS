@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, MapPin, Phone, Mail, Calendar, Heart, MessageCircle, Clock, Award, Users, CheckCircle, Shield, Video, ArrowLeft, Target, GraduationCap } from 'lucide-react';
+import { Star, MapPin, Phone, Mail, Calendar, Heart, MessageCircle, Clock, Award, Users, CheckCircle, Shield, Video, ArrowLeft, Target, GraduationCap, Camera } from 'lucide-react';
 import Header from '../../components/user/Header';
 import Footer from '../../components/user/Footer';
 import BottomNavigation from '../../components/user/BottomNavigation';
@@ -763,6 +763,31 @@ const ProfilePagePublic: React.FC = () => {
                             <h4 className="text-lg font-semibold text-gray-900">{edu.Title}</h4>
                             <p className="text-gray-600">{edu.Institution}</p>
                             <p className="text-sm text-gray-500">{edu.IssueDate}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Photo Gallery Section */}
+                {portfolio?.Photos && portfolio.Photos.filter(isValidPhoto).length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-2xl">
+                        <Camera className="w-6 h-6 text-blue-600" />
+                        Фотографії
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-1">
+                      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                        {portfolio.Photos.filter(isValidPhoto).map((photo, index) => (
+                          <div key={photo.ID || index} className="rounded-xl overflow-hidden shadow-sm">
+                            <img
+                              src={getImageUrl(photo.URL!)}
+                              alt={`Фото ${index + 1}`}
+                              className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+                            />
                           </div>
                         ))}
                       </div>

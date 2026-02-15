@@ -32,6 +32,9 @@ type RegisterRequest struct {
 	ChildGender  *string `json:"childGender"`
 	ChildProblem *string `json:"childProblem"`
 
+	// Skills for psychologist
+	SkillIDs []uint64 `json:"skillIds"`
+
 	// Google OAuth field
 	GoogleID *string `json:"googleId"`
 }
@@ -104,6 +107,19 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			if err := tx.Save(&portfolio).Error; err != nil {
 				log.Error().Err(err).Msg("RegisterUser: failed to update portfolio")
 				return err
+			}
+
+			// Save skills if provided
+			if len(req.SkillIDs) > 0 {
+				var skills []models.Skill
+				if err := tx.Where("id IN ?", req.SkillIDs).Find(&skills).Error; err != nil {
+					log.Error().Err(err).Msg("RegisterUser: failed to find skills")
+					return err
+				}
+				if err := tx.Model(&user).Association("Skills").Replace(skills); err != nil {
+					log.Error().Err(err).Msg("RegisterUser: failed to set skills")
+					return err
+				}
 			}
 
 			return nil // Commit the transaction
