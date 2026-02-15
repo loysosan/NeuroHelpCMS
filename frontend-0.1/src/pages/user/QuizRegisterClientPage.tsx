@@ -11,11 +11,6 @@ interface ClientRegistrationData {
   phone: string;
   email: string;
   password: string;
-  country: string;
-  city: string;
-  street: string;
-  house: string;
-  // Дані про дитину (опціонально)
   hasChild: boolean;
   childAge?: number;
   childProblem?: string;
@@ -28,10 +23,6 @@ const empty: ClientRegistrationData = {
   phone: '',
   email: '',
   password: '',
-  country: '',
-  city: '',
-  street: '',
-  house: '',
   hasChild: false,
   childAge: undefined,
   childProblem: '',
@@ -66,7 +57,6 @@ const QuizRegisterClientPage: React.FC = () => {
     setError('');
     setBusy(true);
     try {
-      // Підготовка payload для реєстрації
       const payload: any = {
         email: data.email,
         password: data.password,
@@ -75,16 +65,11 @@ const QuizRegisterClientPage: React.FC = () => {
         firstName: data.firstName,
         lastName: data.lastName,
         phone: data.phone,
-        country: data.country,
-        city: data.city,
-        street: data.street,
-        house: data.house,
-        // Дані про дитину, якщо є
-        child: data.hasChild ? {
-          age: data.childAge,
-          problem: data.childProblem,
-          gender: data.childGender
-        } : null
+        ...(data.hasChild ? {
+          childAge: data.childAge,
+          childGender: data.childGender,
+          childProblem: data.childProblem,
+        } : {}),
       };
 
       const res = await fetch('/api/register', {
@@ -103,14 +88,14 @@ const QuizRegisterClientPage: React.FC = () => {
       setError(e.message || 'Помилка');
       setBusy(false);
     }
-  }, [data, navigate]);
+  }, [data, navigate, googleUser]);
 
   const onSubmitFinal = (e: React.FormEvent) => {
     e.preventDefault();
     submit();
   };
 
-  const totalSteps = data.hasChild ? 5 : 4;
+  const totalSteps = data.hasChild ? 3 : 2;
   const progress = Math.round((step / totalSteps) * 100);
 
   const renderStep = () => {
@@ -118,21 +103,23 @@ const QuizRegisterClientPage: React.FC = () => {
       case 1:
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold">Основна інформація</h3>
+            <h3 className="text-xl font-semibold">Особисті дані</h3>
             <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-1 block">Імʼя *</label>
-                <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                  value={data.firstName}
-                  onChange={e => setField('firstName', e.target.value)}
-                  required />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Прізвище *</label>
-                <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                  value={data.lastName}
-                  onChange={e => setField('lastName', e.target.value)}
-                  required />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Імʼя *</label>
+                  <input className="w-full h-11 rounded-lg border px-3 text-sm"
+                    value={data.firstName}
+                    onChange={e => setField('firstName', e.target.value)}
+                    required />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Прізвище *</label>
+                  <input className="w-full h-11 rounded-lg border px-3 text-sm"
+                    value={data.lastName}
+                    onChange={e => setField('lastName', e.target.value)}
+                    required />
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Телефон *</label>
@@ -142,21 +129,6 @@ const QuizRegisterClientPage: React.FC = () => {
                   placeholder="+380..."
                   required />
               </div>
-            </div>
-            <div className="flex justify-end">
-              <button type="button" onClick={next}
-                className="px-6 h-11 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-500">
-                Далі
-              </button>
-            </div>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold">Облікові дані</h3>
-            <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Email *</label>
                 <input className={`w-full h-11 rounded-lg border px-3 text-sm ${isOAuth ? 'bg-gray-100 text-gray-500' : ''}`}
@@ -182,11 +154,7 @@ const QuizRegisterClientPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            <div className="flex justify-between">
-              <button type="button" onClick={back}
-                className="px-5 h-11 rounded-lg border text-sm hover:bg-gray-50">
-                Назад
-              </button>
+            <div className="flex justify-end">
               <button type="button" onClick={next}
                 className="px-6 h-11 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-500">
                 Далі
@@ -195,61 +163,14 @@ const QuizRegisterClientPage: React.FC = () => {
           </div>
         );
 
-      case 3:
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold">Локація</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-1 block">Країна *</label>
-                <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                  value={data.country}
-                  onChange={e => setField('country', e.target.value)}
-                  required />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Місто *</label>
-                <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                  value={data.city}
-                  onChange={e => setField('city', e.target.value)}
-                  required />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Вулиця *</label>
-                <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                  value={data.street}
-                  onChange={e => setField('street', e.target.value)}
-                  required />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">№ будинку *</label>
-                <input className="w-full h-11 rounded-lg border px-3 text-sm"
-                  value={data.house}
-                  onChange={e => setField('house', e.target.value)}
-                  required />
-              </div>
-            </div>
-            <div className="flex justify-between">
-              <button type="button" onClick={back}
-                className="px-5 h-11 rounded-lg border text-sm hover:bg-gray-50">
-                Назад
-              </button>
-              <button type="button" onClick={next}
-                className="px-6 h-11 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-500">
-                Далі
-              </button>
-            </div>
-          </div>
-        );
-
-      case 4:
+      case 2:
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Інформація про дитину</h3>
             <p className="text-sm text-gray-600">
-              Якщо ви шукаете допомогу для дитини, будь ласка, надайте додаткову інформацію.
+              Якщо ви шукаєте допомогу для дитини, будь ласка, надайте додаткову інформацію.
             </p>
-            
+
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <input
@@ -328,7 +249,7 @@ const QuizRegisterClientPage: React.FC = () => {
           </div>
         );
 
-      case 5:
+      case 3:
         return (
           <form onSubmit={onSubmitFinal} className="space-y-6">
             <h3 className="text-xl font-semibold">Підтвердження</h3>
@@ -338,7 +259,6 @@ const QuizRegisterClientPage: React.FC = () => {
                 <div><span className="font-medium">Імʼя:</span> {data.firstName} {data.lastName}</div>
                 <div><span className="font-medium">Email:</span> {data.email}</div>
                 <div><span className="font-medium">Телефон:</span> {data.phone}</div>
-                <div><span className="font-medium">Адреса:</span> {data.country}, {data.city}, {data.street} {data.house}</div>
                 {data.hasChild && (
                   <div className="pt-2 border-t border-gray-200">
                     <div className="font-medium mb-2">Інформація про дитину:</div>

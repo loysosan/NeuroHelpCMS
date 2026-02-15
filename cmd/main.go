@@ -133,6 +133,15 @@ func main() {
 		r.Get("/api/users/{user_id}/portfolio/languages", handlers.GetLanguages)
 		r.Get("/api/users/{user_id}/portfolio/educations", handlers.GetEducations)
 
+		// Education CRUD
+		r.Post("/api/users/portfolio/education", handlers.AddEducation)
+		r.Put("/api/users/portfolio/education/{education_id}", handlers.UpdateEducation)
+		r.Delete("/api/users/portfolio/education/{education_id}", handlers.DeleteEducation)
+
+		// Child management (for clients)
+		r.Get("/api/users/self/child", handlers.GetSelfChild)
+		r.Put("/api/users/self/child", handlers.UpdateSelfChild)
+
 		// Search endpoints (only for registered users)
 		r.Post("/api/users/search/specialists", handlers.SearchSpecialists)
 		r.Get("/api/users/search/specialists", handlers.SearchSpecialistsGET)

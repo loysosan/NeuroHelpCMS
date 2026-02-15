@@ -36,7 +36,9 @@ type UpdateSelfPortfolioRequest struct {
 	FacebookURL  *string  `json:"facebookURL"`
 	InstagramURL *string  `json:"instagramURL"`
 	VideoURL     *string  `json:"videoUrl"`
-	Rate         *float64 `json:"rate"` // Нове поле для ставки
+	Rate         *float64 `json:"rate"`
+	ClientAgeMin *int     `json:"clientAgeMin"`
+	ClientAgeMax *int     `json:"clientAgeMax"`
 }
 
 // UpdateSelfPortfolio godoc
@@ -88,7 +90,13 @@ func UpdateSelfPortfolio(w http.ResponseWriter, r *http.Request) {
 		portfolio.Experience = *req.Experience
 	}
 	if req.Rate != nil {
-		portfolio.Rate = req.Rate // Оновлення ставки
+		portfolio.Rate = req.Rate
+	}
+	if req.ClientAgeMin != nil {
+		portfolio.ClientAgeMin = req.ClientAgeMin
+	}
+	if req.ClientAgeMax != nil {
+		portfolio.ClientAgeMax = req.ClientAgeMax
 	}
 	portfolio.ContactEmail = req.ContactEmail
 	portfolio.ContactPhone = req.ContactPhone

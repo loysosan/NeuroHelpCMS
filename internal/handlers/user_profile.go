@@ -61,7 +61,7 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	if err := db.DB.Preload("Portfolio").Preload("Portfolio.Educations").Preload("Skills").Preload("Skills.Category").Where("email = ?", email).First(&user).Error; err != nil {
+	if err := db.DB.Preload("Portfolio").Preload("Portfolio.Photos").Preload("Portfolio.Educations").Preload("Skills").Preload("Skills.Category").Preload("Child").Where("email = ?", email).First(&user).Error; err != nil {
 		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
 		return
 	}
@@ -99,7 +99,7 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 			"id":           user.Portfolio.ID,
 			"description":  user.Portfolio.Description,
 			"experience":   user.Portfolio.Experience,
-			"educations":   user.Portfolio.Educations, // Замість "education": user.Portfolio.Education
+			"educations":   user.Portfolio.Educations,
 			"contactEmail": user.Portfolio.ContactEmail,
 			"contactPhone": user.Portfolio.ContactPhone,
 			"city":         user.Portfolio.City,
@@ -109,6 +109,10 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 			"telegram":     user.Portfolio.Telegram,
 			"facebookURL":  user.Portfolio.FacebookURL,
 			"instagramURL": user.Portfolio.InstagramURL,
+			"videoURL":     user.Portfolio.VideoURL,
+			"rate":         user.Portfolio.Rate,
+			"clientAgeMin": user.Portfolio.ClientAgeMin,
+			"clientAgeMax": user.Portfolio.ClientAgeMax,
 			"photos":       user.Portfolio.Photos,
 		}
 		response["portfolio"] = portfolioData
@@ -125,8 +129,151 @@ func GetSelfProfile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if user.Role == "client" && user.Child.ID != 0 {
+		response["child"] = map[string]interface{}{
+			"id":      user.Child.ID,
+			"age":     user.Child.Age,
+			"gender":  user.Child.Gender,
+			"problem": user.Child.Problem,
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// GetSelfChild godoc
+// @Summary      Get own child data
+// @Description  Returns the authenticated client's child information
+// @Tags         Actions for users
+// @Produce      json
+// @Success      200 {object} map[string]interface{}
+// @Failure      401,403,404 {object} map[string]interface{}
+// @Router       /api/users/self/child [get]
+// @Security     BearerAuth
+func GetSelfChild(w http.ResponseWriter, r *http.Request) {
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
+
+	var user models.User
+	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
+
+	if user.Role != "client" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only clients can access child data")
+		return
+	}
+
+	var child models.Child
+	if err := db.DB.Where("client_id = ?", user.ID).First(&child).Error; err != nil {
+		// No child record — return empty
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"data":    nil,
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"id":      child.ID,
+			"age":     child.Age,
+			"gender":  child.Gender,
+			"problem": child.Problem,
+		},
+	})
+}
+
+// UpdateSelfChild godoc
+// @Summary      Update or create child data
+// @Description  Allows a client to update or create their child information
+// @Tags         Actions for users
+// @Accept       json
+// @Produce      json
+// @Param        child body map[string]interface{} true "Child data"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,401,403,500 {object} map[string]interface{}
+// @Router       /api/users/self/child [put]
+// @Security     BearerAuth
+func UpdateSelfChild(w http.ResponseWriter, r *http.Request) {
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
+
+	var user models.User
+	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
+		return
+	}
+
+	if user.Role != "client" {
+		utils.WriteError(w, http.StatusForbidden, "FORBIDDEN", "Only clients can manage child data")
+		return
+	}
+
+	var updateData struct {
+		Age     *int    `json:"age"`
+		Gender  *string `json:"gender"`
+		Problem *string `json:"problem"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")
+		return
+	}
+
+	var child models.Child
+	result := db.DB.Where("client_id = ?", user.ID).First(&child)
+	if result.Error != nil {
+		// Create new child record
+		child = models.Child{
+			ClientID: user.ID,
+			Gender:   "notspecified",
+		}
+	}
+
+	if updateData.Age != nil {
+		child.Age = *updateData.Age
+	}
+	if updateData.Gender != nil {
+		child.Gender = *updateData.Gender
+	}
+	if updateData.Problem != nil {
+		child.Problem = *updateData.Problem
+	}
+
+	if child.ID == 0 {
+		if err := db.DB.Create(&child).Error; err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to create child record")
+			return
+		}
+	} else {
+		if err := db.DB.Save(&child).Error; err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update child record")
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Child data updated successfully",
+		"data": map[string]interface{}{
+			"id":      child.ID,
+			"age":     child.Age,
+			"gender":  child.Gender,
+			"problem": child.Problem,
+		},
+	})
 }
 
 // ClientSelfUpdate godoc
