@@ -102,6 +102,9 @@ func main() {
 	r.Get("/api/news/count", handlers.GetNewsCount)
 	r.Get("/api/news/home", handlers.GetHomeNews)
 
+	// Public skills endpoint (needed for registration quiz)
+	r.Get("/api/users/skills", handlers.GetAllSkillsByCategory)
+
 	// Protected user endpoints
 	r.Group(func(r chi.Router) {
 		r.Use(authmw.RequireUser)
@@ -117,7 +120,6 @@ func main() {
 
 		r.Put("/api/users/self/skills", handlers.SetSpecialistSkills)
 
-		r.Get("/api/users/skills", handlers.GetAllSkillsByCategory)
 		r.Get("/api/users/{user_id}/skills", handlers.GetUserSkills)
 
 		r.Post("/api/users/portfolio/photo", handlers.UploadPortfolioPhoto)
