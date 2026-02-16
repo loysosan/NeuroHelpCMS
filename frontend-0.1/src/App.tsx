@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AdminAuthProvider } from './context/AdminAuthContext';
 import { UserAuthProvider } from './context/UserAuthContext';
+import { ToastProvider } from './components/ui/Toast';
 import AdminRoutes from './routes/AdminRoutes';
 import HomePage from './pages/user/HomePage';
 import NewsListPage from './pages/user/NewsListPage';
@@ -16,6 +17,7 @@ function App() {
     <BrowserRouter>
       <UserAuthProvider>
         <AdminAuthProvider>
+          <ToastProvider>
           <Routes>
             {/* Admin routes */}
             <Route path="/admin/*" element={<AdminRoutes />} />
@@ -33,6 +35,7 @@ function App() {
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </ToastProvider>
         </AdminAuthProvider>
       </UserAuthProvider>
     </BrowserRouter>

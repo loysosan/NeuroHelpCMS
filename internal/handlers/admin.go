@@ -316,45 +316,73 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	// Delete related data in correct order
 
-	// 1. ДОБАВИТЬ: Delete child record if exists
+	// 1. Delete child record if exists
 	if err := tx.Where("client_id = ?", id).Delete(&models.Child{}).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete child records")
 		return
 	}
 
-	// 2. Delete photos from portfolio if exists
-	if err := tx.Exec("DELETE photos FROM photos INNER JOIN portfolios ON photos.portfolio_id = portfolios.id WHERE portfolios.psychologist_id = ?", id).Error; err != nil {
-		tx.Rollback()
-		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete photos")
-		return
+	// 2. Find portfolio and delete its children (photos, educations, languages, diplomas)
+	var portfolio models.Portfolio
+	if err := tx.Where("psychologist_id = ?", id).First(&portfolio).Error; err == nil {
+		if err := tx.Where("portfolio_id = ?", portfolio.ID).Delete(&models.Photo{}).Error; err != nil {
+			tx.Rollback()
+			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete photos")
+			return
+		}
+		if err := tx.Where("portfolio_id = ?", portfolio.ID).Delete(&models.Education{}).Error; err != nil {
+			tx.Rollback()
+			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete educations")
+			return
+		}
+		if err := tx.Where("portfolio_id = ?", portfolio.ID).Delete(&models.Language{}).Error; err != nil {
+			tx.Rollback()
+			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete languages")
+			return
+		}
+		if err := tx.Where("portfolio_id = ?", portfolio.ID).Delete(&models.Diploma{}).Error; err != nil {
+			tx.Rollback()
+			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete diplomas")
+			return
+		}
+		if err := tx.Delete(&portfolio).Error; err != nil {
+			tx.Rollback()
+			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete portfolio")
+			return
+		}
 	}
 
-	// 3. Delete portfolio
-	if err := tx.Where("psychologist_id = ?", id).Delete(&models.Portfolio{}).Error; err != nil {
-		tx.Rollback()
-		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete portfolio")
-		return
-	}
-
-	// 4. Delete blog posts
+	// 3. Delete blog posts
 	if err := tx.Where("psychologist_id = ?", id).Delete(&models.BlogPost{}).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete blog posts")
 		return
 	}
 
-	// 5. Delete reviews (both given and received)
+	// 4. Delete reviews and ratings
 	if err := tx.Where("client_id = ? OR psychologist_id = ?", id, id).Delete(&models.Review{}).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete reviews")
 		return
 	}
+	if err := tx.Where("psychologist_id = ?", id).Delete(&models.Rating{}).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete ratings")
+		return
+	}
 
-	// 6. Delete psychologist skills (many-to-many relationship)
+	// 5. Delete psychologist skills
 	if err := tx.Where("psychologist_id = ?", id).Delete(&models.PsychologistSkills{}).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete skills")
+		return
+	}
+
+	// 6. Delete availabilities
+	if err := tx.Where("psychologist_id = ?", id).Delete(&models.Availability{}).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete availabilities")
 		return
 	}
 
