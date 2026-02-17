@@ -4,6 +4,7 @@ import Header from '../../components/user/Header';
 import Footer from '../../components/user/Footer';
 import BottomNavigation from '../../components/user/BottomNavigation';
 import type { GoogleUser } from '../../components/user/GoogleLoginButton';
+import RangeSlider, { DualRangeSlider } from '../../components/ui/RangeSlider';
 
 interface RegistrationData {
   firstName: string;
@@ -18,6 +19,10 @@ interface RegistrationData {
   street: string;
   shortDescription: string;
   videoUrl: string;
+  experience: number;
+  rate: number;
+  clientAgeMin: number;
+  clientAgeMax: number;
 }
 
 type SkillItem = { id: number; name: string; category: string };
@@ -35,6 +40,10 @@ const empty: RegistrationData = {
   street: '',
   shortDescription: '',
   videoUrl: '',
+  experience: 0,
+  rate: 0,
+  clientAgeMin: 0,
+  clientAgeMax: 100,
 };
 
 const QuizRegisterPage: React.FC = () => {
@@ -331,7 +340,45 @@ const QuizRegisterPage: React.FC = () => {
       case 5:
         return (
           <form onSubmit={onSubmitFinal} className="space-y-6">
-            <h3 className="text-xl font-semibold">Про себе</h3>
+            <h3 className="text-xl font-semibold">Про себе та умови</h3>
+
+            {/* Sliders */}
+            <div className="space-y-5">
+              <RangeSlider
+                label="Досвід роботи"
+                value={data.experience}
+                onChange={v => setField('experience', v)}
+                min={0}
+                max={50}
+                step={1}
+                suffix=" р."
+                minLabel="0"
+                maxLabel="50+"
+              />
+              <RangeSlider
+                label="Ставка за годину"
+                value={data.rate}
+                onChange={v => setField('rate', v)}
+                min={0}
+                max={5000}
+                step={50}
+                suffix=" грн"
+                minLabel="0"
+                maxLabel="5000+"
+              />
+              <DualRangeSlider
+                label="Вік клієнтів, з якими працюєте"
+                valueMin={data.clientAgeMin}
+                valueMax={data.clientAgeMax}
+                onChangeMin={v => setField('clientAgeMin', v)}
+                onChangeMax={v => setField('clientAgeMax', v)}
+                min={0}
+                max={100}
+                step={1}
+                suffix=" р."
+              />
+            </div>
+
             <div>
               <label className="text-sm font-medium mb-1 block">Короткий опис *</label>
               <textarea

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Briefcase, Edit3, Save, MapPin, Phone, Mail, Clock, DollarSign, Users, Calendar, MessageCircle } from 'lucide-react';
 import { UserProfile } from './types';
 import { useToast } from '../ui/Toast';
+import RangeSlider, { DualRangeSlider } from '../ui/RangeSlider';
 
 type Props = {
   user: UserProfile;
@@ -87,34 +88,41 @@ const PortfolioSection: React.FC<Props> = ({ user, authenticatedFetch, onReload 
                 rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Розкажіть про свій досвід та підходи до роботи..." />
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1.5">Досвід (роки)</label>
-                <input type="number" min="0" value={form.experience}
-                  onChange={e => setForm({ ...form, experience: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1.5">Ставка (грн/год)</label>
-                <input type="number" min="0" value={form.rate}
-                  onChange={e => setForm({ ...form, rate: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1.5">Вік від</label>
-                  <input type="number" min="0" max="120" value={form.clientAgeMin}
-                    onChange={e => setForm({ ...form, clientAgeMin: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1.5">Вік до</label>
-                  <input type="number" min="0" max="120" value={form.clientAgeMax}
-                    onChange={e => setForm({ ...form, clientAgeMax: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                </div>
-              </div>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <RangeSlider
+                label="Досвід роботи"
+                value={form.experience}
+                onChange={v => setForm({ ...form, experience: v })}
+                min={0}
+                max={50}
+                step={1}
+                suffix=" р."
+                minLabel="0"
+                maxLabel="50+"
+              />
+              <RangeSlider
+                label="Ставка за годину"
+                value={form.rate}
+                onChange={v => setForm({ ...form, rate: v })}
+                min={0}
+                max={5000}
+                step={50}
+                suffix=" грн"
+                minLabel="0"
+                maxLabel="5000+"
+              />
             </div>
+            <DualRangeSlider
+              label="Вік клієнтів"
+              valueMin={form.clientAgeMin}
+              valueMax={form.clientAgeMax}
+              onChangeMin={v => setForm({ ...form, clientAgeMin: v })}
+              onChangeMax={v => setForm({ ...form, clientAgeMax: v })}
+              min={0}
+              max={100}
+              step={1}
+              suffix=" р."
+            />
           </fieldset>
 
           {/* Group: Location */}

@@ -19,13 +19,17 @@ type RegisterRequest struct {
 	models.User
 
 	// Fields for the psychologist's portfolio
-	Telegram         *string `json:"telegram"`
-	InstagramURL     *string `json:"instagram"`
-	City             *string `json:"city"`
-	Address          *string `json:"street"` // Frontend sends 'street'
-	FullDescription  *string `json:"fullDescription"`
-	ShortDescription *string `json:"shortDescription"` // Can be mapped to Description
-	VideoURL         *string `json:"videoUrl"`
+	Telegram         *string  `json:"telegram"`
+	InstagramURL     *string  `json:"instagram"`
+	City             *string  `json:"city"`
+	Address          *string  `json:"street"` // Frontend sends 'street'
+	FullDescription  *string  `json:"fullDescription"`
+	ShortDescription *string  `json:"shortDescription"` // Can be mapped to Description
+	VideoURL         *string  `json:"videoUrl"`
+	Experience       *int     `json:"experience"`
+	Rate             *float64 `json:"rate"`
+	ClientAgeMin     *int     `json:"clientAgeMin"`
+	ClientAgeMax     *int     `json:"clientAgeMax"`
 
 	// Fields for the client's child
 	ChildAge     *int    `json:"childAge"` // Changed from *uint to *int
@@ -101,6 +105,20 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 				portfolio.Description = *req.ShortDescription
 			} else if req.FullDescription != nil {
 				portfolio.Description = *req.FullDescription
+			}
+
+			// Set experience, rate, and client age range
+			if req.Experience != nil {
+				portfolio.Experience = *req.Experience // Experience is int, not pointer
+			}
+			if req.Rate != nil {
+				portfolio.Rate = req.Rate // Both are pointers
+			}
+			if req.ClientAgeMin != nil {
+				portfolio.ClientAgeMin = req.ClientAgeMin // Both are pointers
+			}
+			if req.ClientAgeMax != nil {
+				portfolio.ClientAgeMax = req.ClientAgeMax // Both are pointers
 			}
 
 			// Save the updated portfolio
