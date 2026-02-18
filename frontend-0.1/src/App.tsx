@@ -9,7 +9,7 @@ import NewsDetailPage from './pages/user/NewsDetailPage';
 import QuizRegisterPage from './pages/user/QuizRegisterPage';
 import QuizRegisterClientPage from './pages/user/QuizRegisterClientPage';
 import ProfilePage from './pages/user/ProfilePage';
-import ProfilePagePublic from './pages/user/ProfilePagePublic';
+import ProfilePagePublicNew from './pages/user/ProfilePagePublicNew';
 import GoogleRoleSelectPage from './pages/user/GoogleRoleSelectPage';
 
 function App() {
@@ -29,7 +29,7 @@ function App() {
             <Route path="/quiz-register" element={<QuizRegisterPage />} />
             <Route path="/quiz-register-client" element={<QuizRegisterClientPage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/specialist/:id" element={<ProfilePagePublic />} />
+            <Route path="/specialist/:id" element={<ProfilePagePublicNew />} />
             <Route path="/register-role" element={<GoogleRoleSelectPage />} />
 
             {/* Catch all */}
