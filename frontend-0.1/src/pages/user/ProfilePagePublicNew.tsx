@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Star, MapPin, Phone, Mail, Calendar, Heart, MessageCircle,
   Clock, Award, CheckCircle, Video, Globe, GraduationCap,
@@ -8,6 +8,8 @@ import {
 import Header from '../../components/user/Header';
 import Footer from '../../components/user/Footer';
 import BottomNavigation from '../../components/user/BottomNavigation';
+import { useUserAuth } from '../../context/UserAuthContext';
+import { startConversation } from '../../api/user/chat';
 
 import '../../styles/design-system.css';
 import '../../styles/utility-classes.css';
@@ -128,6 +130,8 @@ const ImageFallback: React.FC<{ src?: string; alt?: string; className?: string }
 
 const ProfilePagePublicNew: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { isAuthenticated, user: authUser } = useUserAuth();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [err, setErr] = useState<string | null>(null);
@@ -136,6 +140,21 @@ const ProfilePagePublicNew: React.FC = () => {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [educations, setEducations] = useState<Education[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
+
+  const handleWriteMessage = async () => {
+    if (!isAuthenticated || !user) return;
+    if (authUser?.role !== 'client') return;
+    setChatLoading(true);
+    try {
+      const conv = await startConversation(user.ID);
+      navigate(`/chats/${conv.id}`);
+    } catch {
+      // silently ignore — user will see nothing changed
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   // Sticky header on scroll
   useEffect(() => {
@@ -525,9 +544,13 @@ const ProfilePagePublicNew: React.FC = () => {
                       </button>
                     </Link>
                     <div className="grid grid-cols-2 gap-2">
-                      <button className="flex items-center justify-center gap-1.5 px-3 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium">
+                      <button
+                        onClick={handleWriteMessage}
+                        disabled={chatLoading || !isAuthenticated || authUser?.role !== 'client'}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <MessageCircle className="w-4 h-4" />
-                        Написати
+                        {chatLoading ? '...' : 'Написати'}
                       </button>
                       <button
                         onClick={() => setIsFavorite(!isFavorite)}

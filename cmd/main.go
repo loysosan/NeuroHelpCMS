@@ -155,7 +155,16 @@ func main() {
 		// --- Routes for sessions (for clients and psychologists) ---
 		r.Post("/api/users/sessions/book/{slotId}", handlers.BookSession)
 		r.Get("/api/users/sessions/my", handlers.GetMySessions)
+
+		// --- Chat REST endpoints ---
+		r.Post("/api/conversations", handlers.StartConversation)
+		r.Get("/api/conversations", handlers.GetMyConversations)
+		r.Get("/api/conversations/unread", handlers.GetUnreadCount)
+		r.Get("/api/conversations/{id}/messages", handlers.GetConversationMessages)
 	})
+
+	// WebSocket chat — auth via ?token= query param (outside RequireUser middleware)
+	r.Get("/api/ws/{id}", handlers.WSChat)
 
 	// Public user endpoints
 	r.Get("/api/users/blog/{psychologist_id}", handlers.GetBlogPosts)

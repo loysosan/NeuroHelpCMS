@@ -16,8 +16,6 @@ type Administrator struct {
 	Role         string  `gorm:"type:enum('admin', 'moderator', 'master');not null;default:'admin'"`
 	RefreshToken string  `gorm:"type:text"`
 
-	CreatedAt        time.Time `gorm:"autoCreateTime"`
-	UpdatedAt        time.Time `gorm:"autoUpdateTime"`
-	MessagesSent     []Message `gorm:"foreignKey:SenderID;constraint:OnDelete:SET NULL"`
-	MessagesReceived []Message `gorm:"foreignKey:ReceiverID;constraint:OnDelete:SET NULL"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
