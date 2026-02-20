@@ -9,3 +9,4 @@ tmp_*
 figma/
 .playwright-mcp/
 CLAUDE.md
+claude_tmp/

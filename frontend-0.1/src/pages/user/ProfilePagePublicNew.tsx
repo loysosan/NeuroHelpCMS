@@ -12,23 +12,23 @@ import BottomNavigation from '../../components/user/BottomNavigation';
 import '../../styles/design-system.css';
 import '../../styles/utility-classes.css';
 
-// Types (без змін)
+// Types (camelCase for API compatibility)
 type Photo = {
-  ID?: number;
-  URL?: string;
+  id?: number;
+  url?: string;
 };
 
 type Language = {
-  ID?: number;
-  Name?: string;
-  Proficiency?: string;
+  id?: number;
+  name?: string;
+  proficiency?: string;
 };
 
 type Education = {
-  ID?: number;
-  Title?: string;
-  Institution?: string;
-  IssueDate?: string;
+  id?: number;
+  title?: string;
+  institution?: string;
+  issueDate?: string;
 };
 
 type Portfolio = {
@@ -89,7 +89,7 @@ const getImageUrl = (url: string): string => {
 };
 
 const isValidPhoto = (photo: any) => {
-  return photo && photo.URL && typeof photo.URL === 'string' && photo.URL.trim() !== '';
+  return photo && photo.url && typeof photo.url === 'string' && photo.url.trim() !== '';
 };
 
 const ImageFallback: React.FC<{ src?: string; alt?: string; className?: string }> = ({ src, alt, className }) => {
@@ -368,7 +368,7 @@ const ProfilePagePublicNew: React.FC = () => {
   const skills = user.Skills || [];
   const portfolio = user.Portfolio;
   const rating = user.Rating && typeof user.Rating === 'number' && !isNaN(user.Rating) ? user.Rating : 0;
-  const avatarUrl = user.AvatarURL || (portfolio?.Photos && portfolio.Photos.length > 0 && isValidPhoto(portfolio.Photos[0]) ? portfolio.Photos[0].URL : undefined);
+  const avatarUrl = user.AvatarURL || (portfolio?.Photos && portfolio.Photos.length > 0 && isValidPhoto(portfolio.Photos[0]) ? portfolio.Photos[0].url : undefined);
 
   const groupSkillsByCategory = (skills: (string | Skill)[]) => {
     const grouped: { [key: string]: string[] } = {};
@@ -490,7 +490,7 @@ const ProfilePagePublicNew: React.FC = () => {
                         {languages.slice(0, 3).map((lang, index) => (
                           <span key={index} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 rounded text-xs font-medium text-blue-700">
                             <Globe className="w-3 h-3" />
-                            {getLanguageName(lang.Name || '')}
+                            {getLanguageName(lang.name || '')}
                           </span>
                         ))}
                         {languages.length > 3 && (
@@ -619,10 +619,10 @@ const ProfilePagePublicNew: React.FC = () => {
                     <Award className="w-5 h-5 text-green-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 text-sm">{edu.Title}</h4>
-                    <p className="text-sm text-gray-600">{edu.Institution}</p>
-                    {edu.IssueDate && (
-                      <p className="text-xs text-gray-500 mt-1">{edu.IssueDate}</p>
+                    <h4 className="font-semibold text-gray-900 text-sm">{edu.title}</h4>
+                    <p className="text-sm text-gray-600">{edu.institution}</p>
+                    {edu.issueDate && (
+                      <p className="text-xs text-gray-500 mt-1">{edu.issueDate}</p>
                     )}
                   </div>
                 </div>
@@ -678,9 +678,9 @@ const ProfilePagePublicNew: React.FC = () => {
             </h2>
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
               {portfolio.Photos.filter(isValidPhoto).map((photo, index) => (
-                <div key={photo.ID || index} className="aspect-square rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div key={photo.id || index} className="aspect-square rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   <img
-                    src={getImageUrl(photo.URL!)}
+                    src={getImageUrl(photo.url!)}
                     alt={`Фото ${index + 1}`}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                   />
