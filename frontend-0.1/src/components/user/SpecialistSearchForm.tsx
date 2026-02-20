@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, ChevronUp, ChevronDown, Search, X } from 'lucide-react';
+import RangeSlider from '../ui/RangeSlider';
+import SkillsDropdown from './SkillsDropdown';
 
 interface Skill {
   id: number;
@@ -23,7 +25,12 @@ export interface SpecialistSearchValues {
   minPrice?: number;
   maxPrice?: number;
   minExperience?: number;
-  skillIds: number[]; // NEW: array of skill IDs
+  maxExperience?: number;
+  minAge?: number;
+  maxAge?: number;
+  minChildAge?: number;
+  maxChildAge?: number;
+  skillIds: number[];
 }
 
 interface Props {
@@ -46,12 +53,23 @@ const SpecialistSearchForm: React.FC<Props> = ({ onSearch }) => {
     minPrice: undefined,
     maxPrice: undefined,
     minExperience: undefined,
+    maxExperience: undefined,
+    minAge: undefined,
+    maxAge: undefined,
+    minChildAge: undefined,
+    maxChildAge: undefined,
     skillIds: [],
   });
   const [openFilters, setOpenFilters] = useState(false);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [skillsByCategory, setSkillsByCategory] = useState<SkillsByCategory>({});
   const [loadingSkills, setLoadingSkills] = useState(false);
+
+  // Range sliders state
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
+  const [experienceRange, setExperienceRange] = useState<[number, number]>([0, 30]);
+  const [specialistAgeRange, setSpecialistAgeRange] = useState<[number, number]>([18, 70]);
+  const [childAgeRange, setChildAgeRange] = useState<[number, number]>([0, 18]);
 
   // Load skills from API on mount
   useEffect(() => {
@@ -87,7 +105,21 @@ const SpecialistSearchForm: React.FC<Props> = ({ onSearch }) => {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(v);
+
+    // Apply range values to search params
+    const searchValues = {
+      ...v,
+      minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
+      maxPrice: priceRange[1] < 5000 ? priceRange[1] : undefined,
+      minExperience: experienceRange[0] > 0 ? experienceRange[0] : undefined,
+      maxExperience: experienceRange[1] < 30 ? experienceRange[1] : undefined,
+      minAge: specialistAgeRange[0] > 18 ? specialistAgeRange[0] : undefined,
+      maxAge: specialistAgeRange[1] < 70 ? specialistAgeRange[1] : undefined,
+      minChildAge: childAgeRange[0] > 0 ? childAgeRange[0] : undefined,
+      maxChildAge: childAgeRange[1] < 18 ? childAgeRange[1] : undefined,
+    };
+
+    onSearch(searchValues);
   };
 
   const set = <K extends keyof SpecialistSearchValues>(
@@ -104,8 +136,17 @@ const SpecialistSearchForm: React.FC<Props> = ({ onSearch }) => {
       minPrice: undefined,
       maxPrice: undefined,
       minExperience: undefined,
+      maxExperience: undefined,
+      minAge: undefined,
+      maxAge: undefined,
+      minChildAge: undefined,
+      maxChildAge: undefined,
       skillIds: [],
     }));
+    setPriceRange([0, 5000]);
+    setExperienceRange([0, 30]);
+    setSpecialistAgeRange([18, 70]);
+    setChildAgeRange([0, 18]);
   };
 
   // Toggle skill selection
@@ -137,18 +178,25 @@ const SpecialistSearchForm: React.FC<Props> = ({ onSearch }) => {
       label: formatOptions.find((f) => f.value === v.format)?.label,
       onRemove: () => set('format', ''),
     },
-    (v.minPrice || v.maxPrice) && {
+    (priceRange[0] > 0 || priceRange[1] < 5000) && {
       k: 'price',
-      label: `${v.minPrice ?? 0}–${v.maxPrice ?? '∞'}₴`,
-      onRemove: () => {
-        set('minPrice', undefined);
-        set('maxPrice', undefined);
-      },
+      label: `${priceRange[0]}–${priceRange[1]}₴`,
+      onRemove: () => setPriceRange([0, 5000]),
     },
-    v.minExperience && {
+    (experienceRange[0] > 0 || experienceRange[1] < 30) && {
       k: 'experience',
-      label: `Досвід ≥ ${v.minExperience}р`,
-      onRemove: () => set('minExperience', undefined),
+      label: `Досвід: ${experienceRange[0]}–${experienceRange[1]} років`,
+      onRemove: () => setExperienceRange([0, 30]),
+    },
+    (specialistAgeRange[0] > 18 || specialistAgeRange[1] < 70) && {
+      k: 'age',
+      label: `Вік: ${specialistAgeRange[0]}–${specialistAgeRange[1]}`,
+      onRemove: () => setSpecialistAgeRange([18, 70]),
+    },
+    (childAgeRange[0] > 0 || childAgeRange[1] < 18) && {
+      k: 'childAge',
+      label: `Вік дитини: ${childAgeRange[0]}–${childAgeRange[1]}`,
+      onRemove: () => setChildAgeRange([0, 18]),
     },
   ].filter(Boolean) as Array<{ k: string; label?: string; onRemove: () => void }>;
 
@@ -209,44 +257,69 @@ const SpecialistSearchForm: React.FC<Props> = ({ onSearch }) => {
       )}
 
       {openFilters && (
-        <div className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+        <div className="space-y-6 p-6 bg-gray-50 rounded-xl border border-gray-200">
           {/* Skills Selection */}
           <div className="space-y-2">
             <label className="text-xs font-medium uppercase text-gray-500">
               Спеціалізація / Навички
             </label>
-            {loadingSkills ? (
-              <div className="text-sm text-gray-500">Завантаження...</div>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(skillsByCategory).map(([categoryName, categorySkills]) => (
-                  <div key={categoryName} className="space-y-1">
-                    <div className="text-xs font-semibold text-gray-700">
-                      {categoryName}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {categorySkills.map((skill) => (
-                        <button
-                          key={skill.id}
-                          type="button"
-                          onClick={() => toggleSkill(skill.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            v.skillIds.includes(skill.id)
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {skill.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <SkillsDropdown
+              skills={skills}
+              skillsByCategory={skillsByCategory}
+              selectedSkillIds={v.skillIds}
+              onToggleSkill={toggleSkill}
+              loading={loadingSkills}
+            />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* Range Sliders Grid - 2 columns on desktop */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Price Range Slider */}
+            <RangeSlider
+              min={0}
+              max={5000}
+              step={50}
+              values={priceRange}
+              onChange={setPriceRange}
+              label="Ціна за годину"
+              formatValue={(val) => `${val}₴`}
+            />
+
+            {/* Experience Range Slider */}
+            <RangeSlider
+              min={0}
+              max={30}
+              step={1}
+              values={experienceRange}
+              onChange={setExperienceRange}
+              label="Досвід (років)"
+              formatValue={(val) => `${val} р`}
+            />
+
+            {/* Specialist Age Range */}
+            <RangeSlider
+              min={18}
+              max={70}
+              step={1}
+              values={specialistAgeRange}
+              onChange={setSpecialistAgeRange}
+              label="Вік спеціаліста"
+              formatValue={(val) => `${val} р`}
+            />
+
+            {/* Child Age Range */}
+            <RangeSlider
+              min={0}
+              max={18}
+              step={1}
+              values={childAgeRange}
+              onChange={setChildAgeRange}
+              label="Вік дитини клієнта"
+              formatValue={(val) => `${val} р`}
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
             {/* City */}
             <div className="space-y-1">
               <label className="text-xs font-medium uppercase text-gray-500">
@@ -286,55 +359,6 @@ const SpecialistSearchForm: React.FC<Props> = ({ onSearch }) => {
                     {f.label}
                   </button>
                 ))}
-              </div>
-            </div>
-
-            {/* Experience */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium uppercase text-gray-500">
-                Досвід (років)
-              </label>
-              <input
-                type="number"
-                min={0}
-                placeholder="від 0"
-                value={v.minExperience ?? ''}
-                onChange={(e) =>
-                  set(
-                    'minExperience',
-                    e.target.value ? Number(e.target.value) : undefined
-                  )
-                }
-                className="w-full h-10 rounded-md border border-gray-300 text-sm px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            {/* Price Range */}
-            <div className="space-y-1 md:col-span-2">
-              <label className="text-xs font-medium uppercase text-gray-500">
-                Ціна (₴)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="Від"
-                  value={v.minPrice ?? ''}
-                  onChange={(e) =>
-                    set('minPrice', e.target.value ? Number(e.target.value) : undefined)
-                  }
-                  className="w-full h-10 rounded-md border border-gray-300 text-sm px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="До"
-                  value={v.maxPrice ?? ''}
-                  onChange={(e) =>
-                    set('maxPrice', e.target.value ? Number(e.target.value) : undefined)
-                  }
-                  className="w-full h-10 rounded-md border border-gray-300 text-sm px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
               </div>
             </div>
           </div>

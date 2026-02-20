@@ -23,6 +23,8 @@ type SearchRequest struct {
 	MaxExperience *int     `json:"maxExperience"` // maximum experience in years
 	MinRate       *float64 `json:"minRate"`       // minimum hourly rate
 	MaxRate       *float64 `json:"maxRate"`       // maximum hourly rate
+	MinChildAge   *int     `json:"minChildAge"`   // minimum child age (searches for specialists who work with this age range)
+	MaxChildAge   *int     `json:"maxChildAge"`   // maximum child age
 	Page          int      `json:"page"`          // page for pagination
 	Limit         int      `json:"limit"`         // items per page
 }
@@ -147,6 +149,14 @@ func SearchSpecialists(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.MaxRate != nil {
 		query = query.Where("portfolios.rate <= ?", *req.MaxRate)
+	}
+
+	// Filter by child age (find specialists who work with this age range)
+	if req.MinChildAge != nil {
+		query = query.Where("portfolios.client_age_max >= ?", *req.MinChildAge)
+	}
+	if req.MaxChildAge != nil {
+		query = query.Where("portfolios.client_age_min <= ?", *req.MaxChildAge)
 	}
 
 	// Filter by skills

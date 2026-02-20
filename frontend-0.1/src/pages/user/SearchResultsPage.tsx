@@ -60,6 +60,21 @@ const SearchResultsPage: React.FC = () => {
     const minExp = searchParams.get('minExp');
     if (minExp) params.minExperience = Number(minExp);
 
+    const maxExp = searchParams.get('maxExp');
+    if (maxExp) params.maxExperience = Number(maxExp);
+
+    const minAge = searchParams.get('minAge');
+    if (minAge) params.minAge = Number(minAge);
+
+    const maxAge = searchParams.get('maxAge');
+    if (maxAge) params.maxAge = Number(maxAge);
+
+    const minChildAge = searchParams.get('minChildAge');
+    if (minChildAge) params.minChildAge = Number(minChildAge);
+
+    const maxChildAge = searchParams.get('maxChildAge');
+    if (maxChildAge) params.maxChildAge = Number(maxChildAge);
+
     const skillIds = searchParams.get('skillIds');
     if (skillIds) {
       params.skillIds = skillIds.split(',').map(id => Number(id));
@@ -140,6 +155,12 @@ const SearchResultsPage: React.FC = () => {
     if (values.minPrice !== undefined) params.set('minPrice', String(values.minPrice));
     if (values.maxPrice !== undefined) params.set('maxPrice', String(values.maxPrice));
     if (values.minExperience !== undefined) params.set('minExp', String(values.minExperience));
+    if (values.maxExperience !== undefined) params.set('maxExp', String(values.maxExperience));
+    if (values.minAge !== undefined) params.set('minAge', String(values.minAge));
+    if (values.maxAge !== undefined) params.set('maxAge', String(values.maxAge));
+    if (values.minChildAge !== undefined) params.set('minChildAge', String(values.minChildAge));
+    if (values.maxChildAge !== undefined) params.set('maxChildAge', String(values.maxChildAge));
+    if (values.skillIds && values.skillIds.length > 0) params.set('skillIds', values.skillIds.join(','));
 
     setSearchParams(params);
   };
