@@ -44,6 +44,7 @@ func Connect() {
 		&models.Rating{},
 		&models.BlogPost{},
 		&models.Session{},
+		&models.Conversation{},
 		&models.Message{},
 		&models.Availability{},
 		&models.News{},

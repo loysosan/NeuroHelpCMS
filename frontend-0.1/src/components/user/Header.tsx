@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { Menu, X, LogIn, LogOut } from 'lucide-react';
+import { Menu, X, LogIn, LogOut, MessageCircle } from 'lucide-react';
 import { useUserAuth } from '../../context/UserAuthContext';
+import { useUnreadCount } from '../../hooks/useUnreadCount';
 import LoginModal from './LoginModal';
 
 const navItems = [
@@ -15,6 +16,7 @@ const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { isAuthenticated, user, logout } = useUserAuth();
+  const unreadCount = useUnreadCount();
 
   const handleLogout = () => {
     logout();
@@ -58,10 +60,23 @@ const Header: React.FC = () => {
 
               {isAuthenticated ? (
                 <>
-                  <NavLink to="/profile" className={({ isActive }) => 
+                  <NavLink to="/profile" className={({ isActive }) =>
                     `text-sm font-medium transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-700 hover:text-gray-900'}`
                   }>
                     Профіль
+                  </NavLink>
+                  <NavLink to="/chats" className={({ isActive }) =>
+                    `relative flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-700 hover:text-gray-900'}`
+                  }>
+                    <span className="relative">
+                      <MessageCircle className="w-4 h-4" />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-0.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </span>
+                    Чати
                   </NavLink>
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-gray-600">
@@ -147,13 +162,35 @@ const Header: React.FC = () => {
                     Новини
                   </Link>
                   {isAuthenticated && (
-                    <Link
-                      to="/profile"
-                      onClick={() => setOpen(false)}
-                      className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
-                    >
-                      Профіль
-                    </Link>
+                    <>
+                      <Link
+                        to="/profile"
+                        onClick={() => setOpen(false)}
+                        className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
+                      >
+                        Профіль
+                      </Link>
+                      <Link
+                        to="/chats"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
+                      >
+                        <span className="relative">
+                          <MessageCircle className="w-4 h-4" />
+                          {unreadCount > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-0.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                          )}
+                        </span>
+                        Чати
+                        {unreadCount > 0 && (
+                          <span className="ml-auto min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[11px] font-bold">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                      </Link>
+                    </>
                   )}
                 </nav>
 

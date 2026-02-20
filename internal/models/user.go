@@ -27,7 +27,6 @@ type User struct {
 	Sessions          []Session      `gorm:"foreignKey:PsychologistID;constraint:OnDelete:SET NULL"`
 	ClientSessions    []Session      `gorm:"foreignKey:ClientID;constraint:OnDelete:SET NULL"`
 	MessagesSent      []Message      `gorm:"foreignKey:SenderID;constraint:OnDelete:SET NULL"`
-	MessagesReceived  []Message      `gorm:"foreignKey:ReceiverID;constraint:OnDelete:SET NULL"`
 	Availability      []Availability `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	Rating            Rating         `gorm:"foreignKey:PsychologistID;constraint:OnDelete:RESTRICT"`
 	RefreshToken      string         `gorm:"type:varchar(512);"`

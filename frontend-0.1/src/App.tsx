@@ -12,6 +12,8 @@ import ProfilePage from './pages/user/ProfilePage';
 import ProfilePagePublicNew from './pages/user/ProfilePagePublicNew';
 import GoogleRoleSelectPage from './pages/user/GoogleRoleSelectPage';
 import SearchResultsPage from './pages/user/SearchResultsPage';
+import ChatsPage from './pages/user/ChatsPage';
+import ChatRoomPage from './pages/user/ChatRoomPage';
 
 function App() {
   return (
@@ -33,6 +35,8 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/specialist/:id" element={<ProfilePagePublicNew />} />
             <Route path="/register-role" element={<GoogleRoleSelectPage />} />
+            <Route path="/chats" element={<ChatsPage />} />
+            <Route path="/chats/:id" element={<ChatRoomPage />} />
 
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />
