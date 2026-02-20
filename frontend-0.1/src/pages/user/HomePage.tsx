@@ -62,6 +62,7 @@ const HomePage: React.FC = () => {
     if (v.minPrice !== undefined) params.set('minPrice', String(v.minPrice));
     if (v.maxPrice !== undefined) params.set('maxPrice', String(v.maxPrice));
     if (v.minExperience !== undefined) params.set('minExp', String(v.minExperience));
+    if (v.skillIds && v.skillIds.length > 0) params.set('skillIds', v.skillIds.join(','));
     navigate(`/search?${params.toString()}`);
   };
 

@@ -35,10 +35,10 @@ type User struct {
 }
 
 type Photo struct {
-	ID          uint64    `gorm:"primaryKey;autoIncrement"`
-	PortfolioID uint64    `gorm:"not null"`
-	URL         string    `gorm:"type:varchar(255);not null"`
-	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	ID          uint64    `gorm:"primaryKey;autoIncrement" json:"id"`
+	PortfolioID uint64    `gorm:"not null" json:"portfolioId"`
+	URL         string    `gorm:"type:varchar(255);not null" json:"url"`
+	CreatedAt   time.Time `gorm:"autoCreateTime" json:"createdAt"`
 }
 
 // Review represents a client's review of a psychologist\

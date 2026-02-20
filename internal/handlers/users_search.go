@@ -14,13 +14,17 @@ import (
 
 // SearchRequest structure for specialist search parameters
 type SearchRequest struct {
-	Gender   *string  `json:"gender"`   // "male", "female", "notselected"
-	MinAge   *int     `json:"minAge"`   // minimum age
-	MaxAge   *int     `json:"maxAge"`   // maximum age
-	City     *string  `json:"city"`     // city
-	SkillIDs []uint64 `json:"skillIds"` // array of skill IDs
-	Page     int      `json:"page"`     // page for pagination
-	Limit    int      `json:"limit"`    // items per page
+	Gender        *string  `json:"gender"`        // "male", "female", "notselected"
+	MinAge        *int     `json:"minAge"`        // minimum age
+	MaxAge        *int     `json:"maxAge"`        // maximum age
+	City          *string  `json:"city"`          // city
+	SkillIDs      []uint64 `json:"skillIds"`      // array of skill IDs
+	MinExperience *int     `json:"minExperience"` // minimum experience in years
+	MaxExperience *int     `json:"maxExperience"` // maximum experience in years
+	MinRate       *float64 `json:"minRate"`       // minimum hourly rate
+	MaxRate       *float64 `json:"maxRate"`       // maximum hourly rate
+	Page          int      `json:"page"`          // page for pagination
+	Limit         int      `json:"limit"`         // items per page
 }
 
 // SearchSpecialistsResponse response structure
@@ -49,12 +53,14 @@ type PortfolioSearchResult struct {
 	Description  string             `json:"description"`
 	Experience   int                `json:"experience"`
 	Educations   []models.Education `json:"educations"`
+	Photos       []models.Photo     `json:"photos"`
 	ContactEmail *string            `json:"contactEmail"`
 	ContactPhone *string            `json:"contactPhone"`
 	City         *string            `json:"city"`
 	DateOfBirth  *time.Time         `json:"dateOfBirth"`
 	Gender       *string            `json:"gender"`
 	Age          *int               `json:"age"`
+	Rate         *float64           `json:"rate"`
 }
 
 // SkillSearchResult skill structure for search
@@ -96,8 +102,7 @@ func SearchSpecialists(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build base query
-	query := db.DB.Table("users").
-		Select("users.*").
+	query := db.DB.Model(&models.User{}).
 		Where("users.role = ? AND users.status = ?", "psychologist", "Active").
 		Joins("LEFT JOIN portfolios ON portfolios.psychologist_id = users.id")
 
@@ -128,6 +133,22 @@ func SearchSpecialists(w http.ResponseWriter, r *http.Request) {
 		query = query.Where("LOWER(portfolios.city) LIKE ?", "%"+strings.ToLower(*req.City)+"%")
 	}
 
+	// Filter by experience
+	if req.MinExperience != nil {
+		query = query.Where("portfolios.experience >= ?", *req.MinExperience)
+	}
+	if req.MaxExperience != nil {
+		query = query.Where("portfolios.experience <= ?", *req.MaxExperience)
+	}
+
+	// Filter by rate (price)
+	if req.MinRate != nil {
+		query = query.Where("portfolios.rate >= ?", *req.MinRate)
+	}
+	if req.MaxRate != nil {
+		query = query.Where("portfolios.rate <= ?", *req.MaxRate)
+	}
+
 	// Filter by skills
 	if len(req.SkillIDs) > 0 {
 		query = query.Joins("JOIN psychologist_skills ON psychologist_skills.psychologist_id = users.id").
@@ -150,6 +171,7 @@ func SearchSpecialists(w http.ResponseWriter, r *http.Request) {
 	if err := query.
 		Preload("Portfolio").
 		Preload("Portfolio.Educations").
+		Preload("Portfolio.Photos").
 		Preload("Skills").
 		Preload("Skills.Category").
 		Preload("Rating").
@@ -177,11 +199,13 @@ func SearchSpecialists(w http.ResponseWriter, r *http.Request) {
 			Description:  user.Portfolio.Description,
 			Experience:   user.Portfolio.Experience,
 			Educations:   user.Portfolio.Educations,
+			Photos:       user.Portfolio.Photos,
 			ContactEmail: user.Portfolio.ContactEmail,
 			ContactPhone: user.Portfolio.ContactPhone,
 			City:         user.Portfolio.City,
 			DateOfBirth:  user.Portfolio.DateOfBirth,
 			Gender:       user.Portfolio.Gender,
+			Rate:         user.Portfolio.Rate,
 		}
 
 		// Calculate age
@@ -252,6 +276,10 @@ func calculateAge(birthDate time.Time) int {
 // @Param        maxAge query int false "Maximum age"
 // @Param        city query string false "City filter"
 // @Param        skillIds query string false "Comma-separated skill IDs"
+// @Param        minExperience query int false "Minimum experience in years"
+// @Param        maxExperience query int false "Maximum experience in years"
+// @Param        minRate query number false "Minimum hourly rate"
+// @Param        maxRate query number false "Maximum hourly rate"
 // @Param        page query int false "Page number (default: 1)"
 // @Param        limit query int false "Items per page (default: 20, max: 100)"
 // @Success      200 {object} SearchSpecialistsResponse
@@ -287,6 +315,30 @@ func SearchSpecialistsGET(w http.ResponseWriter, r *http.Request) {
 			if skillId, err := strconv.ParseUint(strings.TrimSpace(skillIdStr), 10, 64); err == nil {
 				req.SkillIDs = append(req.SkillIDs, skillId)
 			}
+		}
+	}
+
+	if minExpStr := r.URL.Query().Get("minExperience"); minExpStr != "" {
+		if minExp, err := strconv.Atoi(minExpStr); err == nil {
+			req.MinExperience = &minExp
+		}
+	}
+
+	if maxExpStr := r.URL.Query().Get("maxExperience"); maxExpStr != "" {
+		if maxExp, err := strconv.Atoi(maxExpStr); err == nil {
+			req.MaxExperience = &maxExp
+		}
+	}
+
+	if minRateStr := r.URL.Query().Get("minRate"); minRateStr != "" {
+		if minRate, err := strconv.ParseFloat(minRateStr, 64); err == nil {
+			req.MinRate = &minRate
+		}
+	}
+
+	if maxRateStr := r.URL.Query().Get("maxRate"); maxRateStr != "" {
+		if maxRate, err := strconv.ParseFloat(maxRateStr, 64); err == nil {
+			req.MaxRate = &maxRate
 		}
 	}
 

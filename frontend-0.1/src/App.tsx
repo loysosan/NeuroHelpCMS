@@ -11,6 +11,7 @@ import QuizRegisterClientPage from './pages/user/QuizRegisterClientPage';
 import ProfilePage from './pages/user/ProfilePage';
 import ProfilePagePublicNew from './pages/user/ProfilePagePublicNew';
 import GoogleRoleSelectPage from './pages/user/GoogleRoleSelectPage';
+import SearchResultsPage from './pages/user/SearchResultsPage';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             
             {/* User routes */}
             <Route path="/" element={<HomePage />} />
+            <Route path="/search" element={<SearchResultsPage />} />
             <Route path="/news" element={<NewsListPage />} />
             <Route path="/news/:id" element={<NewsDetailPage />} />
             <Route path="/quiz-register" element={<QuizRegisterPage />} />
