@@ -1,6 +1,6 @@
 export type Photo = {
-  ID: number;
-  URL: string;
+  id: number;
+  url: string;
 };
 
 export type Language = {

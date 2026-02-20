@@ -27,10 +27,10 @@ type Language = {
 };
 
 type Education = {
-  id?: number;
-  title?: string;
-  institution?: string;
-  issueDate?: string;
+  ID?: number;
+  Title?: string;
+  Institution?: string;
+  IssueDate?: string;
 };
 
 type Portfolio = {
@@ -642,10 +642,10 @@ const ProfilePagePublicNew: React.FC = () => {
                     <Award className="w-5 h-5 text-green-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 text-sm">{edu.title}</h4>
-                    <p className="text-sm text-gray-600">{edu.institution}</p>
-                    {edu.issueDate && (
-                      <p className="text-xs text-gray-500 mt-1">{edu.issueDate}</p>
+                    <h4 className="font-semibold text-gray-900 text-sm">{edu.Title}</h4>
+                    <p className="text-sm text-gray-600">{edu.Institution}</p>
+                    {edu.IssueDate && (
+                      <p className="text-xs text-gray-500 mt-1">{new Date(edu.IssueDate).toLocaleDateString('uk-UA')}</p>
                     )}
                   </div>
                 </div>

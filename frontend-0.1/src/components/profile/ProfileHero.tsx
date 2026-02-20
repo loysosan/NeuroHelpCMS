@@ -17,8 +17,8 @@ const getPhotoUrl = (url: string): string => {
 
 const ProfileHero: React.FC<Props> = ({ user, completeness, onLogout }) => {
   const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase();
-  const avatarUrl = user.portfolio?.photos?.[0]?.URL
-    ? getPhotoUrl(user.portfolio.photos[0].URL)
+  const avatarUrl = user.portfolio?.photos?.[0]?.url
+    ? getPhotoUrl(user.portfolio.photos[0].url)
     : null;
 
   return (
