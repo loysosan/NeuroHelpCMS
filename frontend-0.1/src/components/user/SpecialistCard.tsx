@@ -46,7 +46,7 @@ const SpecialistCard: React.FC<Props> = ({ specialist }) => {
   // Get avatar URL (first photo or fallback)
   const hasPhoto = portfolio.photos && portfolio.photos.length > 0 && portfolio.photos[0].url;
   const avatarUrl = hasPhoto
-    ? `${import.meta.env.VITE_API_URL || ''}/api/uploads/${portfolio.photos[0].url}`
+    ? `${import.meta.env.VITE_API_URL || ''}/api${portfolio.photos[0].url}`
     : null;
 
   // Get initials for fallback
