@@ -12,6 +12,7 @@ const getEmbedUrl = (url: string): string | null => {
 };
 import { UserProfile } from './types';
 import { useToast } from '../ui/Toast';
+import RangeSlider, { DualRangeSlider } from '../ui/RangeSlider';
 
 type Props = {
   user: UserProfile;
@@ -111,128 +112,41 @@ const PortfolioSection: React.FC<Props> = ({ user, authenticatedFetch, onReload 
                 />
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1.5">Досвід (роки)</label>
-                <input type="number" min="0" value={form.experience}
-                  onChange={e => setForm({ ...form, experience: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <RangeSlider
+                label="Досвід роботи"
+                value={form.experience}
+                onChange={v => setForm({ ...form, experience: v })}
+                min={0}
+                max={50}
+                step={1}
+                suffix=" р."
+                minLabel="0"
+                maxLabel="50+"
+              />
+              <RangeSlider
+                label="Ставка за годину"
+                value={form.rate}
+                onChange={v => setForm({ ...form, rate: v })}
+                min={0}
+                max={5000}
+                step={50}
+                suffix=" грн"
+                minLabel="0"
+                maxLabel="5000+"
+              />
             </div>
-
-            {/* Rate slider */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm text-gray-600">Ставка (грн/год)</label>
-                <span className="text-sm font-medium text-gray-800">{form.rate} грн/год</span>
-              </div>
-
-              <div className="dual-range">
-                <div className="dr-track" />
-                <div
-                  className="dr-fill"
-                  style={{ left: 0, width: `${(form.rate / 5000) * 100}%` }}
-                />
-                <input
-                  type="range" min={0} max={5000} step={50}
-                  value={form.rate}
-                  style={{ zIndex: 3 }}
-                  onChange={e => setForm({ ...form, rate: Number(e.target.value) })}
-                />
-              </div>
-
-              <div className="flex justify-between text-xs text-gray-400 mt-1">
-                <span>0</span><span>1000</span><span>2500</span><span>5000</span>
-              </div>
-
-              <div className="flex items-center gap-2 mt-3">
-                <span className="text-xs text-gray-500">або введіть вручну</span>
-                <input
-                  type="number" min={0} max={5000} step={50}
-                  value={form.rate}
-                  onChange={e => {
-                    const v = Math.min(5000, Math.max(0, parseFloat(e.target.value) || 0));
-                    setForm({ ...form, rate: v });
-                  }}
-                  className="w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <span className="text-xs text-gray-400">грн/год</span>
-              </div>
-            </div>
-
-            {/* Client age range — dual slider */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm text-gray-600">Вік клієнтів</label>
-                <span className="text-sm font-medium text-gray-800">
-                  {form.clientAgeMin} — {form.clientAgeMax} р.
-                </span>
-              </div>
-
-              {/* Dual slider track */}
-              <div className="dual-range">
-                <div className="dr-track" />
-                <div
-                  className="dr-fill"
-                  style={{
-                    left: `${form.clientAgeMin}%`,
-                    width: `${form.clientAgeMax - form.clientAgeMin}%`,
-                  }}
-                />
-                <input
-                  type="range" min={0} max={100} step={1}
-                  value={form.clientAgeMin}
-                  style={{ zIndex: form.clientAgeMin >= form.clientAgeMax - 5 ? 4 : 3 }}
-                  onChange={e => {
-                    const v = Math.min(Number(e.target.value), form.clientAgeMax - 1);
-                    setForm({ ...form, clientAgeMin: v });
-                  }}
-                />
-                <input
-                  type="range" min={0} max={100} step={1}
-                  value={form.clientAgeMax}
-                  style={{ zIndex: 3 }}
-                  onChange={e => {
-                    const v = Math.max(Number(e.target.value), form.clientAgeMin + 1);
-                    setForm({ ...form, clientAgeMax: v });
-                  }}
-                />
-              </div>
-
-              <div className="flex justify-between text-xs text-gray-400 mt-1">
-                <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
-              </div>
-
-              {/* Number inputs */}
-              <div className="flex gap-3 mt-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">від</span>
-                  <input
-                    type="number" min={0} max={100}
-                    value={form.clientAgeMin}
-                    onChange={e => {
-                      const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                      setForm({ ...form, clientAgeMin: Math.min(v, form.clientAgeMax - 1) });
-                    }}
-                    className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <span className="text-xs text-gray-400">р.</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">до</span>
-                  <input
-                    type="number" min={0} max={100}
-                    value={form.clientAgeMax}
-                    onChange={e => {
-                      const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                      setForm({ ...form, clientAgeMax: Math.max(v, form.clientAgeMin + 1) });
-                    }}
-                    className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <span className="text-xs text-gray-400">р.</span>
-                </div>
-              </div>
-            </div>
+            <DualRangeSlider
+              label="Вік клієнтів"
+              valueMin={form.clientAgeMin}
+              valueMax={form.clientAgeMax}
+              onChangeMin={v => setForm({ ...form, clientAgeMin: v })}
+              onChangeMax={v => setForm({ ...form, clientAgeMax: v })}
+              min={0}
+              max={100}
+              step={1}
+              suffix=" р."
+            />
           </fieldset>
 
           {/* Group: Location */}
