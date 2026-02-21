@@ -96,11 +96,11 @@ const PhotosSection: React.FC<Props> = ({ user, authenticatedFetch, onReload }) 
 
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {photos.map(photo => (
-          <div key={photo.ID} className="relative group rounded-xl overflow-hidden aspect-[4/3]">
-            <img src={getPhotoUrl(photo.URL)} alt="Portfolio"
+          <div key={photo.id} className="relative group rounded-xl overflow-hidden aspect-[4/3]">
+            <img src={getPhotoUrl(photo.url)} alt="Portfolio"
               className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-            <button onClick={() => handleDelete(photo.ID)}
+            <button onClick={() => handleDelete(photo.id)}
               className="absolute top-2 right-2 p-1.5 bg-white/90 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow-sm hover:bg-red-50">
               <X className="w-4 h-4" />
             </button>

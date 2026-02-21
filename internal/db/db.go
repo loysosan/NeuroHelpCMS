@@ -49,5 +49,6 @@ func Connect() {
 		&models.Availability{},
 		&models.News{},
 		&models.Child{},
+		&models.ScheduleTemplate{},
 	)
 }

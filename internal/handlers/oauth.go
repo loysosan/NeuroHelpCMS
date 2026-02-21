@@ -97,6 +97,12 @@ func GoogleAuth(w http.ResponseWriter, r *http.Request) {
 
 // loginAndRespond generates JWT tokens and sends authentication response
 func loginAndRespond(w http.ResponseWriter, user *models.User) {
+	if user.Status == "Blocked" {
+		log.Warn().Str("email", user.Email).Msg("GoogleAuth: login denied — account blocked")
+		utils.WriteError(w, http.StatusForbidden, "ACCOUNT_BLOCKED", "Your account has been blocked")
+		return
+	}
+
 	accessToken, err := utils.GenerateAccessToken(user)
 	if err != nil {
 		log.Error().Err(err).Msg("GoogleAuth: failed to generate access token")

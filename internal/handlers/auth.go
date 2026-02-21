@@ -148,6 +148,12 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if user.Status == "Blocked" {
+		log.Warn().Str("email", creds.Username).Msg("User login failed: account blocked")
+		utils.WriteError(w, http.StatusForbidden, "ACCOUNT_BLOCKED", "Your account has been blocked")
+		return
+	}
+
 	// Generate access token
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{

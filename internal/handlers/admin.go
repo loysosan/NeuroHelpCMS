@@ -56,7 +56,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
-	db.DB.Find(&users)
+	db.DB.Preload("Portfolio.Photos").Find(&users)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
 }
@@ -74,13 +74,167 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	var user models.User
-	result := db.DB.First(&user, id)
+	result := db.DB.
+		Preload("Portfolio.Educations").
+		Preload("Portfolio.Photos").
+		Preload("Portfolio.Languages").
+		Preload("Child").
+		Preload("Skills.Category").
+		First(&user, id)
 	if result.Error != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	utils.WriteJSON(w, http.StatusOK, user)
+}
+
+// AdminChangeUserPassword godoc
+// @Summary      Change user password (admin)
+// @Description  Admin sets a new password for any user without knowing the old one
+// @Tags         Actions for administrators
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "User ID"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,404,500 {object} map[string]interface{}
+// @Router       /api/admin/users/{id}/password [put]
+// @Security     BearerAuth
+func AdminChangeUserPassword(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
+		return
+	}
+
+	var req struct {
+		NewPassword string `json:"newPassword"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Invalid JSON format")
+		return
+	}
+	if len(req.NewPassword) < 8 {
+		utils.WriteError(w, http.StatusBadRequest, "PASSWORD_TOO_SHORT", "Password must be at least 8 characters")
+		return
+	}
+
+	var user models.User
+	if err := db.DB.First(&user, id).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+		return
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "HASH_ERROR", "Failed to hash password")
+		return
+	}
+
+	if err := db.DB.Model(&user).Update("password", string(hashed)).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update password")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Password updated successfully",
+	})
+}
+
+// AdminUpdateUserPortfolio godoc
+// @Summary      Update user portfolio (admin)
+// @Description  Admin updates or creates portfolio for a psychologist
+// @Tags         Actions for administrators
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "User ID"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,404,500 {object} map[string]interface{}
+// @Router       /api/admin/users/{id}/portfolio [put]
+// @Security     BearerAuth
+func AdminUpdateUserPortfolio(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
+		return
+	}
+
+	var req struct {
+		Description      *string  `json:"description"`
+		Experience       *int     `json:"experience"`
+		City             *string  `json:"city"`
+		Address          *string  `json:"address"`
+		Rate             *float64 `json:"rate"`
+		ContactEmail     *string  `json:"contactEmail"`
+		ContactPhone     *string  `json:"contactPhone"`
+		Telegram         *string  `json:"telegram"`
+		FacebookURL      *string  `json:"facebookURL"`
+		InstagramURL     *string  `json:"instagramURL"`
+		VideoURL         *string  `json:"videoURL"`
+		ScheduleEnforced *bool    `json:"scheduleEnforced"`
+		ClientAgeMin     *int     `json:"clientAgeMin"`
+		ClientAgeMax     *int     `json:"clientAgeMax"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Invalid JSON format")
+		return
+	}
+
+	var portfolio models.Portfolio
+	db.DB.Where("psychologist_id = ?", id).FirstOrCreate(&portfolio, models.Portfolio{PsychologistID: uint64(id)})
+
+	if req.Description != nil {
+		portfolio.Description = *req.Description
+	}
+	if req.Experience != nil {
+		portfolio.Experience = *req.Experience
+	}
+	if req.City != nil {
+		portfolio.City = req.City
+	}
+	if req.Address != nil {
+		portfolio.Address = req.Address
+	}
+	if req.Rate != nil {
+		portfolio.Rate = req.Rate
+	}
+	if req.ContactEmail != nil {
+		portfolio.ContactEmail = req.ContactEmail
+	}
+	if req.ContactPhone != nil {
+		portfolio.ContactPhone = req.ContactPhone
+	}
+	if req.Telegram != nil {
+		portfolio.Telegram = req.Telegram
+	}
+	if req.FacebookURL != nil {
+		portfolio.FacebookURL = req.FacebookURL
+	}
+	if req.InstagramURL != nil {
+		portfolio.InstagramURL = req.InstagramURL
+	}
+	if req.VideoURL != nil {
+		portfolio.VideoURL = req.VideoURL
+	}
+	if req.ScheduleEnforced != nil {
+		portfolio.ScheduleEnforced = *req.ScheduleEnforced
+	}
+	if req.ClientAgeMin != nil {
+		portfolio.ClientAgeMin = req.ClientAgeMin
+	}
+	if req.ClientAgeMax != nil {
+		portfolio.ClientAgeMax = req.ClientAgeMax
+	}
+
+	if err := db.DB.Save(&portfolio).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update portfolio")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data":    portfolio,
+	})
 }
 
 /*************  ✨ Windsurf Command ⭐  *************/
@@ -386,7 +540,39 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 7. Finally delete user
+	// 7. Delete schedule templates
+	if err := tx.Where("psychologist_id = ?", id).Delete(&models.ScheduleTemplate{}).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete schedule templates")
+		return
+	}
+
+	// 8. Delete sessions (appointments)
+	if err := tx.Where("client_id = ? OR psychologist_id = ?", id, id).Delete(&models.Session{}).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete sessions")
+		return
+	}
+
+	// 9. Delete conversations and messages (chat history)
+	var convIDs []uint64
+	tx.Model(&models.Conversation{}).
+		Where("client_id = ? OR psychologist_id = ?", id, id).
+		Pluck("id", &convIDs)
+	if len(convIDs) > 0 {
+		if err := tx.Where("conversation_id IN ?", convIDs).Delete(&models.Message{}).Error; err != nil {
+			tx.Rollback()
+			utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete messages")
+			return
+		}
+	}
+	if err := tx.Where("client_id = ? OR psychologist_id = ?", id, id).Delete(&models.Conversation{}).Error; err != nil {
+		tx.Rollback()
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete conversations")
+		return
+	}
+
+	// 10. Finally delete user
 	if err := tx.Delete(&user).Error; err != nil {
 		tx.Rollback()
 		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Unable to delete user")

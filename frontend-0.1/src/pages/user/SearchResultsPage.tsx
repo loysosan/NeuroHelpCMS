@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useUserAuth } from '../../context/UserAuthContext';
 import Header from '../../components/user/Header';
@@ -18,8 +18,7 @@ interface SearchResponse {
 
 const SearchResultsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { token, refreshAccessToken } = useUserAuth();
+  const { token } = useUserAuth();
 
   const [specialists, setSpecialists] = useState<SpecialistData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +37,9 @@ const SearchResultsPage: React.FC = () => {
       minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
       maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
       minExperience: searchParams.get('minExp') ? Number(searchParams.get('minExp')) : undefined,
+      skillIds: searchParams.get('skillIds')
+        ? searchParams.get('skillIds')!.split(',').map(Number)
+        : [],
     };
   };
 
@@ -98,7 +100,7 @@ const SearchResultsPage: React.FC = () => {
       const params = buildApiParams(page);
       const base = import.meta.env.VITE_API_URL || '';
 
-      let response = await fetch(`${base}/api/users/search/specialists`, {
+      const response = await fetch(`${base}/api/users/search/specialists`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,21 +109,8 @@ const SearchResultsPage: React.FC = () => {
         body: JSON.stringify(params),
       });
 
-      // Handle token refresh
       if (response.status === 401) {
-        const newToken = await refreshAccessToken();
-        if (newToken) {
-          response = await fetch(`${base}/api/users/search/specialists`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${newToken}`,
-            },
-            body: JSON.stringify(params),
-          });
-        } else {
-          throw new Error('Сесія закінчилась. Будь ласка, увійдіть знову.');
-        }
+        throw new Error('Сесія закінчилась. Будь ласка, увійдіть знову.');
       }
 
       if (!response.ok) {

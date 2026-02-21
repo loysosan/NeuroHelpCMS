@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Award, GraduationCap, Camera, Globe, Baby } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Award, GraduationCap, Camera, Globe, Baby, CalendarDays, ClipboardList, Lock } from 'lucide-react';
 import { useUserAuth } from '../../context/UserAuthContext';
 import Header from '../../components/user/Header';
 import Footer from '../../components/user/Footer';
@@ -13,6 +13,9 @@ import EducationSection from '../../components/profile/EducationSection';
 import PhotosSection from '../../components/profile/PhotosSection';
 import LanguagesSection from '../../components/profile/LanguagesSection';
 import ChildSection from '../../components/profile/ChildSection';
+import ScheduleSection from '../../components/booking/ScheduleSection';
+import { SessionsList } from '../../components/booking/SessionsList';
+import ChangePasswordSection from '../../components/profile/ChangePasswordSection';
 import { UserProfile, Language, SkillItem, ProfileTab } from '../../components/profile/types';
 
 const PSYCHOLOGIST_TABS: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
@@ -22,11 +25,15 @@ const PSYCHOLOGIST_TABS: { key: ProfileTab; label: string; icon: React.ReactNode
   { key: 'education', label: 'Освіта', icon: <GraduationCap className="w-4 h-4" /> },
   { key: 'photos', label: 'Фото', icon: <Camera className="w-4 h-4" /> },
   { key: 'languages', label: 'Мови', icon: <Globe className="w-4 h-4" /> },
+  { key: 'schedule', label: 'Розклад', icon: <CalendarDays className="w-4 h-4" /> },
+  { key: 'security', label: 'Безпека', icon: <Lock className="w-4 h-4" /> },
 ];
 
 const CLIENT_TABS: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
   { key: 'overview', label: 'Огляд', icon: <LayoutDashboard className="w-4 h-4" /> },
   { key: 'child', label: 'Дитина', icon: <Baby className="w-4 h-4" /> },
+  { key: 'sessions', label: 'Мої записи', icon: <ClipboardList className="w-4 h-4" /> },
+  { key: 'security', label: 'Безпека', icon: <Lock className="w-4 h-4" /> },
 ];
 
 const ProfilePage: React.FC = () => {
@@ -137,21 +144,23 @@ const ProfilePage: React.FC = () => {
         <ProfileHero user={user} completeness={calcCompleteness()} onLogout={logout} />
 
         {/* Tabs */}
-        <div className="flex bg-white rounded-xl border p-1.5">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-all ${
-                activeTab === tab.key
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {tab.icon}
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          ))}
+        <div className="bg-white rounded-xl border p-1.5 overflow-x-auto">
+          <div className="flex min-w-max sm:min-w-0">
+            {tabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-all ${
+                  activeTab === tab.key
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Tab content */}
@@ -189,6 +198,18 @@ const ProfilePage: React.FC = () => {
 
         {activeTab === 'child' && !isPsychologist && (
           <ChildSection user={user} authenticatedFetch={authenticatedFetch} onReload={loadProfile} />
+        )}
+
+        {activeTab === 'schedule' && isPsychologist && (
+          <ScheduleSection user={user} authenticatedFetch={authenticatedFetch} onReload={loadProfile} />
+        )}
+
+        {activeTab === 'sessions' && !isPsychologist && (
+          <SessionsList userRole="client" />
+        )}
+
+        {activeTab === 'security' && (
+          <ChangePasswordSection authenticatedFetch={authenticatedFetch} />
         )}
       </main>
 

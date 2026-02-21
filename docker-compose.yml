@@ -49,7 +49,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./frontend-0.1
     image: frontend-app
     container_name: frontend-app
     ports:

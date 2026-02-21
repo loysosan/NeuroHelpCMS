@@ -36,9 +36,10 @@ type UpdateSelfPortfolioRequest struct {
 	FacebookURL  *string  `json:"facebookURL"`
 	InstagramURL *string  `json:"instagramURL"`
 	VideoURL     *string  `json:"videoUrl"`
-	Rate         *float64 `json:"rate"`
-	ClientAgeMin *int     `json:"clientAgeMin"`
-	ClientAgeMax *int     `json:"clientAgeMax"`
+	Rate             *float64 `json:"rate"`
+	ClientAgeMin     *int     `json:"clientAgeMin"`
+	ClientAgeMax     *int     `json:"clientAgeMax"`
+	ScheduleEnforced *bool    `json:"scheduleEnforced"`
 }
 
 // UpdateSelfPortfolio godoc
@@ -107,6 +108,10 @@ func UpdateSelfPortfolio(w http.ResponseWriter, r *http.Request) {
 	portfolio.FacebookURL = req.FacebookURL
 	portfolio.InstagramURL = req.InstagramURL
 	portfolio.VideoURL = req.VideoURL
+
+	if req.ScheduleEnforced != nil {
+		portfolio.ScheduleEnforced = *req.ScheduleEnforced
+	}
 
 	// Обработка даты рождения
 	if req.DateOfBirth != nil {

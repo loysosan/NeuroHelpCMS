@@ -89,6 +89,17 @@ type RatingSearchResult struct {
 // @Failure      400,500 {object} map[string]interface{}
 // @Router       /api/users/search/specialists [post]
 func SearchSpecialists(w http.ResponseWriter, r *http.Request) {
+	email, _ := r.Context().Value("email").(string)
+	var currentUser models.User
+	if err := db.DB.Select("id, status, role").Where("email = ?", email).First(&currentUser).Error; err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "USER_NOT_FOUND", "User not found")
+		return
+	}
+	if currentUser.Role == "client" && currentUser.Status == "Disabled" {
+		utils.WriteError(w, http.StatusForbidden, "ACCOUNT_DISABLED", "Your account is disabled")
+		return
+	}
+
 	var req SearchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "INVALID_FORMAT", "Invalid request format")

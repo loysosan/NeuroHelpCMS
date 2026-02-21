@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Award, Star, Briefcase, DollarSign } from 'lucide-react';
+import { MapPin, Award, Star, Briefcase } from 'lucide-react';
 
 interface Skill {
   id: number;
@@ -52,10 +52,16 @@ const SpecialistCard: React.FC<Props> = ({ specialist }) => {
   // Get initials for fallback
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 
-  // Truncate description
-  const shortDescription = portfolio.description?.length > 150
-    ? portfolio.description.substring(0, 150) + '...'
-    : portfolio.description || 'Опис відсутній';
+  // Strip HTML tags and truncate description
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+  const plainDescription = portfolio.description ? stripHtml(portfolio.description) : '';
+  const shortDescription = plainDescription.length > 150
+    ? plainDescription.substring(0, 150) + '...'
+    : plainDescription || 'Опис відсутній';
 
   // Get first 3 skills
   const displaySkills = skills.slice(0, 3);
@@ -126,7 +132,7 @@ const SpecialistCard: React.FC<Props> = ({ specialist }) => {
               )}
               {portfolio.rate && (
                 <div className="flex items-center gap-1">
-                  <DollarSign className="w-3.5 h-3.5" />
+                  <span className="font-semibold text-sm">₴</span>
                   <span>{portfolio.rate} ₴/год</span>
                 </div>
               )}

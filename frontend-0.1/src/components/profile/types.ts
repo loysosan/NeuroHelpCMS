@@ -1,6 +1,6 @@
 export type Photo = {
-  ID: number;
-  URL: string;
+  id: number;
+  url: string;
 };
 
 export type Language = {
@@ -57,9 +57,10 @@ export type UserProfile = {
     rate?: number;
     clientAgeMin?: number;
     clientAgeMax?: number;
+    scheduleEnforced?: boolean;
     photos?: Photo[];
     educations?: Education[];
   };
 };
 
-export type ProfileTab = 'overview' | 'portfolio' | 'skills' | 'education' | 'photos' | 'languages' | 'child';
+export type ProfileTab = 'overview' | 'portfolio' | 'skills' | 'education' | 'photos' | 'languages' | 'child' | 'schedule' | 'sessions' | 'security';
