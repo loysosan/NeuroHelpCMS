@@ -61,6 +61,8 @@ func main() {
 		r.Get("/api/admin/users/{id}", handlers.GetUser)
 		r.Get("/api/admin/users", handlers.GetAllUsers)
 		r.Put("/api/admin/users/{id}", handlers.UpdateUser)
+		r.Put("/api/admin/users/{id}/password", handlers.AdminChangeUserPassword)
+		r.Put("/api/admin/users/{id}/portfolio", handlers.AdminUpdateUserPortfolio)
 
 		r.Post("/api/admin/skills", handlers.CreateSkill)
 		r.Get("/api/admin/skills", handlers.GetSkills)

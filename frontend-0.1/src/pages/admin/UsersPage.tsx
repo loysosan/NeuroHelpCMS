@@ -3,6 +3,8 @@ import { useAdminAuth } from '../../context/AdminAuthContext';
 import { CreateUserModal } from '../../components/admin/modals/CreateUserModal';
 import { ConfirmationModal } from '../../components/admin/modals/ConfirmationModal';
 import { EditUserModal, EditUserData } from '../../components/admin/modals/EditUserModal';
+import { UserDetailModal } from '../../components/admin/modals/UserDetailModal';
+import { ChangeUserPasswordModal } from '../../components/admin/modals/ChangeUserPasswordModal';
 
 interface RawUser {
   ID: number;
@@ -15,7 +17,14 @@ interface RawUser {
   Phone?: string;
   CreatedAt?: string;
   PlanID?: number | null;
+  Portfolio?: { Photos?: { id: number; url: string }[] };
 }
+
+const getAvatarUrl = (user: RawUser): string | null => {
+  const photo = user.Portfolio?.Photos?.[0];
+  if (!photo) return null;
+  return photo.url.startsWith('/uploads') ? `/api${photo.url}` : photo.url;
+};
 
 interface Plan {
   ID: number;
@@ -32,6 +41,8 @@ export const UsersPage: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [editingUser, setEditingUser] = useState<RawUser | null>(null);
+  const [viewingUserId, setViewingUserId] = useState<number | null>(null);
+  const [passwordUser, setPasswordUser] = useState<RawUser | null>(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | string>('all');
 
@@ -276,16 +287,25 @@ export const UsersPage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filtered.map(u => {
                   const initials = (u.FirstName?.[0] || 'U').toUpperCase() + (u.LastName?.[0] || '').toUpperCase();
+                  const avatarUrl = getAvatarUrl(u);
                   return (
                     <tr key={u.ID} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                              <span className="text-sm font-medium text-gray-700">
-                                {initials}
-                              </span>
-                            </div>
+                            {avatarUrl ? (
+                              <img
+                                src={avatarUrl}
+                                alt=""
+                                className="h-10 w-10 rounded-full object-cover border border-gray-200"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
+                                <span className="text-sm font-semibold text-white">
+                                  {initials}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">
@@ -326,10 +346,22 @@ export const UsersPage: React.FC = () => {
                         {formatDate(u.CreatedAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            onClick={() => setViewingUserId(u.ID)}
+                            className="text-gray-600 hover:text-gray-900 inline-flex items-center px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                            title="Деталі"
+                          >
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            Деталі
+                          </button>
                           <button
                             onClick={() => setEditingUser(u)}
                             className="text-indigo-600 hover:text-indigo-900 inline-flex items-center px-2 py-1 rounded hover:bg-indigo-50 transition-colors"
+                            title="Редагувати"
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.586 3.586a2 2 0 112.828 2.828L12 14l-4 1 1-4 7.586-7.586z" />
@@ -337,8 +369,19 @@ export const UsersPage: React.FC = () => {
                             Редагувати
                           </button>
                           <button
+                            onClick={() => setPasswordUser(u)}
+                            className="text-amber-600 hover:text-amber-900 inline-flex items-center px-2 py-1 rounded hover:bg-amber-50 transition-colors"
+                            title="Змінити пароль"
+                          >
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                            Пароль
+                          </button>
+                          <button
                             onClick={() => setDeleteId(u.ID)}
                             className="text-red-600 hover:text-red-900 inline-flex items-center px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                            title="Видалити"
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -398,6 +441,21 @@ export const UsersPage: React.FC = () => {
           Phone: editingUser.Phone || '',
           PlanID: editingUser.PlanID ?? null
         } : null}
+      />
+
+      <UserDetailModal
+        isOpen={viewingUserId !== null}
+        onClose={() => setViewingUserId(null)}
+        userId={viewingUserId}
+        token={token || ''}
+      />
+
+      <ChangeUserPasswordModal
+        isOpen={passwordUser !== null}
+        onClose={() => setPasswordUser(null)}
+        userId={passwordUser?.ID ?? null}
+        userName={passwordUser ? `${passwordUser.FirstName || ''} ${passwordUser.LastName || ''}`.trim() || passwordUser.Email : ''}
+        token={token || ''}
       />
     </div>
   );

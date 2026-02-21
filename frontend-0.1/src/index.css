@@ -29,3 +29,90 @@ body {
 .prose code { background:#f3f4f6; padding:0.25rem 0.5rem; border-radius:0.25rem; font-size:0.875em; }
 .prose pre { background:#1f2937; color:#f9fafb; padding:1rem; border-radius:0.5rem; overflow-x:auto; margin:1.5rem 0; }
 .prose pre code { background:transparent; padding:0; }
+
+/* Quill WYSIWYG editor */
+.portfolio-editor .ql-toolbar {
+  border: none !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  background: #f9fafb;
+  border-radius: 0;
+  padding: 8px 10px;
+}
+.portfolio-editor .ql-container {
+  border: none !important;
+  font-size: 0.875rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 120px;
+}
+.portfolio-editor .ql-editor {
+  min-height: 120px;
+  padding: 12px;
+  color: #374151;
+  line-height: 1.6;
+}
+.portfolio-editor .ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: normal;
+}
+.portfolio-editor .ql-editor p { margin-bottom: 0.5rem; }
+.portfolio-editor .ql-editor ul,
+.portfolio-editor .ql-editor ol { padding-left: 1.5rem; margin-bottom: 0.5rem; }
+
+/* Dual range slider */
+.dual-range {
+  position: relative;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+.dual-range .dr-track {
+  position: absolute;
+  left: 0; right: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: #e5e7eb;
+}
+.dual-range .dr-fill {
+  position: absolute;
+  height: 4px;
+  border-radius: 2px;
+  background: #3b82f6;
+}
+.dual-range input[type="range"] {
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+  margin: 0;
+  padding: 0;
+}
+.dual-range input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #3b82f6;
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: box-shadow 0.15s;
+}
+.dual-range input[type="range"]::-webkit-slider-thumb:hover,
+.dual-range input[type="range"]:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.2);
+}
+.dual-range input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #3b82f6;
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.dual-range input[type="range"]:focus { outline: none; }

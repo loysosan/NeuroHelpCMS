@@ -52,10 +52,16 @@ const SpecialistCard: React.FC<Props> = ({ specialist }) => {
   // Get initials for fallback
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 
-  // Truncate description
-  const shortDescription = portfolio.description?.length > 150
-    ? portfolio.description.substring(0, 150) + '...'
-    : portfolio.description || 'Опис відсутній';
+  // Strip HTML tags and truncate description
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+  const plainDescription = portfolio.description ? stripHtml(portfolio.description) : '';
+  const shortDescription = plainDescription.length > 150
+    ? plainDescription.substring(0, 150) + '...'
+    : plainDescription || 'Опис відсутній';
 
   // Get first 3 skills
   const displaySkills = skills.slice(0, 3);

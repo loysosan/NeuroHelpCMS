@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Briefcase, Edit3, Save, MapPin, Phone, Mail, Clock, Users, Calendar, MessageCircle, Video } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const getEmbedUrl = (url: string): string | null => {
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
@@ -91,9 +93,23 @@ const PortfolioSection: React.FC<Props> = ({ user, authenticatedFetch, onReload 
             <legend className="text-sm font-semibold text-gray-700 mb-2">Про себе</legend>
             <div>
               <label className="block text-sm text-gray-600 mb-1.5">Опис діяльності</label>
-              <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-                rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Розкажіть про свій досвід та підходи до роботи..." />
+              <div className="rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+                <ReactQuill
+                  theme="snow"
+                  value={form.description}
+                  onChange={v => setForm({ ...form, description: v })}
+                  modules={{
+                    toolbar: [
+                      ['bold', 'italic', 'underline'],
+                      [{ list: 'ordered' }, { list: 'bullet' }],
+                      ['link'],
+                      ['clean'],
+                    ],
+                  }}
+                  placeholder="Розкажіть про свій досвід та підходи до роботи..."
+                  className="portfolio-editor"
+                />
+              </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
@@ -102,24 +118,118 @@ const PortfolioSection: React.FC<Props> = ({ user, authenticatedFetch, onReload 
                   onChange={e => setForm({ ...form, experience: parseInt(e.target.value) || 0 })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
               </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1.5">Ставка (грн/год)</label>
-                <input type="number" min="0" value={form.rate}
-                  onChange={e => setForm({ ...form, rate: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+
+            {/* Rate slider */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm text-gray-600">Ставка (грн/год)</label>
+                <span className="text-sm font-medium text-gray-800">{form.rate} грн/год</span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1.5">Вік від</label>
-                  <input type="number" min="0" max="120" value={form.clientAgeMin}
-                    onChange={e => setForm({ ...form, clientAgeMin: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+
+              <div className="dual-range">
+                <div className="dr-track" />
+                <div
+                  className="dr-fill"
+                  style={{ left: 0, width: `${(form.rate / 5000) * 100}%` }}
+                />
+                <input
+                  type="range" min={0} max={5000} step={50}
+                  value={form.rate}
+                  style={{ zIndex: 3 }}
+                  onChange={e => setForm({ ...form, rate: Number(e.target.value) })}
+                />
+              </div>
+
+              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <span>0</span><span>1000</span><span>2500</span><span>5000</span>
+              </div>
+
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-xs text-gray-500">або введіть вручну</span>
+                <input
+                  type="number" min={0} max={5000} step={50}
+                  value={form.rate}
+                  onChange={e => {
+                    const v = Math.min(5000, Math.max(0, parseFloat(e.target.value) || 0));
+                    setForm({ ...form, rate: v });
+                  }}
+                  className="w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <span className="text-xs text-gray-400">грн/год</span>
+              </div>
+            </div>
+
+            {/* Client age range — dual slider */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm text-gray-600">Вік клієнтів</label>
+                <span className="text-sm font-medium text-gray-800">
+                  {form.clientAgeMin} — {form.clientAgeMax} р.
+                </span>
+              </div>
+
+              {/* Dual slider track */}
+              <div className="dual-range">
+                <div className="dr-track" />
+                <div
+                  className="dr-fill"
+                  style={{
+                    left: `${form.clientAgeMin}%`,
+                    width: `${form.clientAgeMax - form.clientAgeMin}%`,
+                  }}
+                />
+                <input
+                  type="range" min={0} max={100} step={1}
+                  value={form.clientAgeMin}
+                  style={{ zIndex: form.clientAgeMin >= form.clientAgeMax - 5 ? 4 : 3 }}
+                  onChange={e => {
+                    const v = Math.min(Number(e.target.value), form.clientAgeMax - 1);
+                    setForm({ ...form, clientAgeMin: v });
+                  }}
+                />
+                <input
+                  type="range" min={0} max={100} step={1}
+                  value={form.clientAgeMax}
+                  style={{ zIndex: 3 }}
+                  onChange={e => {
+                    const v = Math.max(Number(e.target.value), form.clientAgeMin + 1);
+                    setForm({ ...form, clientAgeMax: v });
+                  }}
+                />
+              </div>
+
+              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+              </div>
+
+              {/* Number inputs */}
+              <div className="flex gap-3 mt-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">від</span>
+                  <input
+                    type="number" min={0} max={100}
+                    value={form.clientAgeMin}
+                    onChange={e => {
+                      const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                      setForm({ ...form, clientAgeMin: Math.min(v, form.clientAgeMax - 1) });
+                    }}
+                    className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <span className="text-xs text-gray-400">р.</span>
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1.5">Вік до</label>
-                  <input type="number" min="0" max="120" value={form.clientAgeMax}
-                    onChange={e => setForm({ ...form, clientAgeMax: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">до</span>
+                  <input
+                    type="number" min={0} max={100}
+                    value={form.clientAgeMax}
+                    onChange={e => {
+                      const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                      setForm({ ...form, clientAgeMax: Math.max(v, form.clientAgeMin + 1) });
+                    }}
+                    className="w-16 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <span className="text-xs text-gray-400">р.</span>
                 </div>
               </div>
             </div>
@@ -218,7 +328,10 @@ const PortfolioSection: React.FC<Props> = ({ user, authenticatedFetch, onReload 
         <div className="space-y-5">
           {/* Description */}
           {p?.description && (
-            <p className="text-sm text-gray-700 leading-relaxed">{p.description}</p>
+            <div
+              className="text-sm text-gray-700 leading-relaxed prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: p.description }}
+            />
           )}
 
           {/* Info grid */}
