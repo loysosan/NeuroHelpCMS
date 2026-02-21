@@ -112,6 +112,7 @@ func main() {
 		r.Get("/api/users/{id}", handlers.GetUserProfile) // Змініть з GetUser на GetUserProfile
 		r.Post("/api/reviews/{psychologist_id}", handlers.CreateReview)
 		r.Put("/api/users/self/updateuser", handlers.ClientSelfUpdate)
+		r.Put("/api/users/self/password", handlers.ChangePassword)
 
 		r.Post("/api/users/blog", handlers.CreateBlogPost)
 

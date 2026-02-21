@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"golang.org/x/crypto/bcrypt"
 	"user-api/internal/db"
 	"user-api/internal/models"
 	"user-api/internal/utils"
@@ -326,5 +327,67 @@ func ClientSelfUpdate(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"message": "Profile updated successfully",
 		"data":    user,
+	})
+}
+
+// ChangePassword godoc
+// @Summary      Change password
+// @Description  Allows authenticated user to change their password
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,401,500 {object} map[string]interface{}
+// @Router       /api/users/self/password [put]
+// @Security     BearerAuth
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+		return
+	}
+
+	var req struct {
+		OldPassword string `json:"oldPassword"`
+		NewPassword string `json:"newPassword"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_JSON", "Invalid JSON format")
+		return
+	}
+	if req.OldPassword == "" || req.NewPassword == "" {
+		utils.WriteError(w, http.StatusBadRequest, "MISSING_FIELDS", "oldPassword and newPassword are required")
+		return
+	}
+	if len(req.NewPassword) < 8 {
+		utils.WriteError(w, http.StatusBadRequest, "PASSWORD_TOO_SHORT", "Password must be at least 8 characters")
+		return
+	}
+
+	var user models.User
+	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not found")
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "WRONG_PASSWORD", "Current password is incorrect")
+		return
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "HASH_ERROR", "Failed to hash password")
+		return
+	}
+
+	if err := db.DB.Model(&user).Update("password", string(hashed)).Error; err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to update password")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Password changed successfully",
 	})
 }

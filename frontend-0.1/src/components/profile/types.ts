@@ -63,4 +63,4 @@ export type UserProfile = {
   };
 };
 
-export type ProfileTab = 'overview' | 'portfolio' | 'skills' | 'education' | 'photos' | 'languages' | 'child' | 'schedule' | 'sessions';
+export type ProfileTab = 'overview' | 'portfolio' | 'skills' | 'education' | 'photos' | 'languages' | 'child' | 'schedule' | 'sessions' | 'security';
