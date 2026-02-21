@@ -103,36 +103,46 @@ const isValidPhoto = (photo: any) => {
   return photo && photo.url && typeof photo.url === 'string' && photo.url.trim() !== '';
 };
 
+const getInitials = (name?: string): string => {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return parts[0][0].toUpperCase();
+};
+
+const AvatarPlaceholder: React.FC<{ name?: string; className?: string }> = ({ name, className }) => (
+  <div className={`w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ${className ?? ''}`}>
+    <span className="text-white font-bold select-none" style={{ fontSize: 'clamp(1rem, 5cqi, 2.5rem)' }}>
+      {getInitials(name)}
+    </span>
+  </div>
+);
+
 const ImageFallback: React.FC<{ src?: string; alt?: string; className?: string }> = ({ src, alt, className }) => {
   const [imgError, setImgError] = useState(false);
-  const [imgLoading, setImgLoading] = useState(true);
+  const [imgLoading, setImgLoading] = useState(!!src);
 
-  const handleImageLoad = () => {
-    setImgLoading(false);
-    setImgError(false);
-  };
-
-  const handleImageError = () => {
-    setImgLoading(false);
-    setImgError(true);
-  };
-
-  const finalSrc = (!src || imgError) ? '/placeholder-image.jpg' : getImageUrl(src);
+  const resolvedSrc = src ? getImageUrl(src) : null;
+  const showPlaceholder = !resolvedSrc || imgError;
 
   return (
     <div className="relative w-full h-full">
-      {imgLoading && (
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 animate-pulse flex items-center justify-center rounded-full">
-          <span className="text-xs text-gray-500 font-medium">Завантаження...</span>
-        </div>
+      {showPlaceholder ? (
+        <AvatarPlaceholder name={alt} />
+      ) : (
+        <>
+          {imgLoading && (
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 animate-pulse" />
+          )}
+          <img
+            src={resolvedSrc!}
+            alt={alt || 'avatar'}
+            className={className}
+            onLoad={() => setImgLoading(false)}
+            onError={() => { setImgLoading(false); setImgError(true); }}
+          />
+        </>
       )}
-      <img
-        src={finalSrc}
-        alt={alt || 'avatar'}
-        className={className}
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-      />
     </div>
   );
 };
@@ -475,11 +485,11 @@ const ProfilePagePublicNew: React.FC = () => {
                 <div className="flex gap-4 items-start w-full md:flex-1">
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
-                    <div className="w-20 h-20 md:w-28 md:h-28 rounded-full overflow-hidden ring-4 ring-white shadow-lg bg-gradient-to-br from-blue-100 to-purple-100">
+                    <div className="w-28 h-28 md:w-40 md:h-40 rounded-full overflow-hidden ring-4 ring-white shadow-xl bg-gradient-to-br from-blue-100 to-purple-100">
                       <ImageFallback src={avatarUrl} alt={fullName} className="w-full h-full object-cover" />
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 md:w-7 md:h-7 bg-green-500 rounded-full border-3 border-white flex items-center justify-center shadow-lg">
-                      <div className="w-2 h-2 bg-white rounded-full" />
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 md:w-8 md:h-8 bg-green-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
+                      <div className="w-2 h-2 md:w-2.5 md:h-2.5 bg-white rounded-full" />
                     </div>
                   </div>
 

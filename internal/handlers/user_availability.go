@@ -25,8 +25,10 @@ import (
 // @Router       /api/users/availability [post]
 // @Security     BearerAuth
 func CreateAvailabilitySlot(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("user").(*models.User)
-
+	user, ok := getUserFromCtx(w, r)
+	if !ok {
+		return
+	}
 	if user.Role != "psychologist" {
 		utils.WriteError(w, http.StatusForbidden, "ACCESS_DENIED", "Only psychologists can create availability slots")
 		return
@@ -106,6 +108,43 @@ func GetPsychologistAvailability(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, availability)
 }
 
+// GetPsychologistScheduleInfo godoc
+// @Summary      Get psychologist schedule info
+// @Description  Returns schedule_enforced flag and available slots (used by client booking page)
+// @Tags         Availability
+// @Produce      json
+// @Param        id path int true "Psychologist ID"
+// @Success      200 {object} map[string]interface{}
+// @Router       /api/users/{id}/schedule-info [get]
+func GetPsychologistScheduleInfo(w http.ResponseWriter, r *http.Request) {
+	psychologistID, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid psychologist ID")
+		return
+	}
+
+	var portfolio models.Portfolio
+	if err := db.DB.Where("psychologist_id = ?", psychologistID).First(&portfolio).Error; err != nil {
+		utils.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Psychologist portfolio not found")
+		return
+	}
+
+	var availability []models.Availability
+	if err := db.DB.Where("psychologist_id = ? AND status = ? AND start_time > ?",
+		psychologistID, "available", time.Now()).
+		Order("start_time ASC").
+		Find(&availability).Error; err != nil {
+		log.Error().Err(err).Msg("Failed to get availability")
+		utils.WriteError(w, http.StatusInternalServerError, "DB_ERROR", "Failed to get availability")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"scheduleEnforced": portfolio.ScheduleEnforced,
+		"availability":     availability,
+	})
+}
+
 // DeleteAvailabilitySlot godoc
 // @Summary      Delete an availability slot
 // @Description  Allows a psychologist to delete an unbooked availability slot
@@ -117,7 +156,10 @@ func GetPsychologistAvailability(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/users/availability/{slotId} [delete]
 // @Security     BearerAuth
 func DeleteAvailabilitySlot(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("user").(*models.User)
+	user, ok := getUserFromCtx(w, r)
+	if !ok {
+		return
+	}
 	slotID, err := strconv.ParseUint(chi.URLParam(r, "slotId"), 10, 64)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid slot ID")

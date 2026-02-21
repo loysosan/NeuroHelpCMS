@@ -14,6 +14,7 @@ import GoogleRoleSelectPage from './pages/user/GoogleRoleSelectPage';
 import SearchResultsPage from './pages/user/SearchResultsPage';
 import ChatsPage from './pages/user/ChatsPage';
 import ChatRoomPage from './pages/user/ChatRoomPage';
+import BookingPage from './pages/user/BookingPage';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
             <Route path="/register-role" element={<GoogleRoleSelectPage />} />
             <Route path="/chats" element={<ChatsPage />} />
             <Route path="/chats/:id" element={<ChatRoomPage />} />
+            <Route path="/booking/:id" element={<BookingPage />} />
 
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />

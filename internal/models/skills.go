@@ -43,9 +43,10 @@ type Portfolio struct {
 	VideoURL       *string     `gorm:"type:varchar(255)"`
 	ClientAgeMin   *int        `gorm:"type:int;comment:Minimum client age"`
 	ClientAgeMax   *int        `gorm:"type:int;comment:Maximum client age"`
-	Rate           *float64    `gorm:"type:decimal(10,2);comment:Hourly rate in currency"`
-	CreatedAt      time.Time   `gorm:"autoCreateTime"`
-	UpdatedAt      time.Time   `gorm:"autoUpdateTime"`
+	Rate             *float64 `gorm:"type:decimal(10,2);comment:Hourly rate in currency"`
+	ScheduleEnforced bool     `gorm:"default:false" json:"scheduleEnforced"`
+	CreatedAt        time.Time `gorm:"autoCreateTime"`
+	UpdatedAt        time.Time `gorm:"autoUpdateTime"`
 	Educations     []Education `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`
 	Diplomas       []Diploma   `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`
 	Photos         []Photo     `gorm:"foreignKey:PortfolioID;constraint:OnDelete:RESTRICT"`

@@ -152,9 +152,20 @@ func main() {
 		r.Post("/api/users/availability", handlers.CreateAvailabilitySlot)
 		r.Delete("/api/users/availability/{slotId}", handlers.DeleteAvailabilitySlot)
 
+		// --- Schedule templates (for psychologists) ---
+		r.Post("/api/users/schedule-templates", handlers.CreateScheduleTemplate)
+		r.Get("/api/users/schedule-templates", handlers.GetMyScheduleTemplates)
+		r.Put("/api/users/schedule-templates/{id}", handlers.UpdateScheduleTemplate)
+		r.Delete("/api/users/schedule-templates/{id}", handlers.DeleteScheduleTemplate)
+		r.Post("/api/users/schedule-templates/generate", handlers.GenerateSlotsFromTemplates)
+
 		// --- Routes for sessions (for clients and psychologists) ---
 		r.Post("/api/users/sessions/book/{slotId}", handlers.BookSession)
+		r.Post("/api/users/sessions/request", handlers.RequestFreeTimeSession)
 		r.Get("/api/users/sessions/my", handlers.GetMySessions)
+		r.Put("/api/users/sessions/{id}/cancel", handlers.CancelSession)
+		r.Put("/api/users/sessions/{id}/confirm", handlers.ConfirmSession)
+		r.Put("/api/users/sessions/{id}/complete", handlers.CompleteSession)
 
 		// --- Chat REST endpoints ---
 		r.Post("/api/conversations", handlers.StartConversation)
@@ -172,6 +183,8 @@ func main() {
 
 	// Public route for viewing psychologist availability
 	r.Get("/api/users/availability/{psychologistId}", handlers.GetPsychologistAvailability)
+	// Public route for booking page (schedule info + slots)
+	r.Get("/api/users/{id}/schedule-info", handlers.GetPsychologistScheduleInfo)
 
 	// Services API endpoints
 	r.Get("/api/healthz", healthz.HealthCheck)
