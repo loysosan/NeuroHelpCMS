@@ -164,7 +164,7 @@ const Badge: React.FC<{ children: React.ReactNode; variant?: string; className?:
   };
   
   return (
-    <span className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
+    <span className={`${baseClasses} ${variantClasses[variant as keyof typeof variantClasses]} ${className}`}>
       {children}
     </span>
   );
@@ -194,7 +194,7 @@ const Button: React.FC<{
   
   return (
     <button 
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`${baseClasses} ${variantClasses[variant as keyof typeof variantClasses]} ${sizeClasses[size as keyof typeof sizeClasses]} ${className}`}
       onClick={onClick}
     >
       {children}

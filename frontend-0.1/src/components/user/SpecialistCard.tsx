@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Award, Star, Briefcase, DollarSign } from 'lucide-react';
+import { MapPin, Award, Star, Briefcase } from 'lucide-react';
 
 interface Skill {
   id: number;
@@ -126,7 +126,7 @@ const SpecialistCard: React.FC<Props> = ({ specialist }) => {
               )}
               {portfolio.rate && (
                 <div className="flex items-center gap-1">
-                  <DollarSign className="w-3.5 h-3.5" />
+                  <span className="font-semibold text-sm">₴</span>
                   <span>{portfolio.rate} ₴/год</span>
                 </div>
               )}

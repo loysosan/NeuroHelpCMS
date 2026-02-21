@@ -302,7 +302,7 @@ const SkillsPage: React.FC = () => {
       <SkillModal
         isOpen={!!editingSkill}
         onClose={()=>setEditingSkill(null)}
-        onSubmit={(data)=> editingSkill && handleUpdateSkill(editingSkill.ID,data)}
+        onSubmit={(data)=> { if (editingSkill) handleUpdateSkill(editingSkill.ID,data); }}
         categories={categories}
         initialData={editingSkill ? { ID: editingSkill.ID, Name: editingSkill.Name, CategoryID: editingSkill.CategoryID } : undefined}
         isEditing

@@ -47,6 +47,7 @@ type Portfolio = {
   Educations?: Education[] | null;
   City?: string | null;
   Address?: string | null;
+  VideoURL?: string | null;
 };
 
 type Skill = {
@@ -80,6 +81,14 @@ type PublicUser = {
   ReviewsCount?: number | null;
   Portfolio?: Portfolio | null;
   AvatarURL?: string | null;
+};
+
+const getEmbedUrl = (url: string): string | null => {
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  const vm = url.match(/vimeo\.com\/(\d+)/);
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+  return null;
 };
 
 // Utility functions
@@ -598,6 +607,36 @@ const ProfilePagePublicNew: React.FC = () => {
             <p className="text-gray-700 leading-relaxed">{portfolio.Description}</p>
           </div>
         )}
+
+        {/* Video embed */}
+        {portfolio?.VideoURL && (() => {
+          const embedUrl = getEmbedUrl(portfolio.VideoURL!);
+          return (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                  <Video className="w-4 h-4 text-red-600" />
+                </div>
+                Відео
+              </h2>
+              {embedUrl ? (
+                <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    src={embedUrl}
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <a href={portfolio.VideoURL!} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border border-red-200">
+                  <Video className="w-4 h-4" /> Переглянути відео
+                </a>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Specializations - Tags */}
         {hasSkills && (

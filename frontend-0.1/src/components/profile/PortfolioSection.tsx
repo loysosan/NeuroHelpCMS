@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { Briefcase, Edit3, Save, MapPin, Phone, Mail, Clock, DollarSign, Users, Calendar, MessageCircle } from 'lucide-react';
+import { Briefcase, Edit3, Save, MapPin, Phone, Mail, Clock, Users, Calendar, MessageCircle, Video } from 'lucide-react';
+
+const getEmbedUrl = (url: string): string | null => {
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  const vm = url.match(/vimeo\.com\/(\d+)/);
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+  return null;
+};
 import { UserProfile } from './types';
 import { useToast } from '../ui/Toast';
 
@@ -216,15 +224,42 @@ const PortfolioSection: React.FC<Props> = ({ user, authenticatedFetch, onReload 
           {/* Info grid */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {p?.experience ? <InfoChip icon={<Clock className="w-4 h-4" />} label="Досвід" value={`${p.experience} р.`} /> : null}
-            {p?.rate ? <InfoChip icon={<DollarSign className="w-4 h-4" />} label="Ставка" value={`${p.rate} грн/год`} /> : null}
+            {p?.rate ? <InfoChip icon={<span className="font-semibold text-sm">₴</span>} label="Ставка" value={`${p.rate} грн/год`} /> : null}
             {p?.city ? <InfoChip icon={<MapPin className="w-4 h-4" />} label="Місто" value={p.address ? `${p.city}, ${p.address}` : p.city} /> : null}
             {(p?.clientAgeMin || p?.clientAgeMax) ? <InfoChip icon={<Users className="w-4 h-4" />} label="Вік клієнтів" value={`${p?.clientAgeMin || 0} — ${p?.clientAgeMax || '...'} р.`} /> : null}
             {genderLabel(p?.gender) ? <InfoChip icon={<Calendar className="w-4 h-4" />} label="Стать" value={genderLabel(p?.gender)!} /> : null}
             {p?.dateOfBirth ? <InfoChip icon={<Calendar className="w-4 h-4" />} label="Дата народження" value={new Date(p.dateOfBirth).toLocaleDateString('uk-UA')} /> : null}
           </div>
 
+          {/* Video embed */}
+          {p?.videoURL && (() => {
+            const embedUrl = getEmbedUrl(p.videoURL!);
+            return embedUrl ? (
+              <div className="pt-3 border-t border-gray-100">
+                <span className="flex items-center gap-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                  <Video className="w-3.5 h-3.5" /> Відео
+                </span>
+                <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    src={embedUrl}
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="pt-3 border-t border-gray-100">
+                <a href={p.videoURL!} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-full hover:bg-red-100 transition-colors border border-red-200">
+                  <Video className="w-3.5 h-3.5" /> Відео
+                </a>
+              </div>
+            );
+          })()}
+
           {/* Contacts */}
-          {(p?.contactEmail || p?.contactPhone || p?.telegram || p?.instagramURL || p?.facebookURL || p?.videoURL) && (
+          {(p?.contactEmail || p?.contactPhone || p?.telegram || p?.instagramURL || p?.facebookURL) && (
             <div className="pt-3 border-t border-gray-100">
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Контакти</span>
               <div className="flex flex-wrap gap-2 mt-2">
@@ -233,12 +268,6 @@ const PortfolioSection: React.FC<Props> = ({ user, authenticatedFetch, onReload 
                 {p?.telegram && <ContactBadge icon={<MessageCircle className="w-3.5 h-3.5" />} value={p.telegram} />}
                 {p?.instagramURL && <ContactBadge icon={<span className="text-xs">IG</span>} value={p.instagramURL} />}
                 {p?.facebookURL && <ContactBadge icon={<span className="text-xs">FB</span>} value={p.facebookURL} href={p.facebookURL} />}
-                {p?.videoURL && (
-                  <a href={p.videoURL} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-full hover:bg-red-100 transition-colors border border-red-200">
-                    <span>YT</span> Відео
-                  </a>
-                )}
               </div>
             </div>
           )}
